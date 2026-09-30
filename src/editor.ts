@@ -10,6 +10,9 @@ import { Scene, type El, type ElInit, type ElJSON, type GroupInfo, type SceneJSO
 import { braceVertical, NEW_KINDS } from "./shape-geom";
 import { CATEGORIES, type Theme } from "./theme";
 import { measureText, TextEditor } from "./text-edit";
+
+/** an icon placed from the palette: a tile this many world units square (label strip included) */
+const ICON_SIZE = 72;
 import { Viewport } from "./viewport";
 
 export interface EditorDeps { stage: HTMLElement; staticCanvas: HTMLCanvasElement; liveCanvas: HTMLCanvasElement; theme: Theme }
@@ -39,7 +42,7 @@ export function createEditor(d: EditorDeps): Editor {
   const text = new TextEditor(d.stage, vp);
   const entered = new Set<string>();
   const subs = new Map<EditorEvent, Set<() => void>>();
-  const defaults: StyleProps = { cat: 0, fill: 1, edge: 1, radius: 8, dash: 0, route: 1 };
+  const defaults: StyleProps = { cat: 0, fill: 0, edge: 1, radius: 8, dash: 0, route: 1 }; // outline fill, round edges
   let savedRev = 0, gc = 0, pasteN = 0, destroyed = false;
   let styleClip: Partial<StyleProps> | null = null;
 
@@ -240,6 +243,8 @@ export function createEditor(d: EditorDeps): Editor {
     scene, vp, renderer, theme: d.theme, hist, snap: true,
     get tool() { return ctl.tool; },
     setTool(t: Tool) { ctl.setTool(t); },
+    get toolLocked() { return ctl.toolLocked; },
+    setToolLock(on: boolean) { ctl.setToolLock(on); },
     selection: () => renderer.selected,
     select(ids) { setSel(ids); },
     clearSelection() { setSel([]); entered.clear(); },
@@ -338,7 +343,7 @@ export function createEditor(d: EditorDeps): Editor {
     placeIcon(iconId, at) {
       const cx = at?.x ?? vp.x + vp.w / vp.zoom / 2, cy = at?.y ?? vp.y + vp.h / vp.zoom / 2;
       return run("place icon", () => {
-        const e = newEl({ kind: "icon", iconId, x: cx - 48, y: cy - 48, w: 96, h: 96 });
+        const e = newEl({ kind: "icon", iconId, x: cx - ICON_SIZE / 2, y: cy - ICON_SIZE / 2, w: ICON_SIZE, h: ICON_SIZE });
         setSel([e.id]);
         return e;
       });

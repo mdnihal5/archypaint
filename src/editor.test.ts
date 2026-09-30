@@ -44,7 +44,7 @@ describe("drawing, connecting, moving", () => {
     expect(ed.selection().size).toBe(1);
     expect(ed.tool).toBe("select");
     ed.setTool("diamond"); ptr("pointerdown", 400, 400); ptr("pointerup", 400, 400);
-    expect(sh("diamond")[0]!.w).toBe(120); // click without drag -> default size
+    expect(sh("diamond")[0]!.w).toBe(96); // click without drag -> default size
   });
 
   it("an arrow binds to shapes and follows when a shape moves; undo restores", () => {

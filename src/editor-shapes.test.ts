@@ -234,7 +234,7 @@ describe("lock, copy style, legend", () => {
     ed.select([el.id]); ed.pasteStyle();
     expect([el.cat, el.fill, el.edge, el.dash]).toEqual([4, 2, 0, 1]);
     expect(el.radius).toBe(0);
-    ed.undo(); expect([el.cat, el.fill]).toEqual([0, 1]);
+    ed.undo(); expect([el.cat, el.fill]).toEqual([0, 0]);
   });
   it("insert legend lists what is used; running it again on the selected legend refreshes it in place", () => {
     draw("rect", 100, 100, 200, 160); ed.setStyle({ cat: 3 });
@@ -325,5 +325,26 @@ describe("leaks and loops", () => {
     ed.highlight(["x"], "x");
     ed.destroy();
     expect(ed.renderer.hi).toEqual([]);
+  });
+});
+
+describe("tool lock (double-click a creation tool)", () => {
+  it("a single-use tool goes back to select after one shape; a locked one stays and draws again", () => {
+    ed.setTool("rect"); draw("rect", 100, 100, 200, 160);
+    expect(ed.tool).toBe("select");
+    ed.setTool("rect"); ed.setToolLock(true); expect(ed.toolLocked).toBe(true);
+    draw("rect", 300, 100, 400, 160);
+    expect(ed.tool).toBe("rect"); // stays active
+    draw("rect", 500, 100, 600, 160);
+    expect(of("rect").length).toBe(3);
+    ed.setToolLock(false); expect(ed.toolLocked).toBe(false);
+    ed.setTool("rect"); draw("rect", 700, 100, 800, 160);
+    expect(ed.tool).toBe("select");
+  });
+  it("choosing another tool, or Escape, releases the lock; select and hand cannot be locked", () => {
+    ed.setTool("ellipse"); ed.setToolLock(true);
+    ed.setTool("arrow"); expect(ed.toolLocked).toBe(false);
+    ed.setTool("select"); ed.setToolLock(true); expect(ed.toolLocked).toBe(false);
+    ed.setTool("hand"); ed.setToolLock(true); expect(ed.toolLocked).toBe(false);
   });
 });

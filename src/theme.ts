@@ -7,11 +7,11 @@ export interface Theme {
 export const CATEGORIES = ["data", "cache", "network", "compute", "queue", "security", "client", "external"] as const;
 
 export const LIGHT: Theme = {
-  paper: "#f5f1e6", grid: "#dcd5c1", gridMajor: "#cbc3ab", ink: "#26323b", mid: "#5f6a73", red: "#c2412d", card: "#fbf9f2",
+  paper: "#fbf5ec", grid: "#f1eadf", gridMajor: "#ebe4d6", ink: "#26323b", mid: "#5f6a73", red: "#c2412d", card: "#fffaf2",
   cats: ["#2b6f9e", "#a25a17", "#2d7b4d", "#6a4fa3", "#0e777e", "#9b3d6b", "#4d5a64", "#7a6a3a"], tint: 0.13,
 };
 export const DARK: Theme = {
-  paper: "#16171b", grid: "#22242a", gridMajor: "#2c2f37", ink: "#e7e9ee", mid: "#9aa1ac", red: "#ff6f5e", card: "#1d1f26",
+  paper: "#18181b", grid: "#1e1e22", gridMajor: "#242428", ink: "#e4e4e7", mid: "#a1a1aa", red: "#ff6f5e", card: "#202024",
   cats: ["#5aa9e6", "#f0913a", "#4cc38a", "#a48af0", "#34c6cf", "#e879b0", "#a9b3be", "#d4bb6a"], tint: 0.16,
 };
 

@@ -38,7 +38,7 @@ const GENERIC_SHAPE = '<rect x="4" y="6" width="16" height="12" rx="1.5" stroke-
 const CSS = `
 .ap-pal{position:fixed;inset:0;z-index:50;font-family:'JetBrains Mono','DejaVu Sans Mono',monospace;color:var(--ink,#26323b)}
 .ap-pal[hidden]{display:none}
-.ap-pal-panel{position:absolute;left:96px;top:72px;width:min(680px,calc(100vw - 128px));background:var(--card,#fbf9f2);
+.ap-pal-panel{position:absolute;left:96px;top:72px;width:min(680px,calc(100vw - 128px));background:var(--card,#fffaf2);
   border:1.5px solid var(--ink,#26323b);box-shadow:6px 6px 0 color-mix(in srgb,var(--ink,#26323b) 14%,transparent)}
 .ap-pal-line{display:flex;align-items:center;gap:12px;padding:14px 18px 6px}
 .ap-pal-slash{font-size:32px;font-weight:700;color:var(--red,#c2412d);line-height:1}

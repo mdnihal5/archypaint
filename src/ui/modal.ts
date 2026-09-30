@@ -47,7 +47,7 @@ export function confirmDialog(root: HTMLElement, msg: string, yes = "Discard"): 
 }
 
 const KEYS: Array<[string, Array<[string, string]>]> = [
-  ["Tools", [["Select", "V"], ["Hand (or hold Space)", "H"], ["Rectangle", "R"], ["Diamond", "D"], ["Ellipse", "O"], ["Arrow", "A"], ["Line", "L"], ["Text", "T"]]],
+  ["Tools", [["Select", "V"], ["Hand (or hold Space)", "H"], ["Rectangle", "R"], ["Diamond", "D"], ["Ellipse", "O"], ["Arrow", "A"], ["Line", "L"], ["Text", "T"], ["Keep the tool after each shape: double-click it", "Q"]]],
   ["Icons", [["Place an icon", "/  or  I"], ["Close search", "Esc"]]],
   ["Edit", [["Undo", "⌘Z"], ["Redo", "⇧⌘Z"], ["Duplicate", "⌘D"], ["Select all", "⌘A"], ["Delete", "⌫"], ["Group", "⌘G"], ["Ungroup", "⇧⌘G"]]],
   ["Arrange", [["Bring to front", "⇧⌘]"], ["Bring forward", "⌘]"], ["Send backward", "⌘["], ["Send to back", "⇧⌘["]]],

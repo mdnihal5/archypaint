@@ -16,7 +16,8 @@ export interface Settings {
   rev: string;
 }
 
-export const DEFAULTS: Settings = { bg: "grid", theme: "system", frame: true, hud: true, layers: true, minimap: true, scale: "1:1", rev: "0" };
+/** what a fresh browser gets: quiet canvas (no frame, layers or footer), minimap on, system theme, grid background */
+export const DEFAULTS: Settings = { bg: "grid", theme: "system", frame: false, hud: false, layers: false, minimap: true, scale: "1:1", rev: "0" };
 const KEY = "archypaint.settings.v1";
 
 const oneOf = <T extends string>(v: unknown, all: readonly T[], d: T): T => (typeof v === "string" && (all as readonly string[]).includes(v) ? (v as T) : d);

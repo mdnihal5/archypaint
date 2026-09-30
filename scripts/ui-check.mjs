@@ -35,6 +35,8 @@ async function open(url, w = 1440, h = 900) {
   const cx = await b.createBrowserContext(); const p = await cx.newPage();
   const errs = []; p.on("pageerror", (e) => errs.push(String(e))); p.on("console", (m) => { if (["error", "warning"].includes(m.type())) errs.push(m.text()); });
   await p.evaluateOnNewDocument(INSTRUMENT);
+  // the checks exercise every panel: start from "everything on" (the shipped defaults are a quieter canvas), unless a test seeds its own settings
+  await p.evaluateOnNewDocument(() => { try { if (!localStorage.getItem("archypaint.settings.v1")) localStorage.setItem("archypaint.settings.v1", JSON.stringify({ bg: "grid", theme: "system", frame: true, hud: true, layers: true, minimap: true })); } catch { /* storage unavailable */ } });
   await p.setViewport({ width: w, height: h }); await p.goto(url); await p.waitForFunction(() => window.__ap && window.__ap.ui);
   await sleep(500);
   return { p, cx, errs };
@@ -72,6 +74,17 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   check("tools: pressed state follows editor.tool", await p.evaluate(() => document.querySelector('button[aria-label="Rectangle"]').getAttribute("aria-pressed") === "true"));
   check("tools: there is no pen tool", await p.evaluate(() => !document.querySelector('button[aria-label^="Pen"]') && !document.body.textContent.includes("Pen (not available")));
   await p.evaluate(() => window.__ap.editor.setTool("select")); await sleep(120);
+  // double-click keeps a creation tool active after each shape; double-click again releases it
+  const rectBtn = await p.$('button[aria-label="Rectangle"]');
+  await rectBtn.click({ clickCount: 2, delay: 30 }); await sleep(120);
+  const drawRect = async (x, y) => { await p.mouse.move(x, y); await p.mouse.down(); await p.mouse.move(x + 60, y + 40, { steps: 3 }); await p.mouse.up(); await sleep(80); };
+  check("tools: double-click locks the tool (marker + editor.toolLocked)", await p.evaluate(() => window.__ap.editor.toolLocked && document.querySelector('button[aria-label="Rectangle"]').dataset.locked === "true"));
+  await drawRect(400, 300); await drawRect(520, 300);
+  check("tools: a locked tool stays active and keeps drawing", await p.evaluate(() => window.__ap.editor.tool === "rect" && [...window.__ap.scene.els.values()].filter((e) => e.kind === "rect").length === 2));
+  await rectBtn.click({ clickCount: 2, delay: 30 }); await sleep(120);
+  await drawRect(640, 300);
+  check("tools: double-click again releases it (single use again)", await p.evaluate(() => !window.__ap.editor.toolLocked && window.__ap.editor.tool === "select" && document.querySelector('button[aria-label="Rectangle"]').dataset.locked === "false"));
+  await p.evaluate(() => { window.__ap.editor.selectAll(); window.__ap.editor.deleteSelection(); window.__ap.editor.setTool("select"); }); await sleep(120);
   await click(p, ".ap-tool-icons"); check("tools: icons button opens the palette", await has(p, "open")); await p.evaluate(() => window.__ap.palette.close());
 
   await clear(p);

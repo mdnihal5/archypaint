@@ -5,6 +5,7 @@ import { makeUpdaterApi, type Ctx, type HudSource } from "./ctx";
 import { confirmDialog, modalOpen, openModal, shortcutsContent } from "./modal";
 import { Disposer, h, installInputTracker, updaterStats } from "./dom";
 import { mountBottom } from "./bottom";
+import { mountBrand } from "./brand";
 import { mountFooter } from "./footer";
 import { mountFind } from "./find";
 import { mountKeys } from "./keys";
@@ -65,6 +66,7 @@ export function mountUI(deps: UiDeps): UiHandle {
   const right = mountRight(ctx, root);
   mountBottom(ctx, root);
   const top = mountTop(ctx, root, right);
+  mountBrand(ctx, root);
   mountFooter(ctx, root);
   mountKeys(ctx);
   mountFind(ctx, root);

@@ -32,6 +32,8 @@ const SHAPE_TOOLS: ToolDef[] = [
   { id: "lane", g: "lane", key: "", label: "Swimlane" },
 ];
 const SHAPE_IDS = new Set(SHAPE_TOOLS.map((t) => t.id));
+/** creation tools; select and hand are always "kept" */
+const LOCKABLE = new Set(["rect", "diamond", "ellipse", "arrow", "line", "text"]);
 
 /** Square hairline tool strip + the shapes flyout + the red "icons" button that opens the palette. */
 export function mountTools(ctx: Ctx, root: HTMLElement): void {
@@ -43,7 +45,16 @@ export function mountTools(ctx: Ctx, root: HTMLElement): void {
     const b = h("button", {
       class: "ap-tool",
       attrs: { type: "button", title: `${t.label} (${t.key})`, "aria-label": t.label, "aria-pressed": "false" },
-      on: { click: () => { editor.setTool(t.id as Tool); ctx.refresh(); } },
+      on: {
+        click: () => { editor.setTool(t.id as Tool); ctx.refresh(); },
+        // double-click keeps a creation tool active after every shape; double-click again (or pick another tool) turns it off
+        dblclick: () => {
+          if (!LOCKABLE.has(t.id)) return;
+          editor.setTool(t.id as Tool);
+          editor.setToolLock(!editor.toolLocked);
+          ctx.refresh();
+        },
+      },
     }, glyph(t.g, 22), h("span", { class: "k", text: t.key, attrs: { "aria-hidden": "true" } }));
     buttons.set(t.id, b);
     strip.append(b);
@@ -93,7 +104,17 @@ export function mountTools(ctx: Ctx, root: HTMLElement): void {
 
   const render = () => {
     const cur = editor.tool as string;
-    for (const [id, b] of buttons) setPressed(b, id === cur);
+    const locked = editor.toolLocked;
+    for (const [id, b] of buttons) {
+      setPressed(b, id === cur);
+      const on = locked && id === cur;
+      if (b.dataset.locked !== String(on)) {
+        b.dataset.locked = String(on);
+        const t = TOOLS.find((x): x is ToolDef => x !== "sep" && x.id === id)!;
+        b.title = on ? `${t.label} (${t.key}) — kept active; double-click or Q to release` : `${t.label} (${t.key}) — double-click to keep active`;
+      }
+    }
+    more.dataset.locked = String(locked && SHAPE_IDS.has(cur));
     setPressed(more, SHAPE_IDS.has(cur));
   };
   const u = ctx.update("tools", render);

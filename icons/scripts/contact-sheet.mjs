@@ -10,8 +10,8 @@ const only = (process.argv.find((a) => a.startsWith("--only=")) || "").slice(7).
 const pack = (process.argv.find((a) => a.startsWith("--pack=")) || "").slice(7); // --pack=aws renders manifests/aws.json only, to dist/contact-sheet-aws*.png
 const manifest = JSON.parse(readFileSync(join(ROOT, pack ? `manifests/${pack}.json` : "manifest.json"), "utf8"));
 const COL = dark
-  ? { bg: "#16171b", card: "#1d1f26", ink: "#e7e9ee", mid: "#9aa1ac", data: "#5aa9e6", cache: "#f0913a", network: "#4cc38a", compute: "#a48af0", queue: "#34c6cf", security: "#e879b0", client: "#a9b3be", external: "#d4bb6a" }
-  : { bg: "#f5f1e6", card: "#fbf9f2", ink: "#26323b", mid: "#5f6a73", data: "#2b6f9e", cache: "#a25a17", network: "#2d7b4d", compute: "#6a4fa3", queue: "#0e777e", security: "#9b3d6b", client: "#4d5a64", external: "#7a6a3a" };
+  ? { bg: "#18181b", card: "#202024", ink: "#e4e4e7", mid: "#a1a1aa", data: "#5aa9e6", cache: "#f0913a", network: "#4cc38a", compute: "#a48af0", queue: "#34c6cf", security: "#e879b0", client: "#a9b3be", external: "#d4bb6a" }
+  : { bg: "#fbf5ec", card: "#fffaf2", ink: "#26323b", mid: "#5f6a73", data: "#2b6f9e", cache: "#a25a17", network: "#2d7b4d", compute: "#6a4fa3", queue: "#0e777e", security: "#9b3d6b", client: "#4d5a64", external: "#7a6a3a" };
 
 const rows = manifest.filter((r) => !only.length || only.includes(r.id));
 const cell = (r) => {

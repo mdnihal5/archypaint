@@ -2,9 +2,9 @@
    Tokens are bare on :root (light), redefined for dark under the media query and [data-theme="dark"]. */
 :root {
   color-scheme: light;
-  --paper: #f5f1e6;
-  --card: #fbf9f2;
-  --panel: #fbf9f2;
+  --paper: #fbf5ec;
+  --card: #fffaf2;
+  --panel: #fffaf2;
   --ink: #26323b;
   --mid: #5f6a73;
   --red: #c2412d;
@@ -26,20 +26,20 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --paper: #16171b; --card: #1d1f26; --panel: #1a1c22; --ink: #e7e9ee; --mid: #9aa1ac;
+    --paper: #18181b; --card: #202024; --panel: #1c1c20; --ink: #e4e4e7; --mid: #a1a1aa;
     --red: #ff6f5e; --red-ink: #ff8272;
-    --line: rgba(231, 233, 238, 0.5); --line-soft: rgba(231, 233, 238, 0.24);
-    --hover: rgba(231, 233, 238, 0.08); --red-wash: rgba(255, 111, 94, 0.16);
+    --line: rgba(228, 228, 231, 0.5); --line-soft: rgba(228, 228, 231, 0.24);
+    --hover: rgba(228, 228, 231, 0.08); --red-wash: rgba(255, 111, 94, 0.16);
     --cat0: #5aa9e6; --cat1: #f0913a; --cat2: #4cc38a; --cat3: #a48af0;
     --cat4: #34c6cf; --cat5: #e879b0; --cat6: #a9b3be; --cat7: #d4bb6a;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --paper: #16171b; --card: #1d1f26; --panel: #1a1c22; --ink: #e7e9ee; --mid: #9aa1ac;
+  --paper: #18181b; --card: #202024; --panel: #1c1c20; --ink: #e4e4e7; --mid: #a1a1aa;
   --red: #ff6f5e; --red-ink: #ff8272;
-  --line: rgba(231, 233, 238, 0.5); --line-soft: rgba(231, 233, 238, 0.24);
-  --hover: rgba(231, 233, 238, 0.08); --red-wash: rgba(255, 111, 94, 0.16);
+  --line: rgba(228, 228, 231, 0.5); --line-soft: rgba(228, 228, 231, 0.24);
+  --hover: rgba(228, 228, 231, 0.08); --red-wash: rgba(255, 111, 94, 0.16);
   --cat0: #5aa9e6; --cat1: #f0913a; --cat2: #4cc38a; --cat3: #a48af0;
   --cat4: #34c6cf; --cat5: #e879b0; --cat6: #a9b3be; --cat7: #d4bb6a;
 }
@@ -107,6 +107,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--paper)
 
 /* ---------- top-left: menu + sheet name ---------- */
 .ap-top { position: absolute; left: var(--edge); top: calc(var(--frame) + var(--gap) + 8px); display: flex; align-items: center; gap: 8px; }
+.ap-brand { position: absolute; right: var(--edge); top: calc(var(--frame) + var(--gap) + 8px); height: 32px; display: flex; align-items: center; gap: 9px; color: var(--ink); user-select: none; }
+.ap-brand svg { display: block; flex: none; }
+.ap-brand-word { font: 700 13px/1 var(--mono); letter-spacing: 0.02em; }
 .ap-name { width: clamp(120px, 22vw, 240px); background: transparent; border: 0; border-bottom: 1px dotted var(--line); padding: 4px 2px; font: 15px var(--mono); color: var(--mid); border-radius: 0; }
 .ap-name:focus { color: var(--ink); }
 .ap-state { font-size: 11px; color: var(--mid); }
@@ -136,6 +139,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--paper)
 .ap-tool:hover:not(:disabled) { background: var(--hover); }
 .ap-tool:disabled { opacity: 0.35; cursor: default; }
 .ap-tool[aria-pressed="true"] { background: var(--red-wash); color: var(--red-ink); }
+.ap-tool[data-locked="true"]::after { content: ""; position: absolute; left: 4px; top: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--red-ink); }
 .ap-tool .k { position: absolute; right: 2px; bottom: 0; font-size: 9px; color: var(--mid); }
 .ap-tool-sep { height: 1px; background: var(--line-soft); margin: 2px 4px; }
 .ap-tool-icons { width: 54px; height: 54px; box-sizing: border-box; border: 1.4px solid var(--red-ink); background: var(--red-wash); color: var(--red-ink);
@@ -227,6 +231,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--paper)
   .ap-right { display: none; }
   .ap-right[data-open="true"]:not([data-any="false"]) { display: flex; left: 12px; right: 12px; width: auto; top: 64px; bottom: 64px; z-index: 20; }
   .ap-ghost { right: 8%; }
+  .ap-brand-word { display: none; }
 }
 @media (max-width: 599px) {
   :root { --frame: 8px; --gap: 10px; }

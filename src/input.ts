@@ -14,10 +14,10 @@ export type Tool = "select" | "hand" | "arrow" | "line" | "text" | ShapeTool | "
 
 /** default size of a shape created by a plain click */
 export const SHAPE_SIZE: Record<ShapeTool, { w: number; h: number }> = {
-  rect: { w: 120, h: 72 }, ellipse: { w: 120, h: 72 }, diamond: { w: 120, h: 72 },
-  cylinder: { w: 96, h: 112 }, cloud: { w: 150, h: 96 }, hexagon: { w: 120, h: 104 }, parallelogram: { w: 150, h: 80 },
-  triangle: { w: 112, h: 98 }, star: { w: 112, h: 106 }, note: { w: 150, h: 120 }, brace: { w: 28, h: 150 },
-  badge: { w: 32, h: 32 }, frame: { w: 360, h: 240 }, lane: { w: 480, h: 270 },
+  rect: { w: 96, h: 56 }, ellipse: { w: 96, h: 56 }, diamond: { w: 96, h: 64 },
+  cylinder: { w: 72, h: 88 }, cloud: { w: 116, h: 76 }, hexagon: { w: 96, h: 84 }, parallelogram: { w: 116, h: 62 },
+  triangle: { w: 88, h: 76 }, star: { w: 88, h: 84 }, note: { w: 116, h: 92 }, brace: { w: 22, h: 116 },
+  badge: { w: 28, h: 28 }, frame: { w: 320, h: 220 }, lane: { w: 420, h: 240 },
 };
 export const isShapeTool = (t: Tool): t is ShapeTool => t in SHAPE_SIZE;
 const isArrowTool = (t: Tool): boolean => t === "arrow" || t === "line";
@@ -128,10 +128,23 @@ export class Controller {
     this.r.onBeforeFrame = null;
   }
 
+  /** double-click a creation tool (or Q): it stays active after each shape until unlocked or another tool is chosen */
+  toolLocked = false;
+  static lockable(t: Tool): boolean { return t === "arrow" || t === "line" || t === "text" || isShapeTool(t); }
+  setToolLock(on: boolean): void {
+    const next = on && Controller.lockable(this.tool);
+    if (next === this.toolLocked) return;
+    this.toolLocked = next;
+    this.onTool(this.tool);
+  }
+  /** what a finished creation does: back to select, unless the tool is locked */
+  private doneCreating(): void { if (!this.toolLocked) this.setTool("select"); }
+
   setTool(t: Tool): void {
     if (t === "legend") { this.core.insertLegend(); return; }
     if (t === "renumber") { this.core.renumberBadges(); return; }
     if (this.tool === t) return;
+    this.toolLocked = false; // choosing a different tool always drops the lock: single click = one use, as before
     this.tool = t; this.r.hoverRect = null; this.r.hoverPort = -1;
     this.onTool(t); this.r.invalidate(false, true);
     this.setCursor(t === "select" ? "" : t === "hand" ? "grab" : "crosshair");
@@ -517,7 +530,7 @@ export class Controller {
           route: d.route, edge: d.edge, dash: d.dash, cat: d.cat, fill: 0, radius: 0, head: g.head,
         });
         core.hist.commit("arrow");
-        core.setSel([a.id]); core.setTool("select");
+        core.setSel([a.id]); this.doneCreating();
         core.emit("change"); core.emit("history");
       }
     }
@@ -557,7 +570,7 @@ export class Controller {
       case "create": this.finishCreate(wx, wy, wasClick); break;
       case "arrow": this.finishArrow(); break;
       case "arrowEnd": this.finishArrowEnd(); break;
-      case "text": if (wasClick) core.createTextAt(wx, wy); core.setTool("select"); break;
+      case "text": if (wasClick) core.createTextAt(wx, wy); this.doneCreating(); break;
       case "pan": this.setCursor(this.tool === "hand" ? "grab" : this.tool === "select" ? "" : "crosshair"); break;
       default: break;
     }
@@ -590,7 +603,7 @@ export class Controller {
     const el = core.newEl(init);
     if (isContainer(kind)) core.toBack(el);
     core.hist.commit("create");
-    core.setSel([el.id]); core.setTool("select");
+    core.setSel([el.id]); this.doneCreating();
     r.invalidate(true, true); core.emit("history");
   }
 
@@ -675,6 +688,7 @@ export class Controller {
     if (k === "-") { core.zoomBy(0.8); return; }
     const map: Record<string, Tool> = { v: "select", r: "rect", o: "ellipse", d: "diamond", a: "arrow", t: "text", h: "hand" };
     if (map[k] && !e.altKey) { core.setTool(map[k]!); return; }
+    if (k === "q" && !e.altKey) { this.setToolLock(!this.toolLocked); return; }
     if (k === "delete" || k === "backspace") { e.preventDefault(); core.deleteSelection(); return; }
     const step = e.shiftKey ? 10 : 1;
     if (k === "arrowleft") { e.preventDefault(); core.nudge(-step, 0); }

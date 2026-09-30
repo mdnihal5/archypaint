@@ -17,6 +17,9 @@ export interface EditorAPI {
   readonly vp: Viewport;
   readonly tool: Tool;
   setTool(t: Tool): void;
+  /** creation tools only: when locked the tool stays active after each shape (double-click a tool, or Q). Choosing another tool unlocks. */
+  readonly toolLocked: boolean;
+  setToolLock(on: boolean): void;
 
   selection(): ReadonlySet<string>;
   select(ids: readonly string[]): void;

@@ -23,7 +23,7 @@ export function registerPwa(opts: PwaOpts = {}): PwaHandle {
   head("link", { rel: "manifest", href: `${base}manifest.webmanifest` }, 'rel="manifest"');
   head("link", { rel: "icon", type: "image/svg+xml", href: `${base}icon.svg` }, 'rel="icon"');
   head("link", { rel: "apple-touch-icon", href: `${base}icon-192.png` }, 'rel="apple-touch-icon"');
-  head("meta", { name: "theme-color", content: "#f5f1e6" }, 'name="theme-color"');
+  head("meta", { name: "theme-color", content: "#fbf5ec" }, 'name="theme-color"');
 
   const sw = navigator.serviceWorker;
   const hadController = !!sw.controller;

@@ -38,7 +38,7 @@ export class TextEditor {
     Object.assign(ta.style, {
       position: "absolute", zIndex: "5", resize: "none", overflow: "hidden", boxSizing: "border-box", margin: "0",
       padding: "0", border: "1.5px solid var(--red, #c2412d)", outline: "none", textAlign: "center", whiteSpace: "pre",
-      background: "var(--card, #fbf9f2)", color: "var(--ink, #26323b)", font: `${FONT_PX}px 'JetBrains Mono','DejaVu Sans Mono',monospace`,
+      background: "var(--card, #fffaf2)", color: "var(--ink, #26323b)", font: `${FONT_PX}px 'JetBrains Mono','DejaVu Sans Mono',monospace`,
       lineHeight: `${LINE}px`, transformOrigin: "0 0",
     } as Partial<CSSStyleDeclaration>);
     this.ta = ta; this.target = e; this.done = onDone; this.closed = onClosed ?? null;
