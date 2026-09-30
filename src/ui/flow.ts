@@ -4,7 +4,8 @@ import type { Theme } from "../theme";
 import type { Ctx } from "./ctx";
 
 /**
- * Flow animation: small red-pencil dots travelling along POINTED arrows (head arrow / dot), start -> pointer. Plain lines are not animated.
+ * Flow animation: small red-pencil dots travelling along POINTED arrows (head arrow / dot), start -> pointer, that are connected at
+ * BOTH ends. Plain lines and arrows with an open end are not animated.
  *
  * Built to cost nothing when it cannot be seen and little when it can:
  *  - its own transparent canvas above the drawing (the static layer is never redrawn for it; exports never include it);
@@ -84,6 +85,8 @@ export function mountFlow(ctx: Ctx, root: HTMLElement): void {
     const keep = new Map<string, Path>();
     for (const e of tmp) {
       if (e.kind !== "arrow" || e.head === 0) continue;
+      // a connection is two ends: an arrow attached at only one end (or to something since deleted) is unfinished, so nothing flows along it
+      if (!e.src || !e.dst || !editor.scene.els.has(e.src) || !editor.scene.els.has(e.dst)) continue;
       list.push(e);
       const c = cache.get(e.id);
       if (c) keep.set(e.id, c);

@@ -111,13 +111,15 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
     const a = box(300, 200), c = box(700, 200), l = box(300, 400), m = box(700, 400);
     scene.add({ kind: "arrow", src: a.id, dst: c.id, head: 1, x: 400, y: 230, w: 300, h: 0, pts: [400, 230, 700, 230], route: 0 });
     scene.add({ kind: "arrow", src: l.id, dst: m.id, head: 0, x: 400, y: 430, w: 300, h: 0, pts: [400, 430, 700, 430], route: 0 });
+    scene.add({ kind: "arrow", src: l.id, dst: "", head: 1, x: 400, y: 470, w: 300, h: 0, pts: [400, 470, 700, 470], route: 0 }); // pointed, but one end open
+    scene.add({ kind: "arrow", src: "", dst: "", head: 1, x: 400, y: 500, w: 300, h: 0, pts: [400, 500, 700, 500], route: 0 }); // pointed, both ends free
     renderer.invalidate(true, true); window.__ap.editor.zoomBy(1.0001);
   });
   await sleep(500);
   const h = await p.evaluate(() => innerHeight);
   const top = await lit(0, Math.floor(h / 2)), bottom = await lit(Math.floor(h / 2), h);
   check("flow: a pointed arrow shows moving dots", top > 50, `${top} px`);
-  check("flow: a plain line (no pointer) has none", bottom === 0, `${bottom} px`);
+  check("flow: a plain line, and pointed arrows with an open end, have none", bottom === 0, `${bottom} px`);
   check("flow: animating runs a bounded loop (<= ~35 frames/s)", (await frames(1000)) <= 75);
   await p.evaluate(() => window.__ap.settings.set({ flow: false })); await sleep(300);
   check("flow: turning it off clears the dots and stops every frame", (await lit(0, h)) === 0 && (await frames(700)) === 0);
