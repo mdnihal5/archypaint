@@ -108,17 +108,16 @@ describe("editor.insertImage", () => {
     const drop = (files: File[], x = 100, y = 120) => { const ev = new Event("drop", { bubbles: true, cancelable: true }); Object.assign(ev, { clientX: x, clientY: y, dataTransfer: { files, types: ["Files"], items: files.map((f) => ({ kind: "file", type: f.type })) } }); stage.dispatchEvent(ev); return ev; };
     const ev = drop([file(100, 100)], 100, 120);
     expect(ev.defaultPrevented).toBe(true);
-    await settle();
-    expect(imgs().length).toBe(1);
+    await vi.waitFor(() => expect(imgs().length).toBe(1), { timeout: 4000 }); // wait for the decode itself, not a fixed delay (flaky under load)
     expect(imgs()[0]!.x + imgs()[0]!.w / 2).toBeCloseTo(100);
     const ev2 = drop([new File(["{}"], "doc.archypaint")]); // a document, not a picture
     expect(ev2.defaultPrevented).toBe(false);
     const paste = (files: File[]) => { const ev = new Event("paste", { bubbles: true, cancelable: true }); Object.assign(ev, { clipboardData: { files, getData: () => "" } }); window.dispatchEvent(ev); return ev; };
     expect(paste([file(50, 50, "p.png")]).defaultPrevented).toBe(true);
-    await settle(); expect(imgs().length).toBe(2);
+    await vi.waitFor(() => expect(imgs().length).toBe(2), { timeout: 4000 });
     paste([new File(["x"], "y.txt")]); await settle(); expect(imgs().length).toBe(2);
-    drop([new File(["garbage"], "bad.png", { type: "image/png" })]); await settle();
-    expect(notes.some((n) => n.startsWith("error:"))).toBe(true); // the failure reaches the user, nothing crashes
+    drop([new File(["garbage"], "bad.png", { type: "image/png" })]);
+    await vi.waitFor(() => expect(notes.some((n) => n.startsWith("error:"))).toBe(true), { timeout: 4000 }); // the failure reaches the user, nothing crashes
     off();
   });
   it("bounds the queue: a flood of pictures inserts a bounded number and says so", async () => {
