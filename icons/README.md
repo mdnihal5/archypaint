@@ -61,3 +61,26 @@ Official vendor icon sets can't be redistributed, so the palette can load them f
 - Only self-closing `rect circle ellipse line polyline polygon path`; attributes limited to geometry, `fill`/`stroke` (`currentColor` or `none` only), opacities, `stroke-width`, `stroke-dasharray`, `stroke-linecap`, `stroke-linejoin`. Anything else — scripts, `<g>`, `href`, `url()`, colours, event attributes — rejects the whole pack with a message.
 - Limits: 2000 icons, 5 MB, 8000 characters of markup per tier, `id` kebab-case (max 60), `category` one of `data cache network compute queue security client external`.
 - Icons appear as `user-<pack>-<id>`, grouped under the pack's name; `remove` in the palette deletes the pack.
+
+## Official logos (on demand, never bundled)
+
+Real technology logos (Kafka, Redis, PostgreSQL, Kubernetes, Go, ...) are available as an **opt-in** source in the `/` palette
+("official logos"). They are not part of this library and are not in the repository or the app bundle.
+
+- **Where they come from:** [Simple Icons](https://github.com/simple-icons/simple-icons) (files are CC0; the *marks* remain their
+  owners' trademarks), fetched one file at a time from a **pinned** release on jsDelivr
+  (`https://cdn.jsdelivr.net/npm/simple-icons@<version>/icons/<slug>.svg`, version in `src/logos-catalog.ts`).
+- **When:** only after the user opts in, and only when they *place* a logo. Listing and previews never touch the network.
+  Fetched logos are cached in the browser (IndexedDB, 200 KB cap, least-recently-used eviction; logos on the canvas are never
+  evicted), so placed logos work offline and across reloads.
+- **Restricted brands** (MongoDB, Docker, Linux, Apple, macOS, Linux Foundation) are hidden until a second, explicit choice.
+- **Not covered** (not in Simple Icons): AWS, Azure, Windows, Memcached, DynamoDB, HAProxy, gRPC, Twilio. Our own drawn icons
+  (`aws-*`, `azure-*`, `memcached`, ...) cover these; official AWS/Azure sets can be loaded as a user pack.
+- **Safety:** each download is capped at 12 KB while reading, must match one exact shape (a single `<path>` in a 24x24 `<svg>`),
+  is re-validated with the user-pack grammar, and only *our* markup (`<path d=... fill="currentColor">`) is installed. Only slugs
+  in the catalog are ever requested. 6 s timeout, one retry, 3 concurrent, 60 s cool-down after a failure.
+- **Drawing:** logos are glyph-only icons (one tier at every size), drawn in the element's category colour. Brand colours are
+  not applied (the catalog records them for later).
+- **Regenerating the catalog:** `src/logos-catalog.ts` was built by resolving each title in `data/simple-icons.json` of the pinned
+  release and requesting its file once from the pinned URL (HTTP 200, exact shape). Re-verify every row when bumping the version.
+

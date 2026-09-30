@@ -1,6 +1,7 @@
 import type { Ctx } from "./ctx";
 import { Disposer, h, setAttr, setText } from "./dom";
 import { glyph } from "./glyphs";
+import { ACTIONS, type Action, type ActionSection, type FeatureCtx } from "../features";
 import type { SaveStatus } from "../io";
 
 type SegOpt<T extends string | number> = readonly [T, string];
@@ -42,6 +43,11 @@ export function mountTop(ctx: Ctx, root: HTMLElement, right: { toggleNarrow(): v
   const onoff = (label: string, get: () => boolean, set: (v: boolean) => void) =>
     segRow<"on" | "off">(label, [["on", "on"], ["off", "off"]], () => (get() ? "on" : "off"), (v) => set(v === "on"));
 
+  const fctx: FeatureCtx = { editor, io, toast: ctx.toast, confirm: ctx.confirm, stage: document.getElementById("stage") ?? document.body };
+  const actionItems = (section: ActionSection) => ACTIONS.filter((a: Action) => a.section === section && (a.enabled?.(fctx) ?? true))
+    .map((a: Action) => item(a.label, a.hint ?? "", act(() => a.run(fctx))));
+  const extra = (section: ActionSection, title: string) => { const it = actionItems(section); return it.length ? [sep(), sec(title), ...it] : []; };
+
   const openMenu = () => {
     if (menu) { closeMenu(); return; }
     const sel = editor.selection().size > 0;
@@ -64,11 +70,14 @@ export function mountTop(ctx: Ctx, root: HTMLElement, right: { toggleNarrow(): v
       onoff("Sheet frame", () => settings.get().frame, (v) => settings.set({ frame: v })),
       onoff("Layers panel", () => settings.get().layers, (v) => settings.set({ layers: v })),
       onoff("Minimap (M)", () => settings.get().minimap, (v) => settings.set({ minimap: v })),
+      onoff("Flow animation", () => settings.get().flow, (v) => settings.set({ flow: v })),
       onoff("Status footer", () => settings.get().hud, (v) => settings.set({ hud: v })),
       sep(), sec("Insert"),
       item("Find…", "⌘F", () => { closeMenu(false); ctx.openFind?.(); }),
       item("Legend of categories and lines", "", act(() => { editor.insertLegend(); })),
       item("Renumber step badges", "", act(() => editor.renumberBadges())),
+      ...actionItems("insert"),
+      ...extra("arrange", "Arrange"), ...extra("view", "Present"), ...extra("file", "Share & import"),
       sep(), sec("New shapes"),
       segRow("Edge", [[0, "sharp"], [1, "round"], [2, "soft"]], () => editor.defaults.edge, (v) => editor.setDefaults({ edge: v as 0 | 1 | 2 })),
       segRow("Fill", [[0, "outline"], [1, "tint"], [2, "solid"]], () => editor.defaults.fill, (v) => editor.setDefaults({ fill: v as 0 | 1 | 2 })),

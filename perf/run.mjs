@@ -19,7 +19,7 @@ try {
   await p.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
   const errors = [];
   p.on("pageerror", (e) => errors.push(String(e)));
-  await p.goto(`http://localhost:${PORT}/?${MODE}=${N}`);
+  await p.goto(`http://localhost:${PORT}/?${MODE}=${N}${process.argv.includes("--noflow") ? "&flow=off" : ""}`);
   out.mode = MODE;
   await p.waitForFunction(() => window.__ap && window.__ap.renderer.lastFrameAt > 0);
   if (MODE === "mixed") { // icon packs load lazily on first draw: wait for them so the measurement includes real icon drawing

@@ -1,0 +1,25 @@
+/* Present mode, the read-only shared bar and the link box. Loaded lazily with present-ui.ts; uses the page's tokens. */
+html[data-present="on"] #ui, html[data-present="on"] #palette-host, html[data-present="on"] .ap-ro-bar { display: none !important; }
+html[data-view="readonly"] #ui > *:not(.ap-brand):not(.ap-toasts) { display: none !important; }
+
+.ap-present { position: fixed; inset: 0; z-index: 2000; cursor: pointer; user-select: none; -webkit-user-select: none; }
+.ap-pr-count, .ap-pr-hint { position: fixed; left: 50%; transform: translateX(-50%); font: 12px/1 var(--mono, monospace); color: var(--ink, #222);
+  background: var(--card, #fff); border: 1px solid var(--line, rgba(0, 0, 0, .4)); border-radius: 999px; padding: 7px 14px; opacity: 0; pointer-events: none; transition: opacity .25s; white-space: nowrap; }
+.ap-pr-count { bottom: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ap-pr-hint { top: 18px; color: var(--mid, #555); max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis; }
+.ap-present[data-count="true"] .ap-pr-count, .ap-present[data-hint="true"] .ap-pr-hint { opacity: 1; }
+
+.ap-ro-bar { position: fixed; top: 8px; left: 12px; height: 32px; z-index: 30; display: flex; align-items: center; gap: 10px; padding: 0 6px 0 12px; box-sizing: border-box;
+  font: 12px/1 var(--mono, monospace); color: var(--ink, #222); background: var(--card, #fff); border: 1px solid var(--line, rgba(0, 0, 0, .4)); border-radius: 6px; max-width: calc(100vw - 24px); }
+.ap-ro-bar .ap-ro-msg { color: var(--mid, #555); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap-ro-bar button, .ap-linkbox button { font: 12px/1 var(--mono, monospace); color: var(--ink, #222); background: transparent; border: 1px solid var(--line, rgba(0, 0, 0, .4)); border-radius: 5px; height: 24px; padding: 0 9px; cursor: pointer; }
+.ap-ro-bar button:hover, .ap-linkbox button:hover { background: var(--hover, rgba(0, 0, 0, .06)); }
+.ap-ro-bar button.primary { border-color: var(--red-ink, #b53a27); color: var(--red-ink, #b53a27); }
+.ap-ro-bar button:focus-visible, .ap-linkbox :focus-visible { outline: 2px solid var(--red-ink, #b53a27); outline-offset: 2px; }
+@media (max-width: 640px) { .ap-ro-bar .ap-ro-msg { display: none; } }
+
+.ap-linkbox { position: fixed; inset: 0; z-index: 2100; display: grid; place-items: center; background: rgba(0, 0, 0, .28); }
+.ap-linkbox > div { width: min(560px, calc(100vw - 32px)); background: var(--card, #fff); border: 1px solid var(--line, rgba(0, 0, 0, .4)); border-radius: 8px; padding: 16px; display: grid; gap: 10px; font: 13px/1.4 var(--mono, monospace); color: var(--ink, #222); }
+.ap-linkbox input { width: 100%; box-sizing: border-box; font: 12px var(--mono, monospace); padding: 8px; color: inherit; background: var(--paper, #fff); border: 1px solid var(--line, rgba(0, 0, 0, .4)); border-radius: 5px; }
+.ap-linkbox .row { display: flex; justify-content: flex-end; gap: 8px; }
+@media (prefers-reduced-motion: reduce) { .ap-pr-count, .ap-pr-hint { transition: none; } }

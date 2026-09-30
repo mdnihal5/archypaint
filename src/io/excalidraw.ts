@@ -19,7 +19,12 @@ const num = (v: unknown): number | null => (typeof v === "number" && Number.isFi
 const str = (v: unknown): string => (typeof v === "string" ? v : "");
 const clampC = (v: number) => Math.max(-LIMITS.maxCoord, Math.min(LIMITS.maxCoord, v));
 
-export type ExResult = { ok: true; scene: SceneJSON; warnings: string[] } | { ok: false; message: string };
+/** `images`: provisional key -> data URL for imported image elements; the caller stores them (hydrateImages) and remaps keys to the stored content hash */
+export type ExResult = { ok: true; scene: SceneJSON; warnings: string[]; images?: Record<string, string> } | { ok: false; message: string };
+
+const IMG_URL = /^data:image\/(?:png|jpeg|webp|gif|svg\+xml);base64,[A-Za-z0-9+/=]+$/;
+const MAX_IMPORT_IMAGES = 200;
+const hex16 = (s: string): string => { let a = 2166136261, b = 5381; for (let i = 0; i < s.length; i++) { a = Math.imul(a ^ s.charCodeAt(i), 16777619); b = Math.imul(b, 33) ^ s.charCodeAt(i); } return ((a >>> 0).toString(16).padStart(8, "0") + (b >>> 0).toString(16).padStart(8, "0")); };
 
 /* ------------------------------------------------------------------ colour */
 
@@ -49,7 +54,7 @@ const mix = (hex: string, w: number): string => { const c = hexToRgb(hex) ?? [0,
 /* ------------------------------------------------------------------ import */
 
 const SHAPES: Record<string, ElJSON["kind"]> = { rectangle: "rect", ellipse: "ellipse", diamond: "diamond" };
-const KINDS = ["rect", "ellipse", "diamond", "text", "arrow", "icon", ...NEW_KINDS];
+const KINDS = ["rect", "ellipse", "diamond", "text", "arrow", "icon", "calc", ...NEW_KINDS];
 
 function portFromNorm(nx: number, ny: number): 0 | 1 | 2 | 3 {
   return Math.abs(nx) >= Math.abs(ny) ? (nx >= 0 ? 1 : 3) : ny >= 0 ? 2 : 0;
@@ -104,12 +109,23 @@ export function fromExcalidraw(input: unknown, th: Theme = LIGHT): ExResult {
     }
   }
 
+  const files = isObj(input.files) ? input.files : {};
+  const images: Record<string, string> = {};
+  const imageKey = new Map<string, string>(); // excalidraw element id -> provisional image key
   const keep: Obj[] = [];
   for (const e of live) {
     const t = e.type as string;
     if (labelIds.has(e.id as string)) continue;
     if (t in SHAPES || t === "text" || t === "arrow" || t === "line") keep.push(e);
-    else bump(skipped, t);
+    else if (t === "image") {
+      const f = files[str(e.fileId)];
+      const url = isObj(f) ? str(f.dataURL) : "";
+      if (!IMG_URL.test(url) || imageKey.size >= MAX_IMPORT_IMAGES) { bump(skipped, "image (no usable picture data)"); continue; }
+      const cdk = cdOf(e)?.img;
+      const key = typeof cdk === "string" && /^[0-9a-f]{16}$/.test(cdk) ? cdk : hex16(str(e.fileId) + url.slice(-48));
+      images[key] = url; imageKey.set(e.id as string, key);
+      keep.push(e);
+    } else bump(skipped, t);
   }
   const idMap = new Map<string, string>();
   keep.forEach((e, i) => idMap.set(e.id as string, `e${(i + 1).toString(36)}`));
@@ -138,7 +154,7 @@ export function fromExcalidraw(input: unknown, th: Theme = LIGHT): ExResult {
     const groupIds = Array.isArray(e.groupIds) ? e.groupIds.filter((g): g is string => typeof g === "string").slice(0, LIMITS.maxGroupIds).map(gid) : [];
     const base: ElJSON = {
       id, kind: "rect", x: clampC(x), y: clampC(y), w: Math.min(LIMITS.maxCoord, Math.abs(w0)), h: Math.min(LIMITS.maxCoord, Math.abs(h0)),
-      z: out.length + 1, version: 1, cat: nc.cat, fill: 1, radius: 8, text: labelOf.get(exId) ?? "", edge: 1, groupIds, iconId: "", locked: e.locked === true, n: 0, o: 0,
+      z: out.length + 1, version: 1, cat: nc.cat, fill: 1, radius: 8, text: labelOf.get(exId) ?? "", edge: 1, groupIds, iconId: "", img: "", locked: e.locked === true, n: 0, o: 0,
       src: "", dst: "", sp: -1, dp: -1, route: 1, dash: 0, head: 1, pts: [],
     };
     if (t in SHAPES) {
@@ -149,6 +165,8 @@ export function fromExcalidraw(input: unknown, th: Theme = LIGHT): ExResult {
       base.edge = rounded ? 1 : 0;
       base.radius = rounded ? 8 : 0;
       if (str(e.strokeStyle) === "dashed" || str(e.strokeStyle) === "dotted") base.dash = 1;
+    } else if (t === "image") {
+      base.kind = "image"; base.img = imageKey.get(exId) ?? ""; base.fill = 0; base.edge = 1; base.radius = 8;
     } else if (t === "text") {
       base.kind = "text"; base.text = str(e.text) || str(e.originalText); base.fill = 0;
       if (base.text.length > LIMITS.maxText) base.text = base.text.slice(0, LIMITS.maxText);
@@ -173,7 +191,7 @@ export function fromExcalidraw(input: unknown, th: Theme = LIGHT): ExResult {
     }
     // exact archypaint attributes win when present (this is the round-trip path)
     if (cd) {
-      if (typeof cd.kind === "string" && KINDS.includes(cd.kind) && ((cd.kind === "icon" || NEW_KINDS.has(cd.kind)) ? t in SHAPES : cd.kind === base.kind)) base.kind = cd.kind as ElJSON["kind"];
+      if (typeof cd.kind === "string" && KINDS.includes(cd.kind) && ((cd.kind === "icon" || cd.kind === "calc" || NEW_KINDS.has(cd.kind)) ? t in SHAPES : cd.kind === base.kind)) base.kind = cd.kind as ElJSON["kind"];
       const ci = num(cd.cat); if (ci !== null && Number.isInteger(ci) && ci >= 0 && ci < 256) base.cat = ci;
       for (const [k, allowed] of [["fill", [0, 1, 2]], ["edge", [0, 1, 2]], ["route", [0, 1, 2]], ["dash", [0, 1]], ["head", [0, 1, 2]], ["sp", [-1, 0, 1, 2, 3]], ["dp", [-1, 0, 1, 2, 3]]] as const) {
         const v = num(cd[k]); if (v !== null && (allowed as readonly number[]).includes(v)) (base as unknown as Record<string, number>)[k] = v;
@@ -223,7 +241,7 @@ export function fromExcalidraw(input: unknown, th: Theme = LIGHT): ExResult {
 
   const v = validateFile({ app: APP, version: FORMAT_VERSION, scene: { els: out, groups } });
   if (!v.ok) return { ok: false, message: `Imported drawing failed validation: ${v.error.message}` };
-  return { ok: true, scene: v.value.scene, warnings: [...warnings, ...v.warnings] };
+  return { ok: true, scene: v.value.scene, warnings: [...warnings, ...v.warnings], ...(imageKey.size ? { images } : {}) };
 }
 
 /* ------------------------------------------------------------------ export */
@@ -231,7 +249,9 @@ export function fromExcalidraw(input: unknown, th: Theme = LIGHT): ExResult {
 const hash = (s: string): number => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
 const FIXED: Record<number, [number, number]> = { 0: [0.5, 0], 1: [1, 0.5], 2: [0.5, 1], 3: [0, 0.5] };
 
-export function toExcalidraw(scene: SceneJSON, th: Theme = LIGHT): Obj {
+/** `images` (key -> data URL, from collectImages) lets image elements export as real Excalidraw images; without a picture they become a labelled rectangle */
+export function toExcalidraw(scene: SceneJSON, th: Theme = LIGHT, images?: Record<string, string>): Obj {
+  const files: Record<string, Obj> = {};
   const els = [...scene.els].sort((a, b) => a.z - b.z);
   const byId = new Map(els.map((e) => [e.id, e]));
   const out: Obj[] = [];
@@ -248,7 +268,7 @@ export function toExcalidraw(scene: SceneJSON, th: Theme = LIGHT): Obj {
       boundElements: [], updated: 1, link: null, locked: e.locked,
     };
   };
-  const meta = (e: ElJSON): Obj => ({ [APP]: { kind: e.kind, cat: e.cat, fill: e.fill, edge: e.edge, radius: e.radius, iconId: e.iconId, route: e.route, dash: e.dash, head: e.head, sp: e.sp, dp: e.dp, n: e.n, o: e.o, ...(e.kind === "legend" ? { rawText: e.text } : {}) } });
+  const meta = (e: ElJSON): Obj => ({ [APP]: { kind: e.kind, cat: e.cat, fill: e.fill, edge: e.edge, radius: e.radius, iconId: e.iconId, route: e.route, dash: e.dash, head: e.head, sp: e.sp, dp: e.dp, n: e.n, o: e.o, ...(e.kind === "legend" ? { rawText: e.text } : {}), ...(e.kind === "image" ? { img: e.img } : {}) } });
 
   const labels: Obj[] = [];
   const label = (containerId: string, text: string, cx: number, cy: number, boxW: number): void => {
@@ -297,6 +317,23 @@ export function toExcalidraw(scene: SceneJSON, th: Theme = LIGHT): Obj {
       out.push(el);
       continue;
     }
+    if (e.kind === "image") {
+      const url = images?.[e.img];
+      const m = url ? /^data:(image\/(?:png|jpeg|webp|gif|svg\+xml));base64,/.exec(url) : null;
+      if (url && m) {
+        const reserve = e.text ? 18 : 0;
+        const el = common(e, "image");
+        Object.assign(el, { height: Math.max(4, e.h - reserve), fileId: e.img, status: "saved", scale: [1, 1], crop: null, strokeColor: "transparent", roundness: null, customData: meta(e) });
+        files[e.img] = { mimeType: m[1], id: e.img, dataURL: url, created: 1, lastRetrieved: 1 };
+        out.push(el);
+        if (e.text) {
+          const t = common(e, "text");
+          Object.assign(t, { id: `${e.id}_cap`, y: e.y + e.h - reserve, height: reserve, strokeColor: th.ink, text: e.text, originalText: e.text, fontSize: 14, fontFamily: 3, textAlign: "center", verticalAlign: "middle", containerId: null, autoResize: true, lineHeight: 1.25, boundElements: null, customData: undefined });
+          out.push(t);
+        }
+        continue;
+      }
+    }
     // icons and the newer shapes become the nearest native shape (rectangle / ellipse / diamond); their real kind rides in customData
     const type = ELLIPSE_LIKE.has(e.kind) ? "ellipse" : DIAMOND_LIKE.has(e.kind) ? "diamond" : "rectangle";
     const el = common(e, type);
@@ -306,7 +343,7 @@ export function toExcalidraw(scene: SceneJSON, th: Theme = LIGHT): Obj {
       customData: meta(e),
     });
     out.push(el);
-    const txt = e.kind === "icon" ? e.text || e.iconId : e.kind === "badge" ? String(e.n) : e.kind === "legend" ? legendRows(e.text).map((r) => r.label).join("\n") : e.text;
+    const txt = e.kind === "icon" ? e.text || e.iconId : e.kind === "badge" ? String(e.n) : e.kind === "legend" ? legendRows(e.text).map((r) => r.label).join("\n") : e.kind === "image" ? e.text || "image" : e.text;
     if (txt) label(e.id, txt, e.x + e.w / 2, e.y + e.h / 2, e.w - 8);
   }
   for (const el of out) { const b = bound.get(el.id as string); if (b && el.type !== "text") el.boundElements = b; }
@@ -315,7 +352,7 @@ export function toExcalidraw(scene: SceneJSON, th: Theme = LIGHT): Obj {
     type: "excalidraw", version: 2, source: "archypaint",
     elements: [...out, ...labels],
     appState: { gridSize: null, viewBackgroundColor: "#ffffff" },
-    files: {},
+    files,
     [APP]: { version: FORMAT_VERSION, groups: scene.groups },
   };
 }

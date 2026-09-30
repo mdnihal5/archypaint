@@ -1,4 +1,4 @@
-import { iconInner, iconOps, TIER_GRID, type Op, type Tier } from "./icon-pack";
+import { iconHasDetail, iconInner, iconOps, TIER_GRID, type Op, type Tier } from "./icon-pack";
 import type { El } from "./scene";
 import type { Theme } from "./theme";
 
@@ -51,7 +51,7 @@ export function drawIconEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, zoom
   ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = Math.max(2, 1 / zoom); ctx.stroke();
 
   if (screen >= TILE_ONLY_BELOW && e.iconId) {
-    const tier: Tier = screen >= DETAIL_FROM ? "detail" : "glyph";
+    const tier: Tier = screen >= DETAIL_FROM && iconHasDetail(e.iconId) ? "detail" : "glyph"; // logos have only the glyph tier
     const ops = iconOps(e.iconId, tier); // requests the icon's pack in the background; null until it lands (the plain tile shows meanwhile)
     if (ops) {
       const inset = tier === "detail" ? detailInset : glyphInset;

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-  compiledCount, ensureIcons, ensurePack, iconInner, iconMeta, iconOps, installIndex, installPack, listIcons, MAX_COMPILED,
+  compiledCount, ensureIcons, hasLogoIcon, iconHasDetail, installLogoIcon, removeLogoIcon, ensurePack, iconInner, iconMeta, iconOps, installIndex, installPack, listIcons, MAX_COMPILED,
   onIconsReady, packLoaded, packsVersion, parseIconMarkup, resetPacks, ROOT_STROKE, setPackLoader, type IndexJson, type PackJson,
 } from "./icon-pack";
 
@@ -158,5 +158,39 @@ describe("compiled-op cache", () => {
   it("returns the same ops object for repeated lookups (no re-parse)", () => {
     installIndex(idx([["a", "core"]])); installPack({ v: 2, pack: "core", icons: [["a", P, '<path d="M0 0L2 2"/>']] });
     expect(iconOps("a", "glyph")).toBe(iconOps("a", "glyph"));
+  });
+});
+
+
+describe("glyph-only icons (official logos)", () => {
+  const row = { id: "logo-redis", name: "Redis", aliases: ["cache"], category: "cache", glyph: '<path d="M1 1L5 5z" fill="currentColor" stroke="none"/>' };
+  it("draw from the glyph tier at every size; the detail tier is a scaled copy for export only", () => {
+    installLogoIcon(row);
+    expect(iconHasDetail("logo-redis")).toBe(false);
+    expect(iconInner("logo-redis", "glyph")).toBe(row.glyph);
+    expect(iconInner("logo-redis", "detail")).toBe(`<g transform="scale(2.666667)">${row.glyph}</g>`);
+    expect(iconOps("logo-redis", "detail")).toBeNull(); // the renderer must pick the glyph tier
+    const ops = iconOps("logo-redis", "glyph")!;
+    expect(ops.length).toBe(1); expect(ops[0]!.fill).toBe(true); expect(ops[0]!.stroke).toBe(false);
+  });
+  it("are not part of the search index, but iconMeta knows them, and an index reload keeps them", () => {
+    installLogoIcon(row);
+    expect(listIcons().some((m) => m.id === "logo-redis")).toBe(false);
+    expect(iconMeta("logo-redis")).toMatchObject({ name: "Redis", pack: "logos", vendor: "logo" });
+    installIndex(idx([["a", "core"]]));
+    expect(iconMeta("logo-redis")).not.toBeNull(); expect(hasLogoIcon("logo-redis")).toBe(true);
+  });
+  it("installing repaints without bumping the search version; removing frees the caches", () => {
+    installIndex(idx([["a", "core"]]));
+    const v = packsVersion(); let repaints = 0; const off = onIconsReady(() => repaints++);
+    installLogoIcon(row); expect(packsVersion()).toBe(v); expect(repaints).toBe(1);
+    iconOps("logo-redis", "glyph"); const before = compiledCount();
+    removeLogoIcon("logo-redis");
+    expect(hasLogoIcon("logo-redis")).toBe(false); expect(iconInner("logo-redis", "glyph")).toBeNull();
+    expect(compiledCount()).toBeLessThan(before); expect(repaints).toBe(2);
+    off();
+  });
+  it("a bundled icon is unaffected: unknown ids still report a detail tier (so the normal load path runs)", () => {
+    expect(iconHasDetail("nope")).toBe(true);
   });
 });

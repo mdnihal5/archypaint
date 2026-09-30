@@ -2,7 +2,7 @@ import type { ElJSON } from "../scene";
 
 export function el(p: Partial<ElJSON> & { id: string }): ElJSON {
   return {
-    kind: "rect", x: 0, y: 0, w: 100, h: 60, z: 1, version: 1, cat: 0, fill: 1, radius: 8, text: "", edge: 1, groupIds: [], iconId: "", locked: false, n: 0, o: 0,
+    kind: "rect", x: 0, y: 0, w: 100, h: 60, z: 1, version: 1, cat: 0, fill: 1, radius: 8, text: "", edge: 1, groupIds: [], iconId: "", img: "", locked: false, n: 0, o: 0,
     src: "", dst: "", sp: -1, dp: -1, route: 1, dash: 0, head: 1, pts: [], ...p,
   };
 }

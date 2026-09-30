@@ -94,6 +94,8 @@ export class Controller {
   private rlock = false;
   // arrow state
   private aStart: Anchor | null = null;
+  /** view-only: pointer drag pans, every editing gesture and key is ignored (shared links, presentations) */
+  readOnly = false;
   private aStartId = ""; private aStartPort = -1;
   private arrowEl: El | null = null; private endIsDst = true;
   private pasteN = 0;
@@ -168,7 +170,7 @@ export class Controller {
     const z = this.vp.zoom;
     const wx = this.wx0 = this.vp.toWorldX(x), wy = this.wy0 = this.vp.toWorldY(y);
     const core = this.core, r = this.r;
-    if (e.button === 1 || this.space || this.tool === "hand") { this.mode = "pan"; this.setCursor("grabbing"); return; }
+    if (this.readOnly || e.button === 1 || this.space || this.tool === "hand") { this.mode = "pan"; this.setCursor("grabbing"); return; }
 
     if (this.tool === "select") {
       if (this.startHandle(wx, wy)) return;
@@ -230,7 +232,7 @@ export class Controller {
           if (!e || e.kind === "arrow" || e.locked) continue;
           this.core.hist.touch(e); this.rorig.set(id, { x: e.x, y: e.y, w: e.w, h: e.h });
         }
-        if (r.selected.size === 1) { const k1 = this.scene.els.get([...r.selected][0]!)?.kind; if (k1 === "icon" || k1 === "badge") this.rlock = true; }
+        if (r.selected.size === 1) { const k1 = this.scene.els.get([...r.selected][0]!)?.kind; if (k1 === "icon" || k1 === "badge" || k1 === "image") this.rlock = true; }
         this.mode = "resize";
         return true;
       }
@@ -637,6 +639,7 @@ export class Controller {
   // ---- double click ------------------------------------------------------------------------
 
   private dbl(e: MouseEvent): void {
+    if (this.readOnly) return;
     const [x, y] = this.pt(e);
     const wx = this.vp.toWorldX(x), wy = this.vp.toWorldY(y), core = this.core;
     const hit = this.scene.hit(wx, wy, 4 / this.vp.zoom);
@@ -654,7 +657,7 @@ export class Controller {
     const t = e.target as HTMLElement | null;
     if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
     if (e.code === "Space") { this.space = down; if (down) { e.preventDefault(); this.setCursor("grab"); } else this.setCursor(this.tool === "select" ? "" : this.cursor === "grab" ? "" : this.cursor); return; }
-    if (!down) return;
+    if (!down || this.readOnly) return;
     const core = this.core, mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
     if (e.key === "Escape") { if (this.mode !== "none") this.cancel(); else { core.setSel([]); core.entered.clear(); core.setTool("select"); } return; }
     if (e.altKey && e.shiftKey && !mod) {
@@ -698,6 +701,7 @@ export class Controller {
   }
 
   private clip(e: ClipboardEvent, kind: "copy" | "cut" | "paste"): void {
+    if (this.readOnly) return;
     const t = e.target as HTMLElement | null;
     if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
     const core = this.core;

@@ -1,19 +1,20 @@
 import type { IconMeta } from "./icon-pack";
+import type { Logo } from "./logos-catalog"; // type only: the catalog itself is a lazy chunk
 import { SHAPES, type ShapeDef } from "./shapes";
 import { CATEGORIES } from "./theme";
 
 /** bundled pack order in the UI (user packs follow, shapes last) and their display names */
 export const PACK_ORDER = ["core", "generic2", "oss", "aws", "gcp", "azure"] as const;
-const PACK_LABEL: Record<string, string> = { core: "Core", generic2: "Generic", oss: "Open source", aws: "AWS", gcp: "Google Cloud", azure: "Azure", shapes: "Shapes" };
+const PACK_LABEL: Record<string, string> = { core: "Core", generic2: "Generic", oss: "Open source", aws: "AWS", gcp: "Google Cloud", azure: "Azure", logos: "Official logos", shapes: "Shapes" };
 /** vendor packs get the "original drawings, not affiliated" note */
 export const VENDOR_PACKS: ReadonlySet<string> = new Set(["oss", "aws", "gcp", "azure"]);
 export const sectionLabel = (pack: string): string => PACK_LABEL[pack] ?? (pack.startsWith("user-") ? pack.slice(5) : pack);
-const packRank = (p: string): number => { const i = (PACK_ORDER as readonly string[]).indexOf(p); return i >= 0 ? i : p === "shapes" ? 99 : 50; };
+const packRank = (p: string): number => { const i = (PACK_ORDER as readonly string[]).indexOf(p); return i >= 0 ? i : p === "shapes" ? 99 : p === "logos" ? 60 : 50; };
 
 const catRank = (c: string): number => { const i = (CATEGORIES as readonly string[]).indexOf(c); return i < 0 ? 99 : i; };
 
 export interface Entry {
-  kind: "icon" | "shape";
+  kind: "icon" | "shape" | "logo";
   id: string;
   name: string;
   category: string;
@@ -45,6 +46,18 @@ type IconLike = Pick<IconMeta, "id" | "name" | "aliases" | "category"> & Partial
 export function buildIndex(icons: readonly IconLike[], shapes: readonly ShapeDef[] = SHAPES): Entry[] {
   const out = icons.map((i) => makeEntry("icon", i.id, i.name, i.category, i.aliases, undefined, i.pack ?? "core", i.vendor ?? ""));
   for (const d of shapes) out.push(makeEntry("shape", d.id, d.name, "shape", d.aliases, d.tool));
+  return out;
+}
+
+/** catalog rows -> palette entries (id `logo-<slug>` = the icon id they become). Restricted brands only when asked for. */
+export function buildLogoEntries(logos: readonly Logo[], withRestricted: boolean): Entry[] {
+  const out: Entry[] = [];
+  for (const l of logos) {
+    if (l.restricted && !withRestricted) continue;
+    const e = makeEntry("logo", `logo-${l.slug}`, l.name, l.category, l.aliases, undefined, "logos", "logo");
+    e.lid = l.slug; e.words = split(l.slug + " " + l.name.toLowerCase());
+    out.push(e);
+  }
   return out;
 }
 

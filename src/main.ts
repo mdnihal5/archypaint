@@ -47,8 +47,11 @@ document.body.append(paletteHost);
 const palette = mountPalette(editor, paletteHost);
 let ui = mountUI({ editor, io, palette, settings, hud: renderer });
 
-// restore the autosaved sheet (skipped for benchmark runs so they stay deterministic)
-if (n === 0 && mixed === 0) void io.restore().then((restored) => { if (restored) ui.refresh(); });
+// restore the autosaved sheet (skipped for benchmark runs so they stay deterministic). A share link (#d=) opens read-only
+// INSTEAD: restore() is never called, so autosave stays disarmed and the link can't overwrite the user's own sheet.
+const restore = () => { void io.restore().then((restored) => { if (restored) ui.refresh(); }); };
+if (location.hash.startsWith("#d=")) void import("./share").then((m) => m.openSharedFromHash({ editor, io, stage, toast: (t, k) => ui.toast(t, k) })).then((ok) => { if (!ok) restore(); }, restore);
+else if (n === 0 && mixed === 0) restore();
 
 // offline support (production only, so the dev server is never cached). An update is applied only when there is no unsaved work: never a surprise reload.
 // Never reload on our own: a reload drops undo history, selection and the view mid-session. A waiting worker takes over by

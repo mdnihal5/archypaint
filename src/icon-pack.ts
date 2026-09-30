@@ -106,6 +106,11 @@ const packsLoaded = new Set<string>();
 let indexLoaded = false;
 let version = 0;
 const readyCbs = new Set<() => void>();
+/** official logos (logos.ts): glyph-only icons, NOT part of the search index (the palette lists them from the logo catalog) */
+const logoMeta = new Map<string, IconMeta>();
+const logoKick = new Map<string, number>();
+const LOGO_KICK_MS = 5000;
+export const LOGO_PREFIX = "logo-";
 const pending = new Map<string, Promise<void>>();
 const failedAt = new Map<string, number>();
 const RETRY_MS = 4000;
@@ -176,6 +181,7 @@ export function setPackLoader(fn: Loader | null): void { loader = fn ?? defaultL
 /** tests: forget everything loaded */
 export function resetPacks(): void {
   wanted.clear(); index = []; byId = new Map(); svgs.clear(); packsLoaded.clear(); pending.clear(); failedAt.clear(); compiled.detail.clear(); compiled.glyph.clear();
+  logoMeta.clear(); logoKick.clear();
   indexLoaded = false; userLoaded = false; version = 0;
 }
 
@@ -228,10 +234,11 @@ export async function ensureIcons(ids?: readonly string[]): Promise<void> {
 }
 
 export function listIcons(): readonly IconMeta[] { return index; }
-export function iconMeta(id: string): IconMeta | null { return byId.get(id) ?? null; }
+export function iconMeta(id: string): IconMeta | null { return byId.get(id) ?? logoMeta.get(id) ?? null; }
 
 /** background kick used by drawing paths: cheap, idempotent, retry-throttled */
 function want(id: string): void {
+  if (id.startsWith(LOGO_PREFIX)) { kickLogo(id); return; }
   if (!indexLoaded || !userLoaded) { if (wanted.size < 5000) wanted.add(id); void ensureIndex(false); return; }
   const m = byId.get(id);
   if (m && !packsLoaded.has(m.pack)) void ensurePack(m.pack, false);
@@ -241,7 +248,36 @@ function want(id: string): void {
 export function iconInner(id: string, tier: Tier): string | null {
   const r = svgs.get(id);
   if (!r) { want(id); return null; }
-  return tier === "detail" ? r.detail : r.glyph;
+  if (tier === "detail") return r.detail === "" ? `<g transform="scale(2.666667)">${r.glyph}</g>` : r.detail; // glyph-only icon: scaled 24 -> 64 grid, for export
+  return r.glyph;
+}
+
+/** false for glyph-only icons (logos): the renderer must use the glyph tier at every size. True when unknown (not loaded yet). */
+export function iconHasDetail(id: string): boolean { const r = svgs.get(id); return !r || r.detail !== ""; }
+
+/* ---- official logos: installed by logos.ts, restored lazily from its cache when a document draws one ---- */
+
+/** add (or replace) a logo icon. `glyph` is our own validated markup on the 24 grid. */
+export function installLogoIcon(row: { id: string; name: string; aliases: readonly string[]; category: string; glyph: string }): void {
+  logoMeta.set(row.id, { id: row.id, name: row.name, aliases: row.aliases, category: row.category, pack: "logos", vendor: "logo" });
+  svgs.set(row.id, { detail: "", glyph: row.glyph });
+  compiled.detail.delete(row.id); compiled.glyph.delete(row.id);
+  notify(); // repaint only: the search index is unchanged
+}
+export function removeLogoIcon(id: string): void {
+  if (!logoMeta.delete(id)) return;
+  svgs.delete(id); compiled.detail.delete(id); compiled.glyph.delete(id);
+  notify();
+}
+export const hasLogoIcon = (id: string): boolean => logoMeta.has(id);
+
+/** drawing a logo that is not installed: ask logos.ts (lazy chunk) to restore it from the browser cache. Throttled per id. */
+function kickLogo(id: string): void {
+  const now = performance.now(), t = logoKick.get(id);
+  if (t !== undefined && now - t < LOGO_KICK_MS) return;
+  logoKick.set(id, now);
+  if (logoKick.size > 512) logoKick.clear(); // bounded: a hostile document cannot grow it without limit
+  void import("./logos").then((m) => m.restoreLogo(id.slice(LOGO_PREFIX.length)), () => { /* chunk failed to load: the plain tile stays */ });
 }
 
 /* ------------------------------------------------------------------ compiled-op cache (bounded) */
@@ -255,6 +291,7 @@ export function iconOps(id: string, tier: Tier): Op[] | null {
   const cache = compiled[tier];
   const hit = cache.get(id);
   if (hit) return hit;
+  if (tier === "detail" && svgs.get(id)?.detail === "") return null; // glyph-only icon: callers pick the glyph tier (iconHasDetail)
   const markup = iconInner(id, tier);
   if (markup === null) return null;
   const ops = parseIconMarkup(markup, ROOT_STROKE[tier]);

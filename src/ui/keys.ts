@@ -1,4 +1,5 @@
 import type { Ctx } from "./ctx";
+import { ACTIONS } from "../features";
 import { isTyping } from "./dom";
 
 /**
@@ -10,6 +11,15 @@ export function mountKeys(ctx: Ctx): void {
   ctx.d.on(window, "keydown", (e: KeyboardEvent) => {
     if (e.defaultPrevented || isTyping(e.target) || ctx.modalOpen() || palette.isOpen()) return;
     const meta = e.metaKey || e.ctrlKey;
+    // feature shortcuts (exact modifier match), before the built-ins
+    const k0 = e.key.toLowerCase();
+    for (const a of ACTIONS) {
+      const k = a.key;
+      if (!k || k.key !== k0 || !!k.mod !== meta || !!k.shift !== e.shiftKey || !!k.alt !== e.altKey) continue;
+      const fc = { editor, io, toast: ctx.toast, confirm: ctx.confirm, stage: document.getElementById("stage") ?? document.body };
+      if (a.enabled && !a.enabled(fc)) continue;
+      e.preventDefault(); ctx.run(() => a.run(fc)); return;
+    }
     if (meta) {
       const k = e.key.toLowerCase();
       if (k === "s") { e.preventDefault(); ctx.run(() => (e.shiftKey ? io.saveAs() : io.save())); }

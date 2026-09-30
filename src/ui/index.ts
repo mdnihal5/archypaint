@@ -6,6 +6,7 @@ import { confirmDialog, modalOpen, openModal, shortcutsContent } from "./modal";
 import { Disposer, h, installInputTracker, updaterStats } from "./dom";
 import { mountBottom } from "./bottom";
 import { mountBrand } from "./brand";
+import { mountFlow } from "./flow";
 import { mountFooter } from "./footer";
 import { mountFind } from "./find";
 import { mountKeys } from "./keys";
@@ -39,6 +40,9 @@ export function mountUI(deps: UiDeps): UiHandle {
 
   const toasts = createToasts(root);
   d.add(() => toasts.dispose());
+  // messages from the editor (image import errors...) and the warnings/errors IO raises (lossy import, oversize export); plain "info" saves already toast via the save state
+  d.add(editor.onNotice((m) => toasts.toast(m.text, m.level === "error" ? "err" : "ok")));
+  d.add(io.onMessage((m) => { if (m.level !== "info") toasts.toast(m.text, m.level === "error" ? "err" : "ok"); }));
   const api = makeUpdaterApi(d, editor);
   const slow: Array<() => void> = [];
   let closeShortcuts: (() => void) | null = null;
@@ -61,6 +65,7 @@ export function mountUI(deps: UiDeps): UiHandle {
   };
   d.add(() => { closeShortcuts?.(); pendingConfirm?.close(); });
 
+  mountFlow(ctx, root);
   const sheet = mountSheet(ctx, root);
   mountTools(ctx, root);
   const right = mountRight(ctx, root);

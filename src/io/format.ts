@@ -19,7 +19,7 @@ export const LIMITS = {
   maxZoom: 8,
 } as const;
 
-const KINDS = ["rect", "ellipse", "diamond", "text", "arrow", "icon", "cylinder", "cloud", "hexagon", "parallelogram", "triangle", "star", "note", "brace", "badge", "frame", "lane", "legend"] as const;
+const KINDS = ["rect", "ellipse", "diamond", "text", "arrow", "icon", "cylinder", "cloud", "hexagon", "parallelogram", "triangle", "star", "note", "brace", "badge", "frame", "lane", "legend", "image", "calc"] as const;
 const ID_RE = /^[A-Za-z0-9_-]+$/;
 
 export interface ArchMeta { name: string; created: number; updated: number }
@@ -96,7 +96,7 @@ function plain(v: unknown, path: string): Record<string, unknown> {
 
 /* ---------------------------------------------------------------- element field tables */
 
-const EL_KNOWN = new Set(["id", "kind", "x", "y", "w", "h", "z", "version", "cat", "fill", "edge", "radius", "text", "groupIds", "iconId", "locked", "n", "o", "src", "dst", "sp", "dp", "route", "dash", "head", "pts"]);
+const EL_KNOWN = new Set(["id", "kind", "x", "y", "w", "h", "z", "version", "cat", "fill", "edge", "radius", "text", "groupIds", "iconId", "img", "locked", "n", "o", "src", "dst", "sp", "dp", "route", "dash", "head", "pts"]);
 const ROOT_KNOWN = new Set(["app", "version", "meta", "view", "settings", "scene"]);
 
 function readEl(raw: unknown, i: number, extras: Record<string, Record<string, unknown>>): ElJSON {
@@ -129,6 +129,7 @@ function readEl(raw: unknown, i: number, extras: Record<string, Record<string, u
     text: opt(raw.text, "", (v) => fstr(v, `${p}.text`, LIMITS.maxText)),
     groupIds,
     iconId: opt(raw.iconId, "", (v) => fstr(v, `${p}.iconId`, LIMITS.maxId)),
+    img: opt(raw.img, "", (v) => fstr(v, `${p}.img`, LIMITS.maxId)),
     locked: opt(raw.locked, false, (v) => fbool(v, `${p}.locked`)),
     n: opt(raw.n, 0, (v) => fint(v, `${p}.n`, 0, 99999)),
     o: opt(raw.o, 0, (v) => oneOf(v, `${p}.o`, [0, 1, 2, 3] as const)),
@@ -281,6 +282,7 @@ export function orderEl(e: ElLike, extra?: Record<string, unknown>): string {
   if (e.locked) o.locked = true;
   if (e.groupIds.length) o.groupIds = e.groupIds;
   if (e.kind === "icon") o.iconId = e.iconId;
+  if (e.kind === "image") o.img = e.img;
   if (e.n) o.n = e.n;
   if (e.o) o.o = e.o;
   if (e.kind !== "arrow" && e.dash) o.dash = e.dash;

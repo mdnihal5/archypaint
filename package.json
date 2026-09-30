@@ -8,7 +8,12 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "perf": "node perf/run.mjs"
+    "perf": "node perf/run.mjs",
+    "size": "node scripts/size-check.mjs",
+    "perf:images": "node perf/images-flow.mjs",
+    "perf:tidy": "node perf/tidy-calc.mjs",
+    "present": "node scripts/present-check.mjs",
+    "check": "tsc --noEmit && vitest run && npm run build && node scripts/size-check.mjs"
   },
   "devDependencies": {
     "jsdom": "^29.1.1",

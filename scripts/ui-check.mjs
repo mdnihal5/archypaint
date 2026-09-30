@@ -36,7 +36,7 @@ async function open(url, w = 1440, h = 900) {
   const errs = []; p.on("pageerror", (e) => errs.push(String(e))); p.on("console", (m) => { if (["error", "warning"].includes(m.type())) errs.push(m.text()); });
   await p.evaluateOnNewDocument(INSTRUMENT);
   // the checks exercise every panel: start from "everything on" (the shipped defaults are a quieter canvas), unless a test seeds its own settings
-  await p.evaluateOnNewDocument(() => { try { if (!localStorage.getItem("archypaint.settings.v1")) localStorage.setItem("archypaint.settings.v1", JSON.stringify({ bg: "grid", theme: "system", frame: true, hud: true, layers: true, minimap: true })); } catch { /* storage unavailable */ } });
+  await p.evaluateOnNewDocument(() => { try { if (!localStorage.getItem("archypaint.settings.v1")) localStorage.setItem("archypaint.settings.v1", JSON.stringify({ bg: "grid", theme: "system", frame: true, hud: true, layers: true, minimap: true, flow: false })); } catch { /* storage unavailable */ } });
   await p.setViewport({ width: w, height: h }); await p.goto(url); await p.waitForFunction(() => window.__ap && window.__ap.ui);
   await sleep(500);
   return { p, cx, errs };
@@ -95,6 +95,37 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   await click(p, 'button[aria-label^="Fit to content"]'); check("bottom: fit -> zoomToFit", await has(p, "zoomToFit"));
   check("bottom: undo/redo disabled state mirrors canUndo/canRedo", await p.evaluate(() => { const e = window.__ap.editor; return document.querySelector('button[aria-label^="Undo"]').disabled === !e.canUndo() && document.querySelector('button[aria-label^="Redo"]').disabled === !e.canRedo(); }));
   check("no page errors on the empty sheet", errs.length === 0, errs.join(" | "));
+  await cx.close();
+}
+
+/* ================= 1b. flow animation: dots on POINTED arrows only, zero frames whenever there is nothing to show ================= */
+{
+  const { p, cx, errs } = await open(URL0 + "?theme=light&flow=on");
+  await p.evaluate(() => { window.__fr = 0; const o = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = (f) => { window.__fr++; return o(f); }; });
+  const frames = async (ms) => { const a = await p.evaluate(() => window.__fr); await sleep(ms); return (await p.evaluate(() => window.__fr)) - a; };
+  const lit = (yFrom, yTo) => p.evaluate((a, b) => { const c = document.querySelector(".ap-flow"); if (!c) return -1; const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let y = a; y < b; y++) for (let x = 0; x < c.width; x++) if (d[(y * c.width + x) * 4 + 3]) n++; return n; }, yFrom, yTo);
+  check("flow: an empty sheet runs no frames", (await frames(700)) === 0);
+  await p.evaluate(() => {
+    const { scene, renderer } = window.__ap;
+    const box = (x, y) => scene.add({ kind: "rect", x, y, w: 100, h: 60 });
+    const a = box(300, 200), c = box(700, 200), l = box(300, 400), m = box(700, 400);
+    scene.add({ kind: "arrow", src: a.id, dst: c.id, head: 1, x: 400, y: 230, w: 300, h: 0, pts: [400, 230, 700, 230], route: 0 });
+    scene.add({ kind: "arrow", src: l.id, dst: m.id, head: 0, x: 400, y: 430, w: 300, h: 0, pts: [400, 430, 700, 430], route: 0 });
+    renderer.invalidate(true, true); window.__ap.editor.zoomBy(1.0001);
+  });
+  await sleep(500);
+  const h = await p.evaluate(() => innerHeight);
+  const top = await lit(0, Math.floor(h / 2)), bottom = await lit(Math.floor(h / 2), h);
+  check("flow: a pointed arrow shows moving dots", top > 50, `${top} px`);
+  check("flow: a plain line (no pointer) has none", bottom === 0, `${bottom} px`);
+  check("flow: animating runs a bounded loop (<= ~35 frames/s)", (await frames(1000)) <= 75);
+  await p.evaluate(() => window.__ap.settings.set({ flow: false })); await sleep(300);
+  check("flow: turning it off clears the dots and stops every frame", (await lit(0, h)) === 0 && (await frames(700)) === 0);
+  await p.evaluate(() => window.__ap.settings.set({ flow: true })); await sleep(300);
+  check("flow: turning it on resumes", (await lit(0, h)) > 0);
+  await p.evaluate(() => { const v = window.__ap.vp; v.zoom = 0.1; v.version++; window.__ap.editor.emit("viewport"); }); await sleep(300);
+  check("flow: zoomed out too far to see dots -> no frames", (await lit(0, h)) === 0 && (await frames(700)) === 0);
+  check("flow: no page errors", errs.length === 0, errs.join("; "));
   await cx.close();
 }
 

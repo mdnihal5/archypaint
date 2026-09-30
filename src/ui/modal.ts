@@ -53,6 +53,7 @@ const KEYS: Array<[string, Array<[string, string]>]> = [
   ["Arrange", [["Bring to front", "⇧⌘]"], ["Bring forward", "⌘]"], ["Send backward", "⌘["], ["Send to back", "⇧⌘["]]],
   ["Align & distribute", [["Align left / right", "⌥⇧← / →"], ["Align top / bottom", "⌥⇧↑ / ↓"], ["Centre horizontally / vertically", "⌥⇧H / V"], ["Distribute horizontally / vertically", "⌥⇧X / Y"], ["Match size", "⌥⇧S"]]],
   ["Style & lock", [["Copy style", "⌥⌘C"], ["Paste style", "⌥⌘V"], ["Lock / unlock", "⇧⌘L"]]],
+  ["Features", [["Tidy layout (selection, or everything)", "Y"], ["Capacity note", "C"], ["Present (step through)", "P"], ["Diagram from text", "menu › Insert"], ["Insert image / SVG", "drop or paste"], ["Official logos", "/ › logos"]]],
   ["View", [["Zoom in / out", "+  /  −"], ["Reset zoom", "⌘0"], ["Fit to content", "⇧1"], ["Find in sheet", "⌘F"], ["Minimap", "M"], ["Background grid / plain", "B"], ["This list", "?"]]],
   ["File", [["Open", "⌘O"], ["Save", "⌘S"], ["Save as", "⇧⌘S"], ["Export PNG", "⇧⌘E"]]],
 ];

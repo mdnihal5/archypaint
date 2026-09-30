@@ -1,4 +1,5 @@
 import type { EditorAPI } from "../editor-api";
+import { ensureCalc } from "../calc-view";
 import * as Renderer from "../renderer";
 import type { El } from "../scene";
 import { LIGHT, type Theme } from "../theme";
@@ -61,6 +62,12 @@ function drawArrow(ctx: CanvasRenderingContext2D, e: El, th: Theme): void {
   }
 }
 
+export const imageKeys = (els: readonly El[]): string[] => [...new Set(els.filter((e) => e.kind === "image" && e.img).map((e) => e.img))];
+async function preloadImages(els: readonly El[]): Promise<void> {
+  const keys = imageKeys(els);
+  if (keys.length) await (await import("../images")).preloadImages(keys);
+}
+
 export interface PngResult { blob: Blob; width: number; height: number; scaledDown: boolean; usedSelection: boolean }
 
 /** Render to a PNG using the same shape code as the live canvas. Frees the bitmap before returning. */
@@ -71,6 +78,8 @@ export async function renderPng(editor: EditorAPI, o: ExportOpts = {}): Promise<
   const plan = planExport(b, o.scale ?? 2, PAD);
   if (!plan.ok) throw new ExportError(plan.message);
   await ensureIcons();
+  if (els.some((e) => e.kind === "calc")) await ensureCalc().catch(() => {}); // results are cached per element once the evaluator is loaded
+  await preloadImages(els); // image elements: decode their bitmaps before drawing (same cache and drawer as the canvas)
   const th = themeOf(editor);
   const oc = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(plan.width, plan.height) : Object.assign(document.createElement("canvas"), { width: plan.width, height: plan.height });
   const ctx = oc.getContext("2d") as CanvasRenderingContext2D | null;
@@ -99,5 +108,13 @@ export async function renderSvg(editor: EditorAPI, o: ExportOpts = {}): Promise<
   const { els, usedSelection } = collect(editor, !!o.selectionOnly);
   if (!els.length) throw new ExportError("Nothing to export — the canvas is empty.");
   await ensureIcons();
-  return { text: buildSvg(els, themeOf(editor), { background: o.background ?? true, padding: PAD, icons: Icons.iconSvg }), usedSelection };
+  const calc = els.some((e) => e.kind === "calc") ? await ensureCalc().catch(() => null) : null;
+  const keys = imageKeys(els);
+  let images: Record<string, string> | undefined;
+  if (keys.length) {
+    const r = await (await import("../images")).collectImages(keys);
+    if (r.tooBig) throw new ExportError("The images in this drawing are too large to embed in an SVG (20 MB limit). Export as PNG, or remove some images.");
+    images = r.images;
+  }
+  return { text: buildSvg(els, themeOf(editor), { background: o.background ?? true, padding: PAD, icons: Icons.iconSvg, ...(calc ? { calc: calc.evalCalc } : {}), ...(images ? { images } : {}) }), usedSelection };
 }

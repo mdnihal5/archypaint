@@ -1,5 +1,6 @@
 import { alignBoxes, distributeBoxes, matchSizes, unionOf, type AlignMode, type Box, type Delta } from "./align";
 import { bboxOfPts, computeArrowPts, rerouteBound, sceneRectOf } from "./connectors";
+import { calcSize, ensureCalc, onCalcReady, SAMPLE as CALC_SAMPLE } from "./calc-view";
 import { buildLegend, renumberBadges as renumberPlan } from "./edit-ops";
 import type { EditorAPI, EditorEvent, StyleProps } from "./editor-api";
 import { GroupIndex } from "./groups";
@@ -9,6 +10,7 @@ import { Renderer } from "./renderer";
 import { Scene, type El, type ElInit, type ElJSON, type GroupInfo, type SceneJSON } from "./scene";
 import { braceVertical, NEW_KINDS } from "./shape-geom";
 import { CATEGORIES, type Theme } from "./theme";
+import { installImageInput } from "./images-input";
 import { measureText, TextEditor } from "./text-edit";
 
 /** an icon placed from the palette: a tile this many world units square (label strip included) */
@@ -30,7 +32,7 @@ export type Editor = EditorAPI & {
 
 const EDGE_RADIUS = [0, 8, 18] as const;
 const CLIP_PREFIX = "archypaint:";
-const KINDS = new Set(["rect", "ellipse", "diamond", "text", "arrow", "icon", ...NEW_KINDS]);
+const KINDS = new Set(["rect", "ellipse", "diamond", "text", "arrow", "icon", "calc", "image", ...NEW_KINDS]);
 
 export function createEditor(d: EditorDeps): Editor {
   const scene = new Scene();
@@ -42,8 +44,9 @@ export function createEditor(d: EditorDeps): Editor {
   const text = new TextEditor(d.stage, vp);
   const entered = new Set<string>();
   const subs = new Map<EditorEvent, Set<() => void>>();
+  const notices = new Set<(m: { level: "info" | "warn" | "error"; text: string }) => void>();
   const defaults: StyleProps = { cat: 0, fill: 0, edge: 1, radius: 8, dash: 0, route: 1 }; // outline fill, round edges
-  let savedRev = 0, gc = 0, pasteN = 0, destroyed = false;
+  let savedRev = 0, gc = 0, pasteN = 0, destroyed = false, readOnly = false;
   let styleClip: Partial<StyleProps> | null = null;
 
   const emit = (ev: EditorEvent) => { if (!destroyed) subs.get(ev)?.forEach((f) => f()); };
@@ -51,6 +54,7 @@ export function createEditor(d: EditorDeps): Editor {
 
   /** run `fn` as one undo step (or join the caller's open transaction) */
   function run<T>(label: string, fn: () => T, key = ""): T {
+    if (readOnly) return undefined as T; // view-only: nothing may change the document
     const own = !hist.active;
     if (own) hist.begin();
     try { return fn(); }
@@ -203,6 +207,12 @@ export function createEditor(d: EditorDeps): Editor {
       if (Number.isFinite(n) && n >= 0 && n <= 99999 && n !== el.n) run("edit badge", () => { hist.touch(el); scene.patch(el, { n }); });
       return;
     }
+    if (el.kind === "calc") {
+      if (v === el.text) return; // a repeat commit (blur after Enter, focus loss) must not add an empty undo step
+      const s = calcSize(v); // the note grows and shrinks with its lines; results recompute lazily, once per version
+      run("edit calculation", () => { hist.touch(el); scene.set(el, el.x, el.y, s.w, s.h); scene.patch(el, { text: v }); });
+      return;
+    }
     if (el.kind === "lane") {
       const lines = v.split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 24);
       if (!lines.length) return;
@@ -243,6 +253,13 @@ export function createEditor(d: EditorDeps): Editor {
     scene, vp, renderer, theme: d.theme, hist, snap: true,
     get tool() { return ctl.tool; },
     setTool(t: Tool) { ctl.setTool(t); },
+    get readOnly() { return readOnly; },
+    setReadOnly(on: boolean) {
+      if (on === readOnly) return;
+      readOnly = on; ctl.readOnly = on;
+      if (on) { if (text.isOpen) text.close(false); setSel([]); entered.clear(); ctl.setTool("select"); }
+      emit("tool");
+    },
     get toolLocked() { return ctl.toolLocked; },
     setToolLock(on: boolean) { ctl.setToolLock(on); },
     selection: () => renderer.selected,
@@ -340,6 +357,22 @@ export function createEditor(d: EditorDeps): Editor {
     defaults,
     setDefaults(p) { Object.assign(defaults, p); if (p.edge !== undefined && p.radius === undefined) defaults.radius = edgeRadius(p.edge); },
 
+    async insertImage(blob, at) {
+      const m = await import("./images"); // heavy: sanitiser, codec, store, cache — only when an image is actually inserted
+      if (destroyed) throw new Error("The editor was closed.");
+      const p = await m.prepareImage(blob);
+      if (destroyed) throw new Error("The editor was closed.");
+      const sz = m.fitInsertSize(p.w, p.h);
+      const cx = at?.x ?? vp.x + vp.w / vp.zoom / 2, cy = at?.y ?? vp.y + vp.h / vp.zoom / 2;
+      return run("insert image", () => {
+        const e = newEl({ kind: "image", img: p.key, x: cx - sz.w / 2, y: cy - sz.h / 2, w: sz.w, h: sz.h, fill: 0 });
+        setSel([e.id]);
+        return e;
+      });
+    },
+    notice(level, text) { for (const f of [...notices]) f({ level, text }); },
+    onNotice(cb) { notices.add(cb); return () => { notices.delete(cb); }; },
+
     placeIcon(iconId, at) {
       const cx = at?.x ?? vp.x + vp.w / vp.zoom / 2, cy = at?.y ?? vp.y + vp.h / vp.zoom / 2;
       return run("place icon", () => {
@@ -391,6 +424,34 @@ export function createEditor(d: EditorDeps): Editor {
         return e;
       });
     },
+    insertCalc() {
+      void ensureCalc().catch(() => {}); // start loading the evaluator now so the first draw already has results
+      const s = calcSize(CALC_SAMPLE), z = vp.zoom, cx = vp.x + vp.w / z / 2, cy = vp.y + vp.h / z / 2;
+      return run("capacity note", () => {
+        const e = newEl({ kind: "calc", x: Math.round(cx - s.w / 2), y: Math.round(cy - s.h / 2), w: s.w, h: s.h, text: CALC_SAMPLE, cat: 7, fill: 1 });
+        setSel([e.id]);
+        return e;
+      });
+    },
+    applyPositions(pos, label = "arrange") {
+      const moved = new Set<string>();
+      run(label, () => {
+        for (const [id, p] of pos) {
+          const e = scene.els.get(id);
+          if (!e || e.locked || e.kind === "arrow" || !Number.isFinite(p.x) || !Number.isFinite(p.y) || (e.x === p.x && e.y === p.y)) continue;
+          hist.touch(e); scene.set(e, p.x, p.y); moved.add(id);
+        }
+        rerouteIds(moved); // one batched pass: bound arrows follow, nothing cascades
+      });
+    },
+    async tidy(scope) {
+      const sc = scope ?? (renderer.selected.size >= 2 ? "selection" : "all");
+      const { runTidy } = await import("./tidy");
+      if (destroyed) return 0;
+      const r = runTidy(api, sc);
+      if (r.moved && sc === "all") api.zoomToFit();
+      return r.moved;
+    },
     renumberBadges() {
       const plan = renumberPlan(scene.els.values());
       if (!plan.size) return;
@@ -415,6 +476,7 @@ export function createEditor(d: EditorDeps): Editor {
     },
 
     undo() {
+      if (readOnly) return;
       if (text.isOpen) text.close(false);
       const ids = hist.undo();
       if (!ids) return;
@@ -422,6 +484,7 @@ export function createEditor(d: EditorDeps): Editor {
       setSel(ids); after(); emit("selection");
     },
     redo() {
+      if (readOnly) return;
       if (text.isOpen) text.close(false);
       const ids = hist.redo();
       if (!ids) return;
@@ -454,12 +517,20 @@ export function createEditor(d: EditorDeps): Editor {
     destroy() {
       if (destroyed) return;
       destroyed = true;
-      ctl.destroy(); text.destroy(); renderer.destroy(); hist.clear(); subs.clear(); entered.clear();
+      offCalc(); offImages(); ctl.destroy(); text.destroy(); renderer.destroy(); hist.clear(); subs.clear(); entered.clear(); notices.clear();
     },
 
     copy() { const s = core.copyText(); if (s && navigator.clipboard?.writeText) navigator.clipboard.writeText(s).catch(() => {}); },
     cut() { core.cut(); },
     paste(t) { return core.pasteText(t); },
+    importElements(data, fit = true) {
+      const els = (Array.isArray(data?.els) ? data.els : []).filter((j) => j && KINDS.has(j.kind) && typeof j.x === "number" && typeof j.y === "number" && typeof j.w === "number" && typeof j.h === "number").slice(0, 10_000);
+      if (!els.length) return [];
+      let ids: string[] = [];
+      run("import", () => { ids = cloneInto(els.map(sanitize), Array.isArray(data.groups) ? data.groups : [], 0, 0); setSel(ids); });
+      if (fit) api.focusOn(ids);
+      return ids;
+    },
     nudge(dx, dy) { core.nudge(dx, dy); },
   };
 
@@ -527,6 +598,9 @@ export function createEditor(d: EditorDeps): Editor {
   ctl.onTool = () => emit("tool");
   // keep the text overlay glued to its element while panning/zooming
   api.on("viewport", () => text.place());
+  // the evaluator is a lazy chunk: when it lands, repaint so capacity notes switch from raw lines to results
+  const offCalc = onCalcReady(() => { if (!destroyed) renderer.invalidate(true, false); });
+  const offImages = installImageInput(api, d.stage); // drop / paste of image files (tiny; the pipeline itself is lazy)
   return api;
 }
 
@@ -537,7 +611,7 @@ function sanitize(j: ElJSON): ElJSON {
   return {
     ...j, x: num(j.x, 0), y: num(j.y, 0), w: Math.max(1, num(j.w, 100)), h: Math.max(1, num(j.h, 60)),
     cat: Math.max(0, Math.min(7, Math.floor(num(j.cat, 0)))), fill: ([0, 1, 2].includes(j.fill) ? j.fill : 1) as 0 | 1 | 2,
-    edge: ([0, 1, 2].includes(j.edge) ? j.edge : 1) as 0 | 1 | 2, radius: Math.max(0, num(j.radius, 8)), text: str(j.text), iconId: str(j.iconId),
+    edge: ([0, 1, 2].includes(j.edge) ? j.edge : 1) as 0 | 1 | 2, radius: Math.max(0, num(j.radius, 8)), text: str(j.text), iconId: str(j.iconId), img: str(j.img).slice(0, 64),
     groupIds: Array.isArray(j.groupIds) ? j.groupIds.filter((g) => typeof g === "string") : [],
     pts: Array.isArray(j.pts) ? j.pts.filter((v) => typeof v === "number" && Number.isFinite(v)).slice(0, 64) : [],
     n: Math.max(0, Math.min(99999, Math.floor(num(j.n, 0)))), o: ([0, 1, 2, 3].includes(j.o) ? j.o : 0) as 0 | 1 | 2 | 3,

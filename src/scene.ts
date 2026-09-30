@@ -4,7 +4,7 @@ import { hitShape } from "./shape-geom";
 export type Kind =
   | "rect" | "ellipse" | "diamond" | "text" | "arrow" | "icon"
   | "cylinder" | "cloud" | "hexagon" | "parallelogram" | "triangle" | "star"
-  | "note" | "brace" | "badge" | "frame" | "lane" | "legend";
+  | "note" | "brace" | "badge" | "frame" | "lane" | "legend" | "image" | "calc";
 export type FillStyle = 0 | 1 | 2; // outline, tint, solid
 export type EdgeStyle = 0 | 1 | 2; // sharp, round, soft
 export type Route = 0 | 1 | 2; // straight, elbow, curve
@@ -29,6 +29,8 @@ export interface El {
   groupIds: string[];
   /** icon id from the icon library ("" when not an icon) */
   iconId: string;
+  /** image elements: content-hash key of the stored image blob ("" otherwise) */
+  img: string;
   locked: boolean;
   /** badge: its number; lane: number of lanes (kept in step with the lines of `text`); otherwise unused */
   n: number;
@@ -111,7 +113,7 @@ export class Scene {
   add(init: ElInit): El {
     const e: El = {
       id: `e${(++this.idc).toString(36)}`, z: ++this.zc, version: 1,
-      x: 0, y: 0, w: 96, h: 58, cat: 0, fill: 1, radius: 8, text: "", edge: 1, groupIds: [], iconId: "", locked: false, n: 0, o: 0,
+      x: 0, y: 0, w: 96, h: 58, cat: 0, fill: 1, radius: 8, text: "", edge: 1, groupIds: [], iconId: "", img: "", locked: false, n: 0, o: 0,
       src: "", dst: "", sp: -1, dp: -1, route: 1, dash: 0, head: 1, pts: [],
       gx0: 0, gy0: 0, gx1: 0, gy1: 0, seen: 0, ...init,
     };

@@ -20,6 +20,9 @@ export interface EditorAPI {
   /** creation tools only: when locked the tool stays active after each shape (double-click a tool, or Q). Choosing another tool unlocks. */
   readonly toolLocked: boolean;
   setToolLock(on: boolean): void;
+  /** view-only mode (shared links, presentations): pan and zoom still work, every command that would change the document is a no-op */
+  readonly readOnly: boolean;
+  setReadOnly(on: boolean): void;
 
   selection(): ReadonlySet<string>;
   select(ids: readonly string[]): void;
@@ -39,6 +42,11 @@ export interface EditorAPI {
 
   /** place an icon element; `at` is the world-space centre (default: viewport centre) */
   placeIcon(iconId: string, at?: { x: number; y: number }): El;
+  /** import an image or SVG (validated, downscaled, stored) and place it; rejects with a message fit for a toast */
+  insertImage(blob: Blob, at?: { x: number; y: number }): Promise<El>;
+  /** a short message for the user (toast); the chrome subscribes with onNotice */
+  notice(level: "info" | "warn" | "error", text: string): void;
+  onNotice(cb: (m: { level: "info" | "warn" | "error"; text: string }) => void): () => void;
 
   /** align the selection (blocks: a whole group counts as one) to its own bounds */
   align(mode: AlignMode): void;
@@ -54,8 +62,23 @@ export interface EditorAPI {
   pasteStyle(): void;
   /** insert a legend of the categories and line styles in use — or refresh the selected legend */
   insertLegend(): El | null;
+  /**
+   * Add many elements at once as ONE undo step (text import, generators). Elements get fresh ids; `src`/`dst` bindings and
+   * `groupIds` refer to ids inside `data` and are remapped; bound arrows are routed. No offset is applied. Returns the new ids
+   * (selected afterwards). `fit` zooms to the result.
+   */
+  importElements(data: { els: import("./scene").ElJSON[]; groups: import("./scene").GroupInfo[] }, fit?: boolean): string[];
   /** renumber all step badges 1..N keeping their order */
   renumberBadges(): void;
+  /** insert a capacity note (back-of-envelope calculator) at the view centre and select it */
+  insertCalc(): El | null;
+  /** move elements to exact top-left positions as ONE undo step; arrows bound to them are re-routed once. Locked elements and arrows are skipped. */
+  applyPositions(pos: ReadonlyMap<string, { x: number; y: number }>, label?: string): void;
+  /**
+   * rearrange into clean tiers (layered layout). Default scope: the selection when 2+ shapes are selected, else the whole sheet.
+   * Resolves to the number of elements that moved (0 = nothing to do). One undo step; the layout code loads on first use.
+   */
+  tidy(scope?: "selection" | "all"): Promise<number>;
 
   /** centre the view on a world point / fit and select elements / outline elements (find-bar matches) on the live layer */
   panTo(x: number, y: number): void;

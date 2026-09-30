@@ -1,5 +1,7 @@
 import type { ElLike } from "./format";
 import type { Theme } from "../theme";
+import type { CalcRow } from "../calc";
+import { CALC_LINE, CALC_PAD } from "../calc-view";
 import { CONTAINER_KINDS, FRAME_HEADER, LEGEND_PAD, LEGEND_ROW_H, LEGEND_TITLE_H, PATH_KINDS, labelPoint, laneCells, legendRows, shapeParts } from "../shape-geom";
 
 /** Pure (no DOM) geometry + SVG generation, shared by SVG export and (via arrowPathD) the PNG path. */
@@ -106,7 +108,13 @@ export function arrowLabelPos(e: ElLike): P {
 
 /* ------------------------------------------------------------------ SVG document */
 
-export interface SvgOpts { background: boolean; padding: number; icons: (id: string, tier: "detail" | "glyph") => string | null }
+export interface SvgOpts {
+  /** evaluator for capacity notes (kind "calc"); absent -> the raw lines are exported without results */
+  calc?: (text: string) => CalcRow[];
+  background: boolean; padding: number; icons: (id: string, tier: "detail" | "glyph") => string | null;
+  /** image key -> data URL, for `image` elements (absent keys are drawn as a dashed placeholder) */
+  images?: Record<string, string>;
+}
 
 const symId = (id: string, tier: string) => `ap-ic-${id.replace(/[^\w-]/g, "_")}-${tier}`;
 const SAFE_INNER = /<\s*(script|foreignObject|image|iframe|use|style)\b|\son\w+\s*=|(?:xlink:)?href\s*=/i;
@@ -169,6 +177,20 @@ export function buildSvg(els: readonly ElLike[], th: Theme, o: SvgOpts): string 
         } else if (e.kind === "badge") body.push(labelText(String(e.n), cx, cy + 1, e.fill === 2 ? th.paper : th.ink, Math.max(10, Math.round(Math.min(e.w, e.h) * 0.46))));
         else if (e.text) { const [lx, ly] = labelPoint(e); body.push(labelText(e.text, lx, ly, e.fill === 2 ? th.paper : th.ink)); }
       }
+    } else if (e.kind === "calc") {
+      const f = Math.max(8, Math.min(18, e.w * 0.06, e.h * 0.25));
+      const fillAttr = e.fill === 0 ? `fill="none"` : e.fill === 1 ? `fill="${c}" fill-opacity="${th.tint}"` : `fill="${c}" fill-opacity="0.9"`;
+      body.push(`<path d="M${n(e.x)} ${n(e.y)}H${n(e.x + e.w)}V${n(e.y + e.h - f)}L${n(e.x + e.w - f)} ${n(e.y + e.h)}H${n(e.x)}Z" ${fillAttr} stroke="${c}" stroke-width="2" stroke-linejoin="round"/>`);
+      body.push(`<path d="M${n(e.x + e.w - f)} ${n(e.y + e.h)}V${n(e.y + e.h - f)}H${n(e.x + e.w)}" fill="none" stroke="${c}" stroke-width="1.5" stroke-opacity="0.7" stroke-linejoin="round"/>`);
+      const rows: CalcRow[] = o.calc ? o.calc(e.text) : e.text.split("\n", 40).map((t) => ({ kind: "line", name: "", expr: t, text: "", value: null, err: "" }));
+      const ink = e.fill === 2 ? th.paper : th.ink;
+      rows.forEach((r, i) => {
+        if (r.kind === "blank") return;
+        const ry = e.y + CALC_PAD + i * CALC_LINE + CALC_LINE / 2 + 4.5, lx = e.x + CALC_PAD, rx = e.x + e.w - CALC_PAD;
+        body.push(`<text x="${n(lx)}" y="${n(ry)}" font-size="13" fill="${r.kind === "comment" ? th.mid : ink}">${esc(r.kind === "comment" ? `# ${r.expr}` : r.expr)}</text>`);
+        if (r.err) body.push(`<text x="${n(rx)}" y="${n(ry)}" font-size="13" text-anchor="end" fill="${th.red}">${esc(`! ${r.err}`)}</text>`);
+        else if (r.text) body.push(`<text x="${n(rx)}" y="${n(ry)}" font-size="13" font-weight="700" text-anchor="end" fill="${ink}">${esc(`→ ${r.text}`)}</text>`);
+      });
     } else if (e.kind === "legend") {
       body.push(`<rect x="${n(e.x)}" y="${n(e.y)}" width="${n(e.w)}" height="${n(e.h)}" rx="${e.edge === 0 ? 0 : 8}" fill="${th.card}" stroke="${th.ink}" stroke-opacity="0.55" stroke-width="1.4"/>`);
       body.push(`<text x="${n(e.x + LEGEND_PAD)}" y="${n(e.y + LEGEND_PAD + LEGEND_TITLE_H / 2 + 2)}" font-size="11" font-weight="700" fill="${th.mid}">LEGEND</text>`);
@@ -178,6 +200,11 @@ export function buildSvg(els: readonly ElLike[], th: Theme, o: SvgOpts): string 
         else { const ci = Number(r.swatch.slice(1)), sc = th.cats[(Number.isFinite(ci) ? ci : 0) % th.cats.length]!; body.push(`<rect x="${n(rx + 4)}" y="${n(ry - 7)}" width="16" height="14" rx="3" fill="${sc}" fill-opacity="${th.tint * 1.6}" stroke="${sc}" stroke-width="1.8"/>`); }
         body.push(`<text x="${n(rx + 34)}" y="${n(ry + 4.5)}" font-size="13" fill="${th.ink}">${esc(r.label)}</text>`);
       });
+    } else if (e.kind === "image") {
+      const reserve = e.text ? 18 : 0, href = o.images?.[e.img];
+      if (href && /^data:image\/(png|jpeg|webp|gif|svg\+xml);base64,[A-Za-z0-9+/=]+$/.test(href)) body.push(`<image href="${href}" x="${n(e.x)}" y="${n(e.y)}" width="${n(e.w)}" height="${n(Math.max(4, e.h - reserve))}" preserveAspectRatio="xMidYMid meet"/>`);
+      else body.push(`<rect x="${n(e.x)}" y="${n(e.y)}" width="${n(e.w)}" height="${n(Math.max(4, e.h - reserve))}" fill="${c}" fill-opacity="${th.tint * 1.4}" stroke="${c}" stroke-dasharray="6 4" stroke-width="1.5"/>`);
+      if (e.text) body.push(labelText(e.text, cx, e.y + e.h - 9, th.ink, 12));
     } else if (e.kind === "icon") {
       const r = e.edge === 0 ? 0 : Math.min(e.radius + 4, Math.min(e.w, e.h) / 2);
       body.push(`<rect x="${n(e.x)}" y="${n(e.y)}" width="${n(e.w)}" height="${n(e.h)}" rx="${n(r)}" ${shapeFill(e, c)} ${stroke(e, c, 1.8)}/>`);

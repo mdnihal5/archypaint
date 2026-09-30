@@ -57,3 +57,35 @@ describe("createIO save", () => {
     io.dispose();
   });
 });
+
+describe("adoptCurrent (make an editable copy of a shared link)", () => {
+  const settle = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  it("a document opened WITHOUT restore() is never autosaved, however it changes", async () => {
+    const ed = fakeEditor(); const kv = memKV();
+    const io = createIO(ed, document.createElement("div"), { kv });
+    ed.scene.add({ kind: "rect" }); // the shared document "loaded"
+    io.setDocName("shared name");
+    io.updateSettings({ bg: "plain" });
+    await settle(900); // past the autosave debounce
+    window.dispatchEvent(new Event("pagehide"));
+    await settle(20);
+    expect(kv.data.size).toBe(0); // nothing written: the user's own autosaved sheet is safe
+    io.dispose();
+  });
+
+  it("adoptCurrent() makes it the autosaved document without loading the stored one", async () => {
+    const ed = fakeEditor(); const kv = memKV();
+    kv.data.set("current", { key: "current", text: "{}", name: "mine", savedAt: 1, fileDirty: false });
+    const io = createIO(ed, document.createElement("div"), { kv });
+    ed.scene.add({ kind: "rect", text: "shared" });
+    ed.markSaved(); // as openSharedFromHash does after loading: the shared document is "clean", so nothing would be written without adoptCurrent
+    io.adoptCurrent();
+    await settle(900);
+    const rec = kv.data.get("current") as { text: string } | undefined;
+    expect(rec).toBeDefined();
+    expect(rec!.text).toContain('"text":"shared"'); // the copy replaced the previous autosave, on purpose
+    expect((ed.load as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBe(0); // and nothing was loaded over the copy
+    io.dispose();
+  });
+});

@@ -2,6 +2,8 @@ import type { EditorAPI } from "./editor-api";
 import type { Tool } from "./input";
 import { ensureIcons, iconInner, listIcons, onIconsReady, packLoaded, packsVersion, ROOT_ATTRS } from "./icon-pack";
 import { buildIndex, groupBySection, PACK_ORDER, search, sectionLabel, VENDOR_PACKS, type Entry, type Hit } from "./icon-search";
+import { hasLogoIcon } from "./icon-pack";
+import type { LogosUI } from "./palette-logos"; // type only: the logos UI is a lazy chunk
 import { CATEGORIES, DARK, LIGHT } from "./theme";
 import { addUserPackFromText, closeUserPackStore, listUserPacks, MAX_PACK_BYTES, removeUserPack } from "./user-packs";
 
@@ -11,6 +13,10 @@ const ROWS = 48;
 const RECENT_KEY = "archypaint.recent.icons";
 const CHIPS = ["all", ...CATEGORIES, "shape"] as const;
 const HINT = "load balancer · cron job · read replica · service worker · message queue";
+
+/** same key as logos.ts (a test keeps them equal): reading one flag must not pull the logos chunk into the entry bundle */
+const OPT_IN_KEY = "archypaint.logos.optin";
+const optedInStored = (): boolean => { try { return localStorage.getItem(OPT_IN_KEY) === "1"; } catch { return false; } };
 
 const DISCLAIMER = "Original drawings, not affiliated with or endorsed by the vendor; names are their owners' trademarks.";
 
@@ -108,6 +114,10 @@ export function mountPalette(editor: EditorAPI, host: HTMLElement): Palette {
   let msgEl!: HTMLDivElement;
   let fileEl!: HTMLInputElement;
   let srcVersion = -1;
+  /** official logos: a lazy chunk, loaded when the Logos source is used or the user already opted in */
+  let lg: LogosUI | null = null;
+  let lgLoading = false;
+  let indexedLogoRev = -1;
   let hits: Hit[] = [];
   const scratch: Hit[] = [];
   let shown: Hit[] = [];
@@ -162,10 +172,13 @@ export function mountPalette(editor: EditorAPI, host: HTMLElement): Palette {
 
   function rebuildIndex(): void {
     const v = packsVersion();
-    if (indexedVersion === v && index.length) return;
-    index = buildIndex(listIcons()); indexedVersion = v;
+    const lr = lg ? lg.rev() : -1;
+    if (indexedVersion === v && indexedLogoRev === lr && index.length) return;
+    index = buildIndex(listIcons());
+    if (lg) for (const e of lg.entries()) index.push(e); // static catalog: no network
+    indexedVersion = v; indexedLogoRev = lr;
     for (const p of listUserPacks()) for (const e of index) if (e.pack === p.key) { e.section = p.name; e.lsec = p.name.toLowerCase(); } // show the pack's own name, not its slug
-    if (source !== "all" && source !== "shapes" && !index.some((e) => e.pack === source)) source = "all";
+    if (source !== "all" && source !== "shapes" && source !== "logos" && !index.some((e) => e.pack === source)) source = "all";
     paintSources();
     paintUserPacks();
   }
@@ -176,10 +189,10 @@ export function mountPalette(editor: EditorAPI, host: HTMLElement): Palette {
     srcVersion = packsVersion();
     const present = new Set(index.map((e) => e.pack));
     const userNames = new Map(listUserPacks().map((p) => [p.key, p.name]));
-    const keys = ["all", ...PACK_ORDER.filter((p) => present.has(p)), ...[...present].filter((p) => p.startsWith("user-")).sort()];
+    const keys = ["all", ...PACK_ORDER.filter((p) => present.has(p)), ...[...present].filter((p) => p.startsWith("user-")).sort(), "logos"];
     srcEl.textContent = "";
     for (const k of keys) {
-      const b = document.createElement("button"); b.type = "button"; b.dataset.src = k; b.textContent = k === "all" ? "all sources" : (userNames.get(k) ?? sectionLabel(k));
+      const b = document.createElement("button"); b.type = "button"; b.dataset.src = k; b.textContent = k === "all" ? "all sources" : k === "logos" ? "official logos" : (userNames.get(k) ?? sectionLabel(k));
       b.setAttribute("aria-pressed", String(k === source)); srcEl.appendChild(b);
     }
   }
@@ -231,8 +244,39 @@ export function mountPalette(editor: EditorAPI, host: HTMLElement): Palette {
 
   function badgeSvg(e: Entry): string {
     if (e.kind === "shape") return `<svg viewBox="0 0 24 24" ${ROOT_ATTRS} stroke-width="1.75">${SHAPE_SVG[e.id] ?? GENERIC_SHAPE}</svg>`;
+    if (e.kind === "logo") return lg ? lg.badge(e) : "";
     const g = iconInner(e.id, "glyph");
     return g ? `<svg viewBox="0 0 24 24" ${ROOT_ATTRS} stroke-width="1.75">${g}</svg>` : "";
+  }
+
+  /* ---- official logos: the whole feature is the lazy palette-logos chunk ---- */
+  function loadLogosUI(): void {
+    if (lg || lgLoading || disposed) return;
+    lgLoading = true;
+    void import("./palette-logos").then(
+      (m) => {
+        lgLoading = false;
+        if (disposed || !root) return;
+        lg = m.createLogosUI({
+          panel: root.querySelector(".ap-pal-panel")!, before: noteEl, editor, say,
+          changed: () => { if (open) render(); },
+          focus: () => input.focus(),
+          pointer: pointerWorld,
+          placed(e, at) {
+            const ci = CATEGORIES.indexOf(e.category as (typeof CATEGORIES)[number]);
+            close();
+            const prev = editor.defaults.cat;
+            if (ci >= 0) editor.setDefaults({ cat: ci });
+            const el = editor.placeIcon(e.id, at);
+            if (ci >= 0) editor.setDefaults({ cat: prev });
+            editor.select([el.id]);
+            recent = [e.id, ...recent.filter((x) => x !== e.id)].slice(0, 8); saveRecent(recent);
+          },
+        });
+        if (open) render(true);
+      },
+      () => { lgLoading = false; if (!disposed) say("Couldn't load official logos.", true); },
+    );
   }
 
   /** keep = a data refresh (a pack landed): keep the selected row and scroll instead of jumping back to the top */
@@ -242,7 +286,11 @@ export function mountPalette(editor: EditorAPI, host: HTMLElement): Palette {
     rebuildIndex();
     const q = input.value;
     const set = q ? undefined : new Set(recent);
-    search(index, q, category, scratch, ROWS, set, source);
+    const logosView = source === "logos";
+    if (!lg && (logosView || optedInStored())) loadLogosUI();
+    const consent = lg ? lg.view(logosView) : false; // true: the consent panel replaces the list
+    if (consent || (logosView && !lg)) scratch.length = 0; // nothing is listed, and nothing is fetched, until the user opts in
+    else search(index, q, category, scratch, ROWS, set, source);
     hits = groupBySection(scratch);
     shown = hits;
     let prevCat = "";
@@ -253,11 +301,13 @@ export function mountPalette(editor: EditorAPI, host: HTMLElement): Palette {
       const e = h.e, col = catColour(e.category);
       const newGroup = e.pack !== prevCat; prevCat = e.pack;
       r.head.hidden = !newGroup; if (newGroup) r.head.textContent = e.section;
-      const key = `${e.kind}:${e.id}:${col}:${e.kind === "shape" || iconInner(e.id, "glyph") !== null ? 1 : 0}`;
+      // "is the preview's SVG loaded" — asked without side effects: iconInner() on an uninstalled logo would start a download
+      const ready = e.kind === "shape" ? 1 : e.kind === "logo" ? (hasLogoIcon(e.id) ? 1 : 0) : iconInner(e.id, "glyph") !== null ? 1 : 0;
+      const key = `${e.kind}:${e.id}:${col}:${ready}`;
       if (r.badgeKey !== key) { r.badgeKey = key; r.badge.style.color = col; r.badge.innerHTML = badgeSvg(e); } // innerHTML parses SVG: only when the row's icon changed
       r.name.textContent = e.name;
       const alias = q ? e.aliases.find((a) => a.toLowerCase().includes(q.trim().toLowerCase())) : undefined;
-      r.meta.textContent = alias && alias.toLowerCase() !== e.name.toLowerCase() ? alias : e.id;
+      r.meta.textContent = alias && alias.toLowerCase() !== e.name.toLowerCase() ? alias : e.kind === "logo" ? (e.aliases[0] ?? "") : e.id;
       r.tag.textContent = e.kind === "shape" ? "shape" : (recent.includes(e.id) && !q ? "recent" : e.category);
     }
     if (prevId !== undefined) {
@@ -265,11 +315,11 @@ export function mountPalette(editor: EditorAPI, host: HTMLElement): Palette {
       sel = i >= 0 ? i : Math.min(sel, Math.max(0, shown.length - 1));
       paintSelection(false);
     } else { sel = 0; paintSelection(true); list.scrollTop = 0; }
-    emptyEl.hidden = shown.length > 0;
-    let vendor = false;
-    for (const h of shown) if (VENDOR_PACKS.has(h.e.pack)) { vendor = true; break; }
-    noteEl.hidden = !vendor; if (vendor) noteEl.textContent = DISCLAIMER;
-    if (!shown.length) emptyEl.textContent = packLoaded() ? "no match — try “queue”, “cache” or “database”" : "loading icons…";
+    emptyEl.hidden = shown.length > 0 || consent;
+    let vendor = false, logo = false;
+    for (const h of shown) { if (h.e.kind === "logo") logo = true; else if (VENDOR_PACKS.has(h.e.pack)) vendor = true; }
+    noteEl.hidden = !(vendor || logo); if (vendor || logo) noteEl.textContent = vendor && logo ? `${DISCLAIMER} ${lg!.note}` : vendor ? DISCLAIMER : lg!.note;
+    if (!shown.length) emptyEl.textContent = logosView && !lg ? "loading logos…" : packLoaded() ? "no match — try “queue”, “cache” or “database”" : "loading icons…";
     hintEl.hidden = q.length > 0;
   }
 
@@ -283,6 +333,7 @@ export function mountPalette(editor: EditorAPI, host: HTMLElement): Palette {
   }
 
   function place(e: Entry): void {
+    if (e.kind === "logo") { lg?.place(e); return; }
     if (e.kind === "shape") { close(); editor.setTool(e.tool as Tool); return; }
     const ci = CATEGORIES.indexOf(e.category as (typeof CATEGORIES)[number]);
     const at = pointerWorld();
@@ -353,7 +404,7 @@ export function mountPalette(editor: EditorAPI, host: HTMLElement): Palette {
       disposed = true; open = false;
       for (const c of cleanups) c();
       cleanups.length = 0;
-      closeUserPackStore();
+      closeUserPackStore(); lg?.dispose(); lg = null;
       root?.remove(); styleEl?.remove(); root = null; styleEl = null; rows = []; hits = []; shown = [];
     },
   };

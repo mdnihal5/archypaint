@@ -5,6 +5,7 @@ import { installIndex, installPack, resetPacks, setPackLoader } from "./icon-pac
 import { mountPalette } from "./palette";
 import { SHAPES } from "./shapes";
 import { memStore, resetUserPacks, setPackStore } from "./user-packs";
+import { memLogoStore, OPT_IN_KEY, RESTRICTED_KEY, setLogoEnv } from "./logos";
 
 const P = '<path d="M0 0L1 1"/>';
 const ROWS: [string, string, string, string, string][] = [
@@ -85,7 +86,7 @@ describe("palette", () => {
   it("source chips list only packs that exist; Alt+→ cycles the source filter", async () => {
     const { ed } = fakeEditor(); const p = mountPalette(ed, host);
     key("/"); await tick();
-    expect(chips(".ap-pal-src")).toEqual(["all sources", "Core", "Open source", "AWS", "Google Cloud"]);
+    expect(chips(".ap-pal-src")).toEqual(["all sources", "Core", "Open source", "AWS", "Google Cloud", "official logos"]);
     const input = document.querySelector<HTMLInputElement>(".ap-pal-input")!;
     key("ArrowRight", { altKey: true }, input); // -> Core
     key("ArrowRight", { altKey: true }, input); key("ArrowRight", { altKey: true }, input); // -> AWS
@@ -186,4 +187,116 @@ describe("teardown", () => {
     expect(document.querySelectorAll("*").length).toBe(nodes0);
     add.mockRestore(); rm.mockRestore();
   }, 30_000);
+});
+
+
+const waitFor = async (cond: () => boolean, ms = 1500): Promise<void> => { const t0 = Date.now(); while (!cond() && Date.now() - t0 < ms) await new Promise((r) => setTimeout(r, 5)); };
+
+describe("official logos (opt-in, on demand)", () => {
+  const KAFKA = '<svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Apache Kafka</title><path d="M1 1L5 5"/></svg>';
+  let fetchMock: ReturnType<typeof vi.fn>;
+  let ok = true;
+  beforeEach(() => {
+    ok = true;
+    fetchMock = vi.fn(async (_u: string) => { if (!ok) throw new TypeError("offline"); return new Response(KAFKA, { status: 200 }); });
+    setLogoEnv({ fetch: fetchMock as never, store: () => memLogoStore() });
+  });
+  afterEach(() => { setLogoEnv(null); });
+
+  const logosChip = () => [...document.querySelectorAll<HTMLElement>(".ap-pal-src button")].find((b) => b.dataset.src === "logos")!;
+  const visible = (sel: string) => { const e = document.querySelector<HTMLElement>(sel); return !!e && !e.hidden; };
+  const restrictedKey = () => document.querySelector<HTMLElement>(".ap-pal-restricted");
+
+  it("shows a consent panel and lists or fetches nothing until the user opts in", async () => {
+    const { ed } = fakeEditor(); const p = mountPalette(ed, host);
+    key("/"); await tick();
+    logosChip().click(); await waitFor(() => visible(".ap-pal-logos"));
+    expect(visible(".ap-pal-logos")).toBe(true);
+    expect(document.querySelector(".ap-pal-logos p")!.textContent).toContain("cdn.jsdelivr.net");
+    expect(names()).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(localStorage.getItem(OPT_IN_KEY)).toBeNull();
+    p.dispose();
+  });
+
+  it("opting in lists the catalog (still no network), hides restricted brands, and remembers the choice", async () => {
+    const { ed } = fakeEditor(); const p = mountPalette(ed, host);
+    key("/"); await tick();
+    logosChip().click(); await waitFor(() => visible(".ap-pal-logos"));
+    document.querySelector<HTMLElement>(".ap-pal-logos button")!.click(); await waitFor(() => names().includes("PostgreSQL"));
+    expect(localStorage.getItem(OPT_IN_KEY)).toBe("1");
+    expect(visible(".ap-pal-logos")).toBe(false);
+    expect(names()).toContain("PostgreSQL");
+    const input = document.querySelector<HTMLInputElement>(".ap-pal-input")!;
+    type(input, "mongo"); expect(names()).toEqual([]); // restricted: hidden
+    type(input, "docker"); expect(names()).toEqual([]);
+    type(input, "kafka"); expect(names()).toEqual(["Kafka"]);
+    expect(fetchMock).not.toHaveBeenCalled(); // listing and previews never download
+    expect(document.querySelector<HTMLElement>(".ap-pal-note")!.textContent).toContain("Trademarks belong to their owners");
+    p.dispose();
+  });
+
+  it("restricted brands appear only after a second, explicit choice", async () => {
+    const { ed } = fakeEditor(); const p = mountPalette(ed, host);
+    key("/"); await tick(); logosChip().click(); await waitFor(() => visible(".ap-pal-logos"));
+    document.querySelector<HTMLElement>(".ap-pal-logos button")!.click(); await waitFor(() => visible(".ap-pal-restricted"));
+    restrictedKey()!.querySelector("button")!.click(); await tick();
+    expect(localStorage.getItem(RESTRICTED_KEY)).toBe("1");
+    const input = document.querySelector<HTMLInputElement>(".ap-pal-input")!;
+    for (const [q, n] of [["mongo", "MongoDB"], ["docker", "Docker"], ["linux", "Linux"]] as const) { type(input, q); expect(names()).toContain(n); }
+    expect(fetchMock).not.toHaveBeenCalled();
+    p.dispose();
+  });
+
+  it("placing a logo downloads it once from the pinned URL, then places icon logo-<slug> in its category colour", async () => {
+    localStorage.setItem(OPT_IN_KEY, "1");
+    const { ed, placed } = fakeEditor(); const p = mountPalette(ed, host);
+    key("/"); await tick(10);
+    const input = document.querySelector<HTMLInputElement>(".ap-pal-input")!;
+    logosChip().click(); await waitFor(() => names().includes("PostgreSQL"));
+    type(input, "kafka"); await tick();
+    key("Enter", {}, input); await waitFor(() => placed.length > 0 || !!document.querySelector(".ap-pal-msg[data-err=\"true\"]:not([hidden])"));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]![0]).toMatch(/^https:\/\/cdn\.jsdelivr\.net\/npm\/simple-icons@\d+\.\d+\.\d+\/icons\/apachekafka\.svg$/);
+    expect(placed).toEqual([{ id: "logo-apachekafka", at: undefined, cat: 4 }]); // queue category
+    expect(p.isOpen()).toBe(false);
+    p.dispose();
+  });
+
+  it("20 mount / use logos / dispose cycles leave no listeners, styles, DOM or cache connections behind", async () => {
+    localStorage.setItem(OPT_IN_KEY, "1");
+    const add = vi.spyOn(window, "addEventListener"), rm = vi.spyOn(window, "removeEventListener");
+    const nodes0 = document.querySelectorAll("*").length, styles0 = document.querySelectorAll("style").length;
+    for (let i = 0; i < 20; i++) {
+      const { ed } = fakeEditor();
+      const h = document.createElement("div"); document.body.append(h);
+      const p = mountPalette(ed, h);
+      key("/"); await tick(2);
+      logosChip().click(); await waitFor(() => names().includes("PostgreSQL"));
+      type(document.querySelector<HTMLInputElement>(".ap-pal-input")!, "kafka");
+      p.dispose(); h.remove();
+    }
+    expect(add.mock.calls.length).toBe(rm.mock.calls.length);
+    expect(document.querySelectorAll("style").length).toBe(styles0);
+    expect(document.querySelectorAll("*").length).toBe(nodes0);
+    add.mockRestore(); rm.mockRestore();
+  }, 30_000);
+
+  it("a failed download places nothing, says so, and Enter retries", async () => {
+    localStorage.setItem(OPT_IN_KEY, "1");
+    const { ed, placed } = fakeEditor(); const p = mountPalette(ed, host);
+    key("/"); await tick(10);
+    const input = document.querySelector<HTMLInputElement>(".ap-pal-input")!;
+    logosChip().click(); await waitFor(() => names().includes("PostgreSQL"));
+    type(input, "kafka"); await tick();
+    ok = false;
+    key("Enter", {}, input); await waitFor(() => !!document.querySelector(".ap-pal-msg[data-err=\"true\"]:not([hidden])"));
+    expect(placed).toEqual([]);
+    expect(document.querySelector(".ap-pal-msg")!.textContent).toContain("Couldn't load");
+    expect(p.isOpen()).toBe(true);
+    ok = true;
+    key("Enter", {}, input); await waitFor(() => placed.length > 0);
+    expect(placed.map((x) => x.id)).toEqual(["logo-apachekafka"]);
+    p.dispose();
+  });
 });

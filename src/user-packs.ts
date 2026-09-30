@@ -24,8 +24,9 @@ export interface UserPackInfo { key: string; name: string; count: number }
 
 const NUM = /^-?\d{1,4}(\.\d{1,4})?$/;
 const OPACITY = /^(0|1|0?\.\d{1,3}|1\.0)$/;
+export const PATH_CHARS = /^[MmLlHhVvCcSsQqTtAaZz0-9.,\s+-]*$/;
 const ATTR: Record<string, RegExp | ((v: string) => boolean)> = {
-  d: (v) => v.length <= MAX_PATH && /^[MmLlHhVvCcSsQqTtAaZz0-9.,\s+-]*$/.test(v),
+  d: (v) => v.length <= MAX_PATH && PATH_CHARS.test(v),
   points: (v) => v.length <= 2000 && /^[0-9.,\s+-]+$/.test(v),
   fill: /^(currentColor|none)$/, stroke: /^(currentColor|none)$/,
   "fill-opacity": OPACITY, "stroke-opacity": OPACITY,
@@ -37,10 +38,16 @@ const TAGS = new Set(["rect", "circle", "ellipse", "line", "polyline", "polygon"
 const ELEMENT = /\s*<([a-z]+)((?:\s+[a-z-]+="[^"]*")*)\s*\/>/y;
 const ATTR_RE = /\s+([a-z-]+)="([^"]*)"/g;
 
-/** null when the markup is acceptable, else the reason */
-export function markupProblem(markup: unknown): string | null {
+export interface MarkupLimits { maxMarkup?: number; maxPath?: number }
+
+/**
+ * null when the markup is acceptable, else the reason. The same grammar validates user packs and downloaded logos;
+ * logos pass larger limits (real brand marks have long paths) but nothing else about the grammar is relaxed.
+ */
+export function markupProblem(markup: unknown, limits?: MarkupLimits): string | null {
   if (typeof markup !== "string" || !markup.trim()) return "empty markup";
-  if (markup.length > MAX_MARKUP) return "markup too large";
+  if (markup.length > (limits?.maxMarkup ?? MAX_MARKUP)) return "markup too large";
+  const maxPath = limits?.maxPath ?? MAX_PATH;
   let pos = 0, n = 0;
   ELEMENT.lastIndex = 0;
   while (pos < markup.length && /\S/.test(markup.slice(pos))) {
@@ -52,6 +59,7 @@ export function markupProblem(markup: unknown): string | null {
     for (const a of m[2]!.matchAll(ATTR_RE)) {
       const rule = ATTR[a[1]!];
       if (!rule) return `attribute "${a[1]}" is not allowed`;
+      if (a[1] === "d") { if (!(a[2]!.length <= maxPath && PATH_CHARS.test(a[2]!))) return `bad value for "d"`; continue; }
       if (!(typeof rule === "function" ? rule(a[2]!) : rule.test(a[2]!))) return `bad value for "${a[1]}"`;
     }
     pos = ELEMENT.lastIndex;

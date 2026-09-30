@@ -26,6 +26,12 @@ export interface IO {
   open(): Promise<void>;
   /** restore the autosaved document on startup; true if something was restored */
   restore(): Promise<boolean>;
+  /**
+   * Make the document currently in the editor the autosaved one, without loading the stored sheet. Used by "Make an
+   * editable copy" of a shared link: the link was opened without restore(), so autosave was never armed and nothing
+   * of the shared document was (or could be) written until this is called.
+   */
+  adoptCurrent(): void;
   exportPng(o?: ExportOpts): Promise<void>;
   exportSvg(o?: ExportOpts): Promise<void>;
   copyPng(o?: ExportOpts): Promise<void>;
@@ -54,6 +60,10 @@ export interface IOOptions {
 /** export/import code is loaded on first use, so it costs nothing at startup */
 const lazyExport = () => import("./export");
 const lazyExcalidraw = () => import("./excalidraw");
+const lazyImgIo = () => import("./images-io");
+const hasImages = (scene: { els: Map<string, { kind: string }> }): boolean => { for (const e of scene.els.values()) if (e.kind === "image") return true; return false; };
+/** set by the images chunk whenever it stores something, so startup only loads that chunk (to delete unreferenced blobs) when images were ever used */
+const IMAGES_FLAG = "archypaint.images.v1";
 const themeOf = (e: EditorAPI): Theme => (e as unknown as { theme?: Theme }).theme ?? LIGHT;
 
 const DISCARD = "You have changes that are not saved to a file. Continue and discard them?";
@@ -142,16 +152,27 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
       const ex = (await lazyExcalidraw()).fromExcalidraw(raw, themeOf(editor));
       if (!ex.ok) { say("error", ex.message); return; }
       handle = null; void autosave.saveHandle(null);
+      if (ex.images && !(await (await lazyImgIo()).hydrateExcalidraw(ex.images, ex.scene.els))) ex.warnings.push("some images could not be loaded");
       loadScene(ex.scene, stripExt(file.name));
       say(ex.warnings.length ? "warn" : "info", ex.warnings.length ? `Imported ${file.name}. ${ex.warnings.join("; ")}.` : `Imported ${file.name}.`);
       return;
     }
     const p = parseArch(r.text);
     if (!p.ok) { say("error", p.error.code === "unsupported_version" || p.error.code === "not_archypaint" ? p.error.message : `Could not open ${file.name}: ${p.error.message}`); return; }
+    if ("images" in p.value.extra) await (await lazyImgIo()).hydrateFile(p.value, say);
     apply(p.value, { markSaved: true });
     meta = { ...meta, name: cleanName(stripExt(file.name)) };
     handle = h; void autosave.saveHandle(h);
     if (p.warnings.length) say("warn", `Opened ${file.name}. ${p.warnings.join("; ")}.`);
+  }
+
+  /** startup only, and only if images were ever stored: delete blobs no element of the restored sheet uses */
+  let gcTimer: ReturnType<typeof setTimeout> | null = null;
+  function scheduleImageGc(): void {
+    let flagged = false;
+    try { flagged = localStorage.getItem(IMAGES_FLAG) === "1"; } catch { /* storage blocked: nothing to collect */ }
+    if (!flagged || gcTimer !== null || disposed) return;
+    gcTimer = setTimeout(() => { gcTimer = null; if (!disposed) void lazyImgIo().then((m) => m.gcUnused(editor.scene)).catch(() => {}); }, 5000);
   }
 
   const io: IO = {
@@ -177,6 +198,13 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
       });
     },
 
+    adoptCurrent() {
+      autosave.arm(); // savedKey = the current state ...
+      nameDirty = true; // ... so mark it changed: the copy must be written even though nothing was edited, and counts as unsaved to a file
+      meta = { ...meta, updated: Date.now() };
+      autosave.schedule();
+    },
+
     async restore() {
       let applied = false;
       try {
@@ -194,6 +222,7 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
         if (applied && h && typeof h.createWritable === "function") handle = h;
       } finally { autosave.arm(); }
       if (!disposed) setStatus("saved");
+      scheduleImageGc();
       return applied;
     },
 
@@ -236,7 +265,8 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
     },
     exportExcalidraw() {
       return withBusy(async () => {
-        const json = JSON.stringify((await lazyExcalidraw()).toExcalidraw(editor.scene.toJSON(), themeOf(editor)));
+        const imgs = hasImages(editor.scene) ? await (await lazyImgIo()).collectForExport(editor.scene, say) : undefined;
+        const json = JSON.stringify((await lazyExcalidraw()).toExcalidraw(editor.scene.toJSON(), themeOf(editor), imgs));
         const r = await files.save(new Blob([json], { type: "application/json" }), meta.name, "excalidraw", "application/json", null, true);
         if (r.ok) say("info", "Exported for Excalidraw. Icons become labelled rectangles there; archypaint keeps their details if you re-import.");
         else if (!r.cancelled) say("error", "Could not save the Excalidraw file.");
@@ -254,6 +284,7 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
     dispose() {
       if (disposed) return;
       disposed = true;
+      if (gcTimer !== null) { clearTimeout(gcTimer); gcTimer = null; }
       for (const f of offs) f();
       offs.length = 0;
       autosave.dispose();
@@ -263,15 +294,23 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
   };
 
   files.onDrop(stage, (f) => {
+    if (f.type.startsWith("image/")) return; // pictures are inserted by the image input, not opened as documents
     void withBusy(async () => { if (await confirmDiscard()) await loadFile(f, null); });
   });
 
   async function doSave(forcePicker: boolean): Promise<void> {
     return withBusy(async () => {
       setStatus("saving");
+      // a saved file is self-contained: pictures travel inside it (under `images`), capped at 20 MB; autosave only keeps keys, the blobs are already local
+      let saveExtra = extra;
+      if (hasImages(editor.scene)) {
+        const r = await (await lazyImgIo()).embedForSave(editor.scene, extra, say);
+        if ("error" in r) { say("error", r.error); setStatus("dirty"); return; }
+        saveExtra = r.extra;
+      }
       let version = editor.scene.nonce;
-      let text = await serializeSliced({ ...src.snapshot(), meta, view: view(), settings, extra, elExtra }, { isStale: () => editor.scene.nonce !== version });
-      if (text === null) { version = editor.scene.nonce; text = serializeArch(buildFile()); } // still being edited: take a consistent synchronous snapshot instead
+      let text = await serializeSliced({ ...src.snapshot(), meta, view: view(), settings, extra: saveExtra, elExtra }, { isStale: () => editor.scene.nonce !== version });
+      if (text === null) { version = editor.scene.nonce; text = serializeArch({ ...buildFile(), extra: saveExtra }); } // still being edited: take a consistent synchronous snapshot instead
       const r = await files.save(new Blob([text], { type: "application/json" }), meta.name, "archypaint", "application/json", handle, forcePicker);
       if (!r.ok) { setStatus(r.cancelled ? "dirty" : "error"); if (!r.cancelled) say("error", "Could not save the file."); return; }
       handle = r.handle;

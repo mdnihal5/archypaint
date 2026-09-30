@@ -1,5 +1,6 @@
 import { bezierAt, effectiveRoute, portPoint, type Rect } from "./connectors";
 import type { GroupIndex } from "./groups";
+import { drawCalcEl } from "./calc-view";
 import { drawIconEl } from "./icons";
 import { handlePoints, type El, type Kind, type Scene } from "./scene";
 import { CONTAINER_KINDS, FRAME_HEADER, LANE_COL_HEADER, LANE_HEADER, LEGEND_PAD, LEGEND_ROW_H, LEGEND_TITLE_H, PATH_KINDS, labelPoint, laneCells, legendRows, shapeParts } from "./shape-geom";
@@ -36,6 +37,8 @@ export class Renderer {
   /** find-bar matches: outlined on the live layer, `hiCur` drawn strongest */
   hi: readonly string[] = [];
   hiCur = "";
+  /** present mode: ids not drawn (null = draw everything; the hot loops pay one null check) */
+  hidden: ReadonlySet<string> | null = null;
   /** id of the element being text-edited: its label is not drawn under the textarea */
   hideText = "";
   /** runs at the start of each frame; input is coalesced and applied here */
@@ -73,6 +76,7 @@ export class Renderer {
   ) {
     this.sctx = sc.getContext("2d", { alpha: true })!;
     this.lctx = lc.getContext("2d", { alpha: true })!;
+    imageRepaint = () => this.invalidate(true, true);
   }
 
   resize(w: number, h: number, dpr: number): void {
@@ -100,7 +104,7 @@ export class Renderer {
   destroy(): void {
     this.destroyed = true;
     if (this.raf) cancelAnimationFrame(this.raf);
-    this.raf = 0; this.onBeforeFrame = null;
+    this.raf = 0; this.onBeforeFrame = null; imageRepaint = null; imageDispose?.();
     this.visible.length = 0; this.dragging.clear(); this.selected.clear(); this.livePts.clear(); this.hi = [];
   }
 
@@ -163,9 +167,10 @@ export class Renderer {
     ctx.font = FONT; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     const lod = z < (this.degraded ? 0.4 : 0.15);
     if (this.groups && this.scene.groups.size && !lod) this.drawGroups(ctx, false);
+    const hid = this.hidden;
     for (let i = 0; i < els.length; i++) {
       const e = els[i]!;
-      if (this.dragging.has(e.id)) continue;
+      if (this.dragging.has(e.id) || (hid !== null && hid.has(e.id))) continue;
       drawEl(ctx, e, this.theme, z, lod, this.hideText === e.id);
     }
     ctx.globalAlpha = 1;
@@ -182,6 +187,8 @@ export class Renderer {
     for (const g of this.scene.groups.values()) {
       const b = this.groups!.bounds(g.id);
       if (!b) continue;
+      // present mode: a group outline appears only once every member has been revealed (its bounds would leak hidden layout)
+      if (this.hidden !== null) { let any = false; for (const id of this.groups!.membersOf(g.id)) if (this.hidden.has(id)) { any = true; break; } if (any) continue; }
       const moved = draggedGroups.has(g.id);
       if (moved !== onlyDragged) continue;
       const x = b.x + (moved ? this.dragDx : 0), y = b.y + (moved ? this.dragDy : 0);
@@ -489,13 +496,35 @@ function drawPathKind(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number
   }
 }
 
+/* ---- image elements: the real drawer lives in the lazy ./images chunk; until it loads (or if it never does) a placeholder is drawn */
+export type ImageDrawer = (ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number, hideText: boolean) => void;
+let imageDrawer: ImageDrawer | null = null;
+let imageRepaint: (() => void) | null = null;
+let imageChunkLoading = false, imageChunkTried = -1e9;
+let imageDispose: (() => void) | null = null;
+/** `dispose` frees what the drawer holds (decoded bitmaps); the renderer calls it on destroy */
+export function setImageDrawer(f: ImageDrawer | null, dispose?: () => void): void { imageDrawer = f; imageDispose = dispose ?? null; }
+/** called by the images chunk when a bitmap finished loading: one repaint, never a loop */
+export function requestImageRepaint(): void { imageRepaint?.(); }
+function ensureImageChunk(): void {
+  if (imageDrawer || imageChunkLoading || performance.now() - imageChunkTried < 4000) return; // a failing chunk is retried at most every 4 s
+  imageChunkLoading = true; imageChunkTried = performance.now();
+  import("./images").then(() => imageRepaint?.()).catch(() => {}).finally(() => { imageChunkLoading = false; });
+}
+
 export function drawEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number, lod: boolean, hideText: boolean): void {
+  if (e.kind === "calc") { drawCalcEl(ctx, e, th, z, lod, hideText); ctx.globalAlpha = 1; return; }
   if (e.kind === "arrow") { drawArrow(ctx, e, th, z, e.pts, lod); return; }
   if (PATH_KINDS.has(e.kind)) { drawPathKind(ctx, e, th, z, lod, hideText); ctx.globalAlpha = 1; return; }
   if (e.kind === "legend") { if (lod) { ctx.globalAlpha = 0.4; ctx.fillStyle = th.mid; ctx.fillRect(e.x, e.y, e.w, e.h); ctx.globalAlpha = 1; } else drawLegend(ctx, e, th, z); return; }
   const col = th.cats[e.cat % th.cats.length]!;
   if (lod) { ctx.globalAlpha = 0.55; ctx.fillStyle = col; ctx.fillRect(e.x, e.y, e.w, e.h); return; }
   if (e.kind === "icon") { drawIconEl(ctx, e, th, z, hideText); ctx.globalAlpha = 1; return; } // label included: it must not be drawn twice
+  if (e.kind === "image") {
+    if (imageDrawer) imageDrawer(ctx, e, th, z, hideText);
+    else { ctx.globalAlpha = th.tint * 1.4; ctx.fillStyle = col; ctx.fillRect(e.x, e.y, e.w, e.h); ensureImageChunk(); }
+    ctx.globalAlpha = 1; return;
+  }
   else if (e.kind !== "text") {
     tracePath(ctx, e.kind, e.x, e.y, e.w, e.h, e.radius);
     if (e.fill === 1) { ctx.globalAlpha = th.tint; ctx.fillStyle = col; ctx.fill(); }
