@@ -1,0 +1,1170 @@
+[
+  {
+    "id": "aws-ec2",
+    "name": "EC2",
+    "aliases": [
+      "ec2",
+      "elastic compute cloud",
+      "virtual machine",
+      "vm",
+      "aws",
+      "instance"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/aws-ec2.svg",
+      "glyph": "svg/aws-ec2.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-lambda",
+    "name": "Lambda",
+    "aliases": [
+      "lambda",
+      "serverless function",
+      "function as a service",
+      "faas",
+      "aws",
+      "event function"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/aws-lambda.svg",
+      "glyph": "svg/aws-lambda.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-ecs",
+    "name": "ECS",
+    "aliases": [
+      "ecs",
+      "elastic container service",
+      "container tasks",
+      "aws",
+      "docker service"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/aws-ecs.svg",
+      "glyph": "svg/aws-ecs.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-eks",
+    "name": "EKS",
+    "aliases": [
+      "eks",
+      "elastic kubernetes service",
+      "kubernetes",
+      "k8s",
+      "aws",
+      "managed kubernetes"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/aws-eks.svg",
+      "glyph": "svg/aws-eks.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-fargate",
+    "name": "Fargate",
+    "aliases": [
+      "fargate",
+      "serverless containers",
+      "aws",
+      "container without servers"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/aws-fargate.svg",
+      "glyph": "svg/aws-fargate.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-elastic-beanstalk",
+    "name": "Elastic Beanstalk",
+    "aliases": [
+      "elastic beanstalk",
+      "beanstalk",
+      "paas",
+      "app deployment platform",
+      "aws"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/aws-elastic-beanstalk.svg",
+      "glyph": "svg/aws-elastic-beanstalk.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-batch",
+    "name": "Batch",
+    "aliases": [
+      "batch",
+      "batch jobs",
+      "job queue",
+      "aws",
+      "compute jobs"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/aws-batch.svg",
+      "glyph": "svg/aws-batch.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-auto-scaling",
+    "name": "Auto Scaling",
+    "aliases": [
+      "auto scaling",
+      "autoscaling",
+      "asg",
+      "scale out",
+      "aws",
+      "elastic capacity"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/aws-auto-scaling.svg",
+      "glyph": "svg/aws-auto-scaling.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-s3",
+    "name": "S3",
+    "aliases": [
+      "s3",
+      "simple storage service",
+      "object storage",
+      "bucket",
+      "aws",
+      "blob"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/aws-s3.svg",
+      "glyph": "svg/aws-s3.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-ebs",
+    "name": "EBS",
+    "aliases": [
+      "ebs",
+      "elastic block store",
+      "block volume",
+      "disk",
+      "aws",
+      "ssd"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/aws-ebs.svg",
+      "glyph": "svg/aws-ebs.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-efs",
+    "name": "EFS",
+    "aliases": [
+      "efs",
+      "elastic file system",
+      "shared file system",
+      "nfs",
+      "aws",
+      "network file system"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/aws-efs.svg",
+      "glyph": "svg/aws-efs.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-fsx",
+    "name": "FSx",
+    "aliases": [
+      "fsx",
+      "managed file servers",
+      "nas",
+      "file server",
+      "aws",
+      "windows file server",
+      "lustre"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/aws-fsx.svg",
+      "glyph": "svg/aws-fsx.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-glacier",
+    "name": "Glacier",
+    "aliases": [
+      "glacier",
+      "s3 glacier",
+      "cold storage",
+      "archive",
+      "aws",
+      "deep archive"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/aws-glacier.svg",
+      "glyph": "svg/aws-glacier.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-rds",
+    "name": "RDS",
+    "aliases": [
+      "rds",
+      "relational database service",
+      "managed sql",
+      "aws",
+      "postgres mysql managed"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/aws-rds.svg",
+      "glyph": "svg/aws-rds.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-aurora",
+    "name": "Aurora",
+    "aliases": [
+      "aurora",
+      "amazon aurora",
+      "cloud native database",
+      "aws",
+      "distributed sql",
+      "mysql compatible"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/aws-aurora.svg",
+      "glyph": "svg/aws-aurora.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-dynamodb",
+    "name": "DynamoDB",
+    "aliases": [
+      "dynamodb",
+      "dynamo",
+      "key value",
+      "nosql",
+      "aws",
+      "wide column",
+      "partitioned table"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/aws-dynamodb.svg",
+      "glyph": "svg/aws-dynamodb.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-elasticache",
+    "name": "ElastiCache",
+    "aliases": [
+      "elasticache",
+      "managed cache",
+      "redis memcached",
+      "aws",
+      "in memory cache"
+    ],
+    "category": "cache",
+    "files": {
+      "detailed": "svg/aws-elasticache.svg",
+      "glyph": "svg/aws-elasticache.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-memorydb",
+    "name": "MemoryDB",
+    "aliases": [
+      "memorydb",
+      "memory db",
+      "durable in memory database",
+      "aws",
+      "redis compatible durable"
+    ],
+    "category": "cache",
+    "files": {
+      "detailed": "svg/aws-memorydb.svg",
+      "glyph": "svg/aws-memorydb.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-redshift",
+    "name": "Redshift",
+    "aliases": [
+      "redshift",
+      "data warehouse",
+      "columnar",
+      "olap",
+      "aws",
+      "warehouse"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/aws-redshift.svg",
+      "glyph": "svg/aws-redshift.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-documentdb",
+    "name": "DocumentDB",
+    "aliases": [
+      "documentdb",
+      "document db",
+      "mongodb compatible",
+      "json documents",
+      "aws",
+      "nosql documents"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/aws-documentdb.svg",
+      "glyph": "svg/aws-documentdb.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-neptune",
+    "name": "Neptune",
+    "aliases": [
+      "neptune",
+      "graph database",
+      "gremlin sparql",
+      "aws",
+      "nodes and edges"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/aws-neptune.svg",
+      "glyph": "svg/aws-neptune.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-timestream",
+    "name": "Timestream",
+    "aliases": [
+      "timestream",
+      "time series database",
+      "tsdb",
+      "metrics store",
+      "aws",
+      "time series"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/aws-timestream.svg",
+      "glyph": "svg/aws-timestream.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-vpc",
+    "name": "VPC",
+    "aliases": [
+      "vpc",
+      "virtual private cloud",
+      "private network",
+      "aws",
+      "subnets"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/aws-vpc.svg",
+      "glyph": "svg/aws-vpc.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-alb",
+    "name": "Application Load Balancer",
+    "aliases": [
+      "alb",
+      "application load balancer",
+      "layer 7",
+      "http routing",
+      "aws",
+      "elb",
+      "path based routing"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/aws-alb.svg",
+      "glyph": "svg/aws-alb.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-nlb",
+    "name": "Network Load Balancer",
+    "aliases": [
+      "nlb",
+      "network load balancer",
+      "layer 4",
+      "tcp load balancer",
+      "aws",
+      "elb",
+      "connection level"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/aws-nlb.svg",
+      "glyph": "svg/aws-nlb.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-gateway-lb",
+    "name": "Gateway Load Balancer",
+    "aliases": [
+      "gateway load balancer",
+      "gwlb",
+      "layer 3 gateway",
+      "virtual appliance",
+      "aws",
+      "inline inspection",
+      "transparent proxy"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/aws-gateway-lb.svg",
+      "glyph": "svg/aws-gateway-lb.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-cloudfront",
+    "name": "CloudFront",
+    "aliases": [
+      "cloudfront",
+      "cdn",
+      "content delivery network",
+      "edge locations",
+      "aws",
+      "edge cache"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/aws-cloudfront.svg",
+      "glyph": "svg/aws-cloudfront.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-route53",
+    "name": "Route 53",
+    "aliases": [
+      "route53",
+      "route 53",
+      "dns",
+      "domain name system",
+      "aws",
+      "name resolver",
+      "traffic routing"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/aws-route53.svg",
+      "glyph": "svg/aws-route53.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-api-gateway",
+    "name": "API Gateway",
+    "aliases": [
+      "api gateway",
+      "apigw",
+      "rest api",
+      "http api",
+      "aws",
+      "routes and stages",
+      "throttling"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/aws-api-gateway.svg",
+      "glyph": "svg/aws-api-gateway.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-nat-gateway",
+    "name": "NAT Gateway",
+    "aliases": [
+      "nat gateway",
+      "nat",
+      "network address translation",
+      "outbound internet",
+      "aws",
+      "private subnet egress"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/aws-nat-gateway.svg",
+      "glyph": "svg/aws-nat-gateway.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-internet-gateway",
+    "name": "Internet Gateway",
+    "aliases": [
+      "internet gateway",
+      "igw",
+      "public internet access",
+      "aws",
+      "vpc gateway"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/aws-internet-gateway.svg",
+      "glyph": "svg/aws-internet-gateway.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-transit-gateway",
+    "name": "Transit Gateway",
+    "aliases": [
+      "transit gateway",
+      "tgw",
+      "network hub",
+      "hub and spoke",
+      "aws",
+      "vpc peering hub"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/aws-transit-gateway.svg",
+      "glyph": "svg/aws-transit-gateway.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-direct-connect",
+    "name": "Direct Connect",
+    "aliases": [
+      "direct connect",
+      "dedicated connection",
+      "private link to datacenter",
+      "aws",
+      "dx",
+      "fiber cross connect"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/aws-direct-connect.svg",
+      "glyph": "svg/aws-direct-connect.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-privatelink",
+    "name": "PrivateLink",
+    "aliases": [
+      "privatelink",
+      "private link",
+      "vpc endpoint",
+      "interface endpoint",
+      "aws",
+      "private connectivity"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/aws-privatelink.svg",
+      "glyph": "svg/aws-privatelink.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-sqs",
+    "name": "SQS",
+    "aliases": [
+      "sqs",
+      "simple queue service",
+      "message queue",
+      "aws",
+      "queue",
+      "visibility timeout"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/aws-sqs.svg",
+      "glyph": "svg/aws-sqs.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-sns",
+    "name": "SNS",
+    "aliases": [
+      "sns",
+      "simple notification service",
+      "pub sub",
+      "fan out topic",
+      "aws",
+      "notifications",
+      "topic"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/aws-sns.svg",
+      "glyph": "svg/aws-sns.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-eventbridge",
+    "name": "EventBridge",
+    "aliases": [
+      "eventbridge",
+      "event bus",
+      "cloudwatch events",
+      "event router",
+      "aws",
+      "rules and targets"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/aws-eventbridge.svg",
+      "glyph": "svg/aws-eventbridge.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-kinesis-streams",
+    "name": "Kinesis Data Streams",
+    "aliases": [
+      "kinesis",
+      "kinesis data streams",
+      "data stream",
+      "shards",
+      "aws",
+      "real time streaming",
+      "kds"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/aws-kinesis-streams.svg",
+      "glyph": "svg/aws-kinesis-streams.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-kinesis-firehose",
+    "name": "Kinesis Data Firehose",
+    "aliases": [
+      "firehose",
+      "kinesis data firehose",
+      "delivery stream",
+      "streaming etl",
+      "aws",
+      "kdf",
+      "stream to storage"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/aws-kinesis-firehose.svg",
+      "glyph": "svg/aws-kinesis-firehose.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-msk",
+    "name": "MSK",
+    "aliases": [
+      "msk",
+      "managed streaming for kafka",
+      "kafka",
+      "aws",
+      "broker cluster",
+      "apache kafka managed"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/aws-msk.svg",
+      "glyph": "svg/aws-msk.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-step-functions",
+    "name": "Step Functions",
+    "aliases": [
+      "step functions",
+      "state machine",
+      "workflow orchestration",
+      "aws",
+      "asl",
+      "serverless workflow"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/aws-step-functions.svg",
+      "glyph": "svg/aws-step-functions.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-appsync",
+    "name": "AppSync",
+    "aliases": [
+      "appsync",
+      "graphql api",
+      "real time sync",
+      "aws",
+      "offline sync",
+      "subscriptions"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/aws-appsync.svg",
+      "glyph": "svg/aws-appsync.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-athena",
+    "name": "Athena",
+    "aliases": [
+      "athena",
+      "interactive sql",
+      "query s3",
+      "serverless query",
+      "aws",
+      "presto sql"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/aws-athena.svg",
+      "glyph": "svg/aws-athena.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-emr",
+    "name": "EMR",
+    "aliases": [
+      "emr",
+      "elastic mapreduce",
+      "big data cluster",
+      "spark hadoop",
+      "aws",
+      "data processing cluster"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/aws-emr.svg",
+      "glyph": "svg/aws-emr.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-glue",
+    "name": "Glue",
+    "aliases": [
+      "glue",
+      "etl",
+      "data catalog",
+      "serverless etl",
+      "aws",
+      "crawlers",
+      "data integration"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/aws-glue.svg",
+      "glyph": "svg/aws-glue.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-quicksight",
+    "name": "QuickSight",
+    "aliases": [
+      "quicksight",
+      "business intelligence",
+      "bi dashboard",
+      "aws",
+      "analytics dashboard",
+      "visualization"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/aws-quicksight.svg",
+      "glyph": "svg/aws-quicksight.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-opensearch-service",
+    "name": "OpenSearch Service",
+    "aliases": [
+      "opensearch",
+      "elasticsearch",
+      "search cluster",
+      "log analytics",
+      "aws",
+      "elk",
+      "opensearch service"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/aws-opensearch-service.svg",
+      "glyph": "svg/aws-opensearch-service.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-sagemaker",
+    "name": "SageMaker",
+    "aliases": [
+      "sagemaker",
+      "machine learning",
+      "ml platform",
+      "model training",
+      "aws",
+      "notebooks",
+      "neural network"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/aws-sagemaker.svg",
+      "glyph": "svg/aws-sagemaker.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-bedrock",
+    "name": "Bedrock",
+    "aliases": [
+      "bedrock",
+      "foundation models",
+      "generative ai",
+      "llm api",
+      "aws",
+      "genai",
+      "model garden"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/aws-bedrock.svg",
+      "glyph": "svg/aws-bedrock.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-iam",
+    "name": "IAM",
+    "aliases": [
+      "iam",
+      "identity and access management",
+      "permissions",
+      "policies",
+      "aws",
+      "roles users"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/aws-iam.svg",
+      "glyph": "svg/aws-iam.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-cognito",
+    "name": "Cognito",
+    "aliases": [
+      "cognito",
+      "user pools",
+      "identity pools",
+      "sign in",
+      "aws",
+      "authentication",
+      "federation"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/aws-cognito.svg",
+      "glyph": "svg/aws-cognito.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-kms",
+    "name": "KMS",
+    "aliases": [
+      "kms",
+      "key management service",
+      "encryption keys",
+      "aws",
+      "cmk",
+      "envelope encryption"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/aws-kms.svg",
+      "glyph": "svg/aws-kms.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-secrets-manager",
+    "name": "Secrets Manager",
+    "aliases": [
+      "secrets manager",
+      "secrets",
+      "vault",
+      "credential rotation",
+      "aws",
+      "password store"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/aws-secrets-manager.svg",
+      "glyph": "svg/aws-secrets-manager.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-waf",
+    "name": "WAF",
+    "aliases": [
+      "waf",
+      "web application firewall",
+      "request filtering",
+      "aws",
+      "owasp rules",
+      "layer 7 firewall"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/aws-waf.svg",
+      "glyph": "svg/aws-waf.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-shield",
+    "name": "Shield",
+    "aliases": [
+      "shield",
+      "ddos protection",
+      "aws shield",
+      "aws",
+      "attack mitigation",
+      "traffic scrubbing"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/aws-shield.svg",
+      "glyph": "svg/aws-shield.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-guardduty",
+    "name": "GuardDuty",
+    "aliases": [
+      "guardduty",
+      "threat detection",
+      "intrusion detection",
+      "aws",
+      "security findings",
+      "anomaly detection"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/aws-guardduty.svg",
+      "glyph": "svg/aws-guardduty.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-cloudwatch",
+    "name": "CloudWatch",
+    "aliases": [
+      "cloudwatch",
+      "monitoring",
+      "metrics and alarms",
+      "logs",
+      "aws",
+      "observability",
+      "dashboards"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/aws-cloudwatch.svg",
+      "glyph": "svg/aws-cloudwatch.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-xray",
+    "name": "X-Ray",
+    "aliases": [
+      "x-ray",
+      "xray",
+      "distributed tracing",
+      "trace map",
+      "aws",
+      "request tracing",
+      "service map"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/aws-xray.svg",
+      "glyph": "svg/aws-xray.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-cloudtrail",
+    "name": "CloudTrail",
+    "aliases": [
+      "cloudtrail",
+      "audit log",
+      "api activity log",
+      "governance",
+      "aws",
+      "who did what",
+      "event history"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/aws-cloudtrail.svg",
+      "glyph": "svg/aws-cloudtrail.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-systems-manager",
+    "name": "Systems Manager",
+    "aliases": [
+      "systems manager",
+      "ssm",
+      "fleet management",
+      "run command",
+      "aws",
+      "patching",
+      "session manager"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/aws-systems-manager.svg",
+      "glyph": "svg/aws-systems-manager.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  },
+  {
+    "id": "aws-cloudformation",
+    "name": "CloudFormation",
+    "aliases": [
+      "cloudformation",
+      "infrastructure as code",
+      "iac",
+      "stacks",
+      "aws",
+      "templates",
+      "cfn"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/aws-cloudformation.svg",
+      "glyph": "svg/aws-cloudformation.glyph.svg"
+    },
+    "batch": 4,
+    "vendor": "aws"
+  }
+]

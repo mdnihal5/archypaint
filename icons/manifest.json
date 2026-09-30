@@ -1,0 +1,1105 @@
+[
+  {
+    "id": "browser",
+    "name": "Browser",
+    "aliases": [
+      "web client",
+      "web app",
+      "spa",
+      "frontend"
+    ],
+    "category": "client",
+    "files": {
+      "detailed": "svg/browser.svg",
+      "glyph": "svg/browser.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "mobile-app",
+    "name": "Mobile app",
+    "aliases": [
+      "phone",
+      "ios",
+      "android",
+      "mobile client"
+    ],
+    "category": "client",
+    "files": {
+      "detailed": "svg/mobile-app.svg",
+      "glyph": "svg/mobile-app.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "desktop-app",
+    "name": "Desktop app",
+    "aliases": [
+      "desktop client",
+      "electron",
+      "native app"
+    ],
+    "category": "client",
+    "files": {
+      "detailed": "svg/desktop-app.svg",
+      "glyph": "svg/desktop-app.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "iot-device",
+    "name": "IoT device",
+    "aliases": [
+      "sensor",
+      "embedded",
+      "edge device",
+      "device"
+    ],
+    "category": "client",
+    "files": {
+      "detailed": "svg/iot-device.svg",
+      "glyph": "svg/iot-device.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "third-party-consumer",
+    "name": "Third-party consumer",
+    "aliases": [
+      "external client",
+      "partner",
+      "api consumer",
+      "3rd party"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/third-party-consumer.svg",
+      "glyph": "svg/third-party-consumer.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "dns",
+    "name": "DNS",
+    "aliases": [
+      "domain name system",
+      "name server",
+      "resolver",
+      "records"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/dns.svg",
+      "glyph": "svg/dns.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "cdn",
+    "name": "CDN",
+    "aliases": [
+      "content delivery network",
+      "edge cache",
+      "edge network",
+      "pop"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/cdn.svg",
+      "glyph": "svg/cdn.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "load-balancer-l4",
+    "name": "Load balancer (L4)",
+    "aliases": [
+      "lb",
+      "balancer",
+      "tcp load balancer",
+      "network load balancer",
+      "nlb"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/load-balancer-l4.svg",
+      "glyph": "svg/load-balancer-l4.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "load-balancer-l7",
+    "name": "Load balancer (L7)",
+    "aliases": [
+      "application load balancer",
+      "alb",
+      "http load balancer",
+      "lb",
+      "balancer"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/load-balancer-l7.svg",
+      "glyph": "svg/load-balancer-l7.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "reverse-proxy",
+    "name": "Reverse proxy",
+    "aliases": [
+      "proxy",
+      "nginx-like",
+      "haproxy-like",
+      "gateway proxy"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/reverse-proxy.svg",
+      "glyph": "svg/reverse-proxy.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "api-gateway",
+    "name": "API gateway",
+    "aliases": [
+      "gateway",
+      "edge gateway",
+      "api management",
+      "apigw"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/api-gateway.svg",
+      "glyph": "svg/api-gateway.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "waf",
+    "name": "Web application firewall",
+    "aliases": [
+      "web firewall",
+      "waf",
+      "app firewall",
+      "shield"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/waf.svg",
+      "glyph": "svg/waf.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "firewall",
+    "name": "Firewall",
+    "aliases": [
+      "network firewall",
+      "fw",
+      "brick wall",
+      "packet filter"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/firewall.svg",
+      "glyph": "svg/firewall.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "vpn",
+    "name": "VPN",
+    "aliases": [
+      "tunnel",
+      "virtual private network",
+      "private link"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/vpn.svg",
+      "glyph": "svg/vpn.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "rate-limiter",
+    "name": "Rate limiter",
+    "aliases": [
+      "throttle",
+      "throttling",
+      "quota",
+      "limiter"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/rate-limiter.svg",
+      "glyph": "svg/rate-limiter.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "service-mesh",
+    "name": "Service mesh",
+    "aliases": [
+      "sidecar",
+      "istio-like",
+      "envoy-like",
+      "mesh"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/service-mesh.svg",
+      "glyph": "svg/service-mesh.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "web-server",
+    "name": "Web server",
+    "aliases": [
+      "http server",
+      "nginx",
+      "apache",
+      "httpd",
+      "static server"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/web-server.svg",
+      "glyph": "svg/web-server.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "app-server",
+    "name": "Application server",
+    "aliases": [
+      "backend",
+      "api server",
+      "app tier",
+      "server"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/app-server.svg",
+      "glyph": "svg/app-server.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "microservice",
+    "name": "Microservice",
+    "aliases": [
+      "service",
+      "svc",
+      "small service",
+      "api"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/microservice.svg",
+      "glyph": "svg/microservice.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "monolith",
+    "name": "Monolith",
+    "aliases": [
+      "monolithic app",
+      "single deployable",
+      "big app"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/monolith.svg",
+      "glyph": "svg/monolith.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "serverless-function",
+    "name": "Serverless function",
+    "aliases": [
+      "lambda",
+      "faas",
+      "function",
+      "cloud function"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/serverless-function.svg",
+      "glyph": "svg/serverless-function.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "container",
+    "name": "Container",
+    "aliases": [
+      "docker container",
+      "oci container",
+      "shipping container"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/container.svg",
+      "glyph": "svg/container.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "pod",
+    "name": "Pod",
+    "aliases": [
+      "k8s pod",
+      "kubernetes pod",
+      "pod group"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/pod.svg",
+      "glyph": "svg/pod.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "node",
+    "name": "Node",
+    "aliases": [
+      "worker node",
+      "host",
+      "machine",
+      "vm",
+      "compute node"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/node.svg",
+      "glyph": "svg/node.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "cluster",
+    "name": "Cluster",
+    "aliases": [
+      "server cluster",
+      "k8s cluster",
+      "fleet",
+      "server group"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/cluster.svg",
+      "glyph": "svg/cluster.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "worker",
+    "name": "Worker",
+    "aliases": [
+      "background worker",
+      "job worker",
+      "consumer",
+      "processor"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/worker.svg",
+      "glyph": "svg/worker.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "cron-job",
+    "name": "Cron job",
+    "aliases": [
+      "scheduler",
+      "scheduled job",
+      "timer",
+      "cron",
+      "schedule"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/cron-job.svg",
+      "glyph": "svg/cron-job.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "batch-job",
+    "name": "Batch job",
+    "aliases": [
+      "etl job",
+      "bulk job",
+      "offline job",
+      "map reduce"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/batch-job.svg",
+      "glyph": "svg/batch-job.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "service-worker",
+    "name": "Service worker",
+    "aliases": [
+      "pwa",
+      "web worker",
+      "background script",
+      "offline worker"
+    ],
+    "category": "client",
+    "files": {
+      "detailed": "svg/service-worker.svg",
+      "glyph": "svg/service-worker.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "daemon",
+    "name": "Daemon",
+    "aliases": [
+      "background process",
+      "systemd",
+      "service process",
+      "agent",
+      "sidecar process"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/daemon.svg",
+      "glyph": "svg/daemon.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "websocket",
+    "name": "WebSocket",
+    "aliases": [
+      "ws",
+      "wss",
+      "persistent connection",
+      "realtime channel",
+      "socket"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/websocket.svg",
+      "glyph": "svg/websocket.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "grpc",
+    "name": "gRPC",
+    "aliases": [
+      "rpc",
+      "protobuf",
+      "remote procedure call",
+      "streaming rpc"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/grpc.svg",
+      "glyph": "svg/grpc.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "sql-database",
+    "name": "SQL database",
+    "aliases": [
+      "db",
+      "database",
+      "rdbms",
+      "relational database",
+      "relational",
+      "table store"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/sql-database.svg",
+      "glyph": "svg/sql-database.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "nosql-document",
+    "name": "NoSQL document store",
+    "aliases": [
+      "document db",
+      "json store",
+      "document database",
+      "nosql",
+      "db"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/nosql-document.svg",
+      "glyph": "svg/nosql-document.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "key-value-store",
+    "name": "Key-value store",
+    "aliases": [
+      "kv",
+      "kv store",
+      "dictionary",
+      "hash map store",
+      "dynamo-like"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/key-value-store.svg",
+      "glyph": "svg/key-value-store.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "wide-column",
+    "name": "Wide-column store",
+    "aliases": [
+      "column family",
+      "cassandra-like",
+      "bigtable-like",
+      "columnar nosql",
+      "sparse table"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/wide-column.svg",
+      "glyph": "svg/wide-column.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "graph-db",
+    "name": "Graph database",
+    "aliases": [
+      "graph",
+      "neo4j-like",
+      "nodes and edges",
+      "property graph"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/graph-db.svg",
+      "glyph": "svg/graph-db.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "time-series-db",
+    "name": "Time-series database",
+    "aliases": [
+      "tsdb",
+      "timeseries",
+      "metrics db",
+      "influx-like",
+      "timescale-like"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/time-series-db.svg",
+      "glyph": "svg/time-series-db.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "primary-db",
+    "name": "Primary database",
+    "aliases": [
+      "leader db",
+      "master",
+      "writer",
+      "primary",
+      "write node",
+      "db"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/primary-db.svg",
+      "glyph": "svg/primary-db.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "read-replica",
+    "name": "Read replica",
+    "aliases": [
+      "replica",
+      "follower",
+      "secondary",
+      "reader",
+      "standby",
+      "db"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/read-replica.svg",
+      "glyph": "svg/read-replica.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "shard",
+    "name": "Shard",
+    "aliases": [
+      "partition",
+      "horizontal partition",
+      "shard node",
+      "hash partition"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/shard.svg",
+      "glyph": "svg/shard.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "cache",
+    "name": "Cache",
+    "aliases": [
+      "chip cache",
+      "cache layer",
+      "fast store",
+      "lookaside cache",
+      "redis-like"
+    ],
+    "category": "cache",
+    "files": {
+      "detailed": "svg/cache.svg",
+      "glyph": "svg/cache.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "in-memory-cache",
+    "name": "In-memory cache",
+    "aliases": [
+      "ram",
+      "memory store",
+      "memcached-like",
+      "in-memory",
+      "redis-like"
+    ],
+    "category": "cache",
+    "files": {
+      "detailed": "svg/in-memory-cache.svg",
+      "glyph": "svg/in-memory-cache.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "message-queue",
+    "name": "Message queue",
+    "aliases": [
+      "mq",
+      "queue",
+      "fifo",
+      "job queue",
+      "sqs-like",
+      "rabbit-like"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/message-queue.svg",
+      "glyph": "svg/message-queue.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "kafka-topic",
+    "name": "Topic / log",
+    "aliases": [
+      "topic",
+      "event log",
+      "stream",
+      "partitioned log",
+      "append-only log",
+      "commit log"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/kafka-topic.svg",
+      "glyph": "svg/kafka-topic.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "pubsub",
+    "name": "Pub/Sub",
+    "aliases": [
+      "publish subscribe",
+      "topic subscription",
+      "event bus",
+      "fan-out",
+      "broadcast"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/pubsub.svg",
+      "glyph": "svg/pubsub.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "dead-letter-queue",
+    "name": "Dead-letter queue",
+    "aliases": [
+      "dlq",
+      "poison queue",
+      "failed messages",
+      "undelivered"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/dead-letter-queue.svg",
+      "glyph": "svg/dead-letter-queue.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "object-storage",
+    "name": "Object storage",
+    "aliases": [
+      "blob storage",
+      "bucket",
+      "s3-like",
+      "blob store",
+      "object store"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/object-storage.svg",
+      "glyph": "svg/object-storage.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "file-storage",
+    "name": "File storage",
+    "aliases": [
+      "nfs",
+      "file system",
+      "shared drive",
+      "network file share",
+      "efs-like",
+      "folder"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/file-storage.svg",
+      "glyph": "svg/file-storage.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "block-volume",
+    "name": "Block volume",
+    "aliases": [
+      "disk",
+      "ebs-like",
+      "hdd",
+      "ssd",
+      "block storage",
+      "volume"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/block-volume.svg",
+      "glyph": "svg/block-volume.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "data-warehouse",
+    "name": "Data warehouse",
+    "aliases": [
+      "warehouse",
+      "olap store",
+      "analytics store",
+      "redshift-like",
+      "bigquery-like",
+      "dwh"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/data-warehouse.svg",
+      "glyph": "svg/data-warehouse.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "search-index",
+    "name": "Search index",
+    "aliases": [
+      "elasticsearch-like",
+      "full text search",
+      "inverted index",
+      "opensearch-like",
+      "search engine",
+      "search"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/search-index.svg",
+      "glyph": "svg/search-index.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "auth-server",
+    "name": "Auth server",
+    "aliases": [
+      "identity provider",
+      "idp",
+      "oauth",
+      "sso",
+      "login service",
+      "authentication"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/auth-server.svg",
+      "glyph": "svg/auth-server.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "secrets-manager",
+    "name": "Secrets manager",
+    "aliases": [
+      "vault",
+      "key management",
+      "kms",
+      "hsm",
+      "credential store",
+      "secret store"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/secrets-manager.svg",
+      "glyph": "svg/secrets-manager.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "session-store",
+    "name": "Session store",
+    "aliases": [
+      "sessions",
+      "session cache",
+      "token store",
+      "cookie store",
+      "session"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/session-store.svg",
+      "glyph": "svg/session-store.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "encrypted",
+    "name": "Encrypted",
+    "aliases": [
+      "lock",
+      "tls",
+      "ssl",
+      "https",
+      "padlock",
+      "secure link"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/encrypted.svg",
+      "glyph": "svg/encrypted.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "spof",
+    "name": "Single point of failure",
+    "aliases": [
+      "warning",
+      "bottleneck",
+      "risk",
+      "spof",
+      "single point of failure"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/spof.svg",
+      "glyph": "svg/spof.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "metrics",
+    "name": "Metrics",
+    "aliases": [
+      "monitoring",
+      "dashboard",
+      "prometheus-like",
+      "grafana-like",
+      "kpi",
+      "graph"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/metrics.svg",
+      "glyph": "svg/metrics.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "logging",
+    "name": "Logging",
+    "aliases": [
+      "logs",
+      "log stream",
+      "audit log",
+      "log file",
+      "elk-like"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/logging.svg",
+      "glyph": "svg/logging.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "tracing",
+    "name": "Distributed tracing",
+    "aliases": [
+      "trace",
+      "spans",
+      "jaeger-like",
+      "opentelemetry-like",
+      "waterfall",
+      "apm"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/tracing.svg",
+      "glyph": "svg/tracing.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "alerting",
+    "name": "Alerting",
+    "aliases": [
+      "alarm",
+      "notification",
+      "pager",
+      "bell",
+      "oncall",
+      "alert"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/alerting.svg",
+      "glyph": "svg/alerting.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "async",
+    "name": "Async",
+    "aliases": [
+      "asynchronous",
+      "fire and forget",
+      "non-blocking",
+      "eventual",
+      "dashed link"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/async.svg",
+      "glyph": "svg/async.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "sync",
+    "name": "Sync",
+    "aliases": [
+      "synchronous",
+      "blocking",
+      "request response",
+      "rpc call",
+      "solid link"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/sync.svg",
+      "glyph": "svg/sync.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "retry",
+    "name": "Retry",
+    "aliases": [
+      "retries",
+      "backoff",
+      "reattempt",
+      "again"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/retry.svg",
+      "glyph": "svg/retry.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "timeout",
+    "name": "Timeout",
+    "aliases": [
+      "deadline",
+      "hourglass",
+      "slow",
+      "expired",
+      "ttl"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/timeout.svg",
+      "glyph": "svg/timeout.glyph.svg"
+    },
+    "batch": 1
+  },
+  {
+    "id": "circuit-breaker",
+    "name": "Circuit breaker",
+    "aliases": [
+      "breaker",
+      "trip",
+      "open circuit",
+      "hystrix-like",
+      "fail fast"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/circuit-breaker.svg",
+      "glyph": "svg/circuit-breaker.glyph.svg"
+    },
+    "batch": 1
+  }
+]

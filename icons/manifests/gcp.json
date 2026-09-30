@@ -1,0 +1,719 @@
+[
+  {
+    "id": "gcp-compute-engine",
+    "name": "Compute Engine",
+    "aliases": [
+      "compute engine",
+      "gce",
+      "vm",
+      "virtual machine",
+      "instance"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/gcp-compute-engine.svg",
+      "glyph": "svg/gcp-compute-engine.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-gke",
+    "name": "Google Kubernetes Engine",
+    "aliases": [
+      "gke",
+      "kubernetes",
+      "k8s",
+      "managed cluster",
+      "google kubernetes engine"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/gcp-gke.svg",
+      "glyph": "svg/gcp-gke.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-cloud-run",
+    "name": "Cloud Run",
+    "aliases": [
+      "cloud run",
+      "serverless container",
+      "containers",
+      "scale to zero"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/gcp-cloud-run.svg",
+      "glyph": "svg/gcp-cloud-run.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-cloud-functions",
+    "name": "Cloud Functions",
+    "aliases": [
+      "cloud functions",
+      "gcf",
+      "function",
+      "faas",
+      "serverless function"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/gcp-cloud-functions.svg",
+      "glyph": "svg/gcp-cloud-functions.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-app-engine",
+    "name": "App Engine",
+    "aliases": [
+      "app engine",
+      "gae",
+      "paas",
+      "managed app platform"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/gcp-app-engine.svg",
+      "glyph": "svg/gcp-app-engine.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-batch",
+    "name": "Batch",
+    "aliases": [
+      "batch",
+      "gcp batch",
+      "job scheduler",
+      "batch jobs",
+      "hpc"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/gcp-batch.svg",
+      "glyph": "svg/gcp-batch.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-cloud-storage",
+    "name": "Cloud Storage",
+    "aliases": [
+      "cloud storage",
+      "gcs",
+      "bucket",
+      "object storage",
+      "blob"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/gcp-cloud-storage.svg",
+      "glyph": "svg/gcp-cloud-storage.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-persistent-disk",
+    "name": "Persistent Disk",
+    "aliases": [
+      "persistent disk",
+      "pd",
+      "block storage",
+      "disk",
+      "volume"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/gcp-persistent-disk.svg",
+      "glyph": "svg/gcp-persistent-disk.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-filestore",
+    "name": "Filestore",
+    "aliases": [
+      "filestore",
+      "nfs",
+      "file share",
+      "managed nfs",
+      "shared files"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/gcp-filestore.svg",
+      "glyph": "svg/gcp-filestore.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-cloud-sql",
+    "name": "Cloud SQL",
+    "aliases": [
+      "cloud sql",
+      "managed sql",
+      "postgres",
+      "mysql",
+      "sql server",
+      "relational"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/gcp-cloud-sql.svg",
+      "glyph": "svg/gcp-cloud-sql.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-alloydb",
+    "name": "AlloyDB for PostgreSQL",
+    "aliases": [
+      "alloydb",
+      "alloy db",
+      "postgres compatible",
+      "columnar engine",
+      "postgresql"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/gcp-alloydb.svg",
+      "glyph": "svg/gcp-alloydb.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-spanner",
+    "name": "Cloud Spanner",
+    "aliases": [
+      "spanner",
+      "cloud spanner",
+      "global database",
+      "distributed sql",
+      "newsql"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/gcp-spanner.svg",
+      "glyph": "svg/gcp-spanner.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-bigtable",
+    "name": "Cloud Bigtable",
+    "aliases": [
+      "bigtable",
+      "cloud bigtable",
+      "wide column",
+      "nosql",
+      "hbase"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/gcp-bigtable.svg",
+      "glyph": "svg/gcp-bigtable.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-firestore",
+    "name": "Firestore",
+    "aliases": [
+      "firestore",
+      "cloud firestore",
+      "document database",
+      "nosql documents",
+      "realtime database"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/gcp-firestore.svg",
+      "glyph": "svg/gcp-firestore.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-memorystore",
+    "name": "Memorystore",
+    "aliases": [
+      "memorystore",
+      "managed redis",
+      "managed memcached",
+      "cache",
+      "redis"
+    ],
+    "category": "cache",
+    "files": {
+      "detailed": "svg/gcp-memorystore.svg",
+      "glyph": "svg/gcp-memorystore.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-load-balancing",
+    "name": "Cloud Load Balancing",
+    "aliases": [
+      "load balancing",
+      "cloud load balancing",
+      "global load balancer",
+      "glb",
+      "anycast",
+      "lb"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/gcp-load-balancing.svg",
+      "glyph": "svg/gcp-load-balancing.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-cloud-cdn",
+    "name": "Cloud CDN",
+    "aliases": [
+      "cloud cdn",
+      "cdn",
+      "edge cache",
+      "content delivery",
+      "pop"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/gcp-cloud-cdn.svg",
+      "glyph": "svg/gcp-cloud-cdn.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-cloud-dns",
+    "name": "Cloud DNS",
+    "aliases": [
+      "cloud dns",
+      "dns",
+      "managed dns",
+      "name server",
+      "zone"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/gcp-cloud-dns.svg",
+      "glyph": "svg/gcp-cloud-dns.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-vpc",
+    "name": "Virtual Private Cloud",
+    "aliases": [
+      "vpc",
+      "virtual private cloud",
+      "private network",
+      "subnet",
+      "network boundary"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/gcp-vpc.svg",
+      "glyph": "svg/gcp-vpc.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-cloud-armor",
+    "name": "Cloud Armor",
+    "aliases": [
+      "cloud armor",
+      "waf",
+      "ddos",
+      "web application firewall",
+      "security policy"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/gcp-cloud-armor.svg",
+      "glyph": "svg/gcp-cloud-armor.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-cloud-nat",
+    "name": "Cloud NAT",
+    "aliases": [
+      "cloud nat",
+      "nat",
+      "nat gateway",
+      "egress",
+      "address translation"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/gcp-cloud-nat.svg",
+      "glyph": "svg/gcp-cloud-nat.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-api-gateway",
+    "name": "API Gateway",
+    "aliases": [
+      "api gateway",
+      "gateway",
+      "apis",
+      "api proxy",
+      "rest gateway"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/gcp-api-gateway.svg",
+      "glyph": "svg/gcp-api-gateway.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-apigee",
+    "name": "Apigee",
+    "aliases": [
+      "apigee",
+      "api management",
+      "api platform",
+      "developer portal",
+      "api analytics"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/gcp-apigee.svg",
+      "glyph": "svg/gcp-apigee.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-pubsub",
+    "name": "Pub/Sub",
+    "aliases": [
+      "pubsub",
+      "pub/sub",
+      "pub sub",
+      "topic",
+      "subscription",
+      "messaging"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/gcp-pubsub.svg",
+      "glyph": "svg/gcp-pubsub.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-cloud-tasks",
+    "name": "Cloud Tasks",
+    "aliases": [
+      "cloud tasks",
+      "task queue",
+      "async tasks",
+      "rate limited queue",
+      "dispatch"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/gcp-cloud-tasks.svg",
+      "glyph": "svg/gcp-cloud-tasks.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-eventarc",
+    "name": "Eventarc",
+    "aliases": [
+      "eventarc",
+      "event routing",
+      "event trigger",
+      "event bus",
+      "eventing"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/gcp-eventarc.svg",
+      "glyph": "svg/gcp-eventarc.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-workflows",
+    "name": "Workflows",
+    "aliases": [
+      "workflows",
+      "google workflows",
+      "orchestration",
+      "serverless workflow",
+      "step function"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/gcp-workflows.svg",
+      "glyph": "svg/gcp-workflows.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-bigquery",
+    "name": "BigQuery",
+    "aliases": [
+      "bigquery",
+      "big query",
+      "data warehouse",
+      "analytics warehouse",
+      "olap",
+      "bq"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/gcp-bigquery.svg",
+      "glyph": "svg/gcp-bigquery.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-dataflow",
+    "name": "Dataflow",
+    "aliases": [
+      "dataflow",
+      "stream processing",
+      "batch processing",
+      "apache beam",
+      "pipeline",
+      "etl"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/gcp-dataflow.svg",
+      "glyph": "svg/gcp-dataflow.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-dataproc",
+    "name": "Dataproc",
+    "aliases": [
+      "dataproc",
+      "hadoop",
+      "spark",
+      "managed cluster",
+      "big data cluster"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/gcp-dataproc.svg",
+      "glyph": "svg/gcp-dataproc.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-composer",
+    "name": "Cloud Composer",
+    "aliases": [
+      "composer",
+      "cloud composer",
+      "airflow",
+      "apache airflow",
+      "dag",
+      "workflow scheduler"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/gcp-composer.svg",
+      "glyph": "svg/gcp-composer.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-looker",
+    "name": "Looker",
+    "aliases": [
+      "looker",
+      "business intelligence",
+      "bi",
+      "dashboards",
+      "data studio",
+      "analytics dashboard"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/gcp-looker.svg",
+      "glyph": "svg/gcp-looker.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-vertex-ai",
+    "name": "Vertex AI",
+    "aliases": [
+      "vertex ai",
+      "vertex",
+      "machine learning",
+      "ml platform",
+      "ai platform",
+      "neural network",
+      "model training"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/gcp-vertex-ai.svg",
+      "glyph": "svg/gcp-vertex-ai.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-iam",
+    "name": "Identity and Access Management",
+    "aliases": [
+      "iam",
+      "identity and access management",
+      "roles",
+      "permissions",
+      "access control",
+      "service account"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/gcp-iam.svg",
+      "glyph": "svg/gcp-iam.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-secret-manager",
+    "name": "Secret Manager",
+    "aliases": [
+      "secret manager",
+      "secrets",
+      "vault",
+      "credentials store",
+      "api keys",
+      "secret versions"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/gcp-secret-manager.svg",
+      "glyph": "svg/gcp-secret-manager.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-kms",
+    "name": "Cloud Key Management Service",
+    "aliases": [
+      "kms",
+      "cloud kms",
+      "key management",
+      "encryption keys",
+      "key rotation",
+      "cmek"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/gcp-kms.svg",
+      "glyph": "svg/gcp-kms.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-cloud-logging",
+    "name": "Cloud Logging",
+    "aliases": [
+      "cloud logging",
+      "logging",
+      "logs",
+      "log explorer",
+      "stackdriver logging",
+      "log entries"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/gcp-cloud-logging.svg",
+      "glyph": "svg/gcp-cloud-logging.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-cloud-monitoring",
+    "name": "Cloud Monitoring",
+    "aliases": [
+      "cloud monitoring",
+      "monitoring",
+      "metrics",
+      "alerting",
+      "slo",
+      "stackdriver monitoring",
+      "uptime"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/gcp-cloud-monitoring.svg",
+      "glyph": "svg/gcp-cloud-monitoring.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  },
+  {
+    "id": "gcp-cloud-trace",
+    "name": "Cloud Trace",
+    "aliases": [
+      "cloud trace",
+      "trace",
+      "distributed tracing",
+      "spans",
+      "latency",
+      "waterfall",
+      "stackdriver trace"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/gcp-cloud-trace.svg",
+      "glyph": "svg/gcp-cloud-trace.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "gcp"
+  }
+]

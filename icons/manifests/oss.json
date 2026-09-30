@@ -1,0 +1,937 @@
+[
+  {
+    "id": "kafka",
+    "name": "Kafka",
+    "aliases": [
+      "kafka broker",
+      "event streaming",
+      "commit log",
+      "partitions",
+      "event log"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/kafka.svg",
+      "glyph": "svg/kafka.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "rabbitmq",
+    "name": "RabbitMQ",
+    "aliases": [
+      "rabbit",
+      "amqp broker",
+      "exchange",
+      "message broker",
+      "queues routing"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/rabbitmq.svg",
+      "glyph": "svg/rabbitmq.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "nats",
+    "name": "NATS",
+    "aliases": [
+      "nats messaging",
+      "subject pub sub",
+      "lightweight messaging",
+      "nats server"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/nats.svg",
+      "glyph": "svg/nats.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "pulsar",
+    "name": "Pulsar",
+    "aliases": [
+      "apache pulsar",
+      "bookkeeper",
+      "segment storage",
+      "pub sub messaging",
+      "tiered broker"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/pulsar.svg",
+      "glyph": "svg/pulsar.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "redis",
+    "name": "Redis",
+    "aliases": [
+      "redis cache",
+      "in memory store",
+      "key value cache",
+      "redis server",
+      "memory data structure"
+    ],
+    "category": "cache",
+    "files": {
+      "detailed": "svg/redis.svg",
+      "glyph": "svg/redis.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "memcached",
+    "name": "Memcached",
+    "aliases": [
+      "memcache",
+      "slab cache",
+      "distributed cache",
+      "lru cache",
+      "object cache"
+    ],
+    "category": "cache",
+    "files": {
+      "detailed": "svg/memcached.svg",
+      "glyph": "svg/memcached.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "postgresql",
+    "name": "PostgreSQL",
+    "aliases": [
+      "postgres",
+      "pg",
+      "relational database",
+      "postgresql db",
+      "sql database engine"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/postgresql.svg",
+      "glyph": "svg/postgresql.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "mysql",
+    "name": "MySQL",
+    "aliases": [
+      "my sql",
+      "mysql server",
+      "innodb",
+      "relational database",
+      "oracle mysql"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/mysql.svg",
+      "glyph": "svg/mysql.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "mariadb",
+    "name": "MariaDB",
+    "aliases": [
+      "maria db",
+      "galera cluster",
+      "mysql fork",
+      "multi master",
+      "relational database"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/mariadb.svg",
+      "glyph": "svg/mariadb.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "sqlite",
+    "name": "SQLite",
+    "aliases": [
+      "sqlite3",
+      "embedded database",
+      "file database",
+      "single file db",
+      "local database"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/sqlite.svg",
+      "glyph": "svg/sqlite.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "mongodb",
+    "name": "MongoDB",
+    "aliases": [
+      "mongo",
+      "document database",
+      "bson",
+      "nosql document store",
+      "mongodb atlas"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/mongodb.svg",
+      "glyph": "svg/mongodb.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "cassandra",
+    "name": "Cassandra",
+    "aliases": [
+      "apache cassandra",
+      "wide column store",
+      "token ring",
+      "ring cluster",
+      "nosql cluster"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/cassandra.svg",
+      "glyph": "svg/cassandra.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "scylladb",
+    "name": "ScyllaDB",
+    "aliases": [
+      "scylla",
+      "shard per core",
+      "cassandra compatible",
+      "low latency nosql",
+      "wide column"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/scylladb.svg",
+      "glyph": "svg/scylladb.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "cockroachdb",
+    "name": "CockroachDB",
+    "aliases": [
+      "cockroach",
+      "cockroach db",
+      "distributed sql",
+      "geo distributed database",
+      "newsql"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/cockroachdb.svg",
+      "glyph": "svg/cockroachdb.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "neo4j",
+    "name": "Neo4j",
+    "aliases": [
+      "neo 4j",
+      "graph database",
+      "cypher",
+      "property graph",
+      "graph store"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/neo4j.svg",
+      "glyph": "svg/neo4j.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "influxdb",
+    "name": "InfluxDB",
+    "aliases": [
+      "influx",
+      "influx db",
+      "time series database",
+      "tsdb",
+      "flux queries"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/influxdb.svg",
+      "glyph": "svg/influxdb.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "clickhouse",
+    "name": "ClickHouse",
+    "aliases": [
+      "click house",
+      "columnar database",
+      "olap database",
+      "column store",
+      "analytics database"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/clickhouse.svg",
+      "glyph": "svg/clickhouse.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "snowflake",
+    "name": "Snowflake",
+    "aliases": [
+      "snowflake data cloud",
+      "cloud data warehouse",
+      "virtual warehouse",
+      "storage compute separation",
+      "data cloud"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/snowflake.svg",
+      "glyph": "svg/snowflake.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "elasticsearch",
+    "name": "Elasticsearch",
+    "aliases": [
+      "elastic",
+      "elastic search",
+      "es cluster",
+      "inverted index",
+      "full text search"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/elasticsearch.svg",
+      "glyph": "svg/elasticsearch.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "opensearch",
+    "name": "OpenSearch",
+    "aliases": [
+      "open search",
+      "opensearch cluster",
+      "search engine",
+      "opensearch dashboards",
+      "log search"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/opensearch.svg",
+      "glyph": "svg/opensearch.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "nginx",
+    "name": "Nginx",
+    "aliases": [
+      "engine x",
+      "nginx server",
+      "reverse proxy",
+      "web server",
+      "static files proxy"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/nginx.svg",
+      "glyph": "svg/nginx.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "haproxy",
+    "name": "HAProxy",
+    "aliases": [
+      "ha proxy",
+      "load balancer",
+      "tcp proxy",
+      "layer 4 balancer",
+      "health checked balancer"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/haproxy.svg",
+      "glyph": "svg/haproxy.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "envoy",
+    "name": "Envoy",
+    "aliases": [
+      "envoy proxy",
+      "l7 proxy",
+      "sidecar proxy",
+      "xds",
+      "filter chain proxy"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/envoy.svg",
+      "glyph": "svg/envoy.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "traefik",
+    "name": "Traefik",
+    "aliases": [
+      "traefik proxy",
+      "dynamic router",
+      "edge router",
+      "service discovery proxy",
+      "ingress router"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/traefik.svg",
+      "glyph": "svg/traefik.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "kong-gateway",
+    "name": "Kong Gateway",
+    "aliases": [
+      "kong",
+      "kong api gateway",
+      "api gateway plugins",
+      "plugin gateway",
+      "apisix style gateway"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/kong-gateway.svg",
+      "glyph": "svg/kong-gateway.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "istio",
+    "name": "Istio",
+    "aliases": [
+      "istio mesh",
+      "service mesh",
+      "envoy sidecars",
+      "control plane mesh",
+      "mtls mesh"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/istio.svg",
+      "glyph": "svg/istio.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "cloudflare",
+    "name": "Cloudflare",
+    "aliases": [
+      "cloudflare cdn",
+      "edge network",
+      "ddos protection",
+      "dns cdn",
+      "cloudflare workers"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/cloudflare.svg",
+      "glyph": "svg/cloudflare.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "kubernetes",
+    "name": "Kubernetes",
+    "aliases": [
+      "k8s",
+      "kube",
+      "container orchestrator",
+      "control plane",
+      "kubernetes cluster"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/kubernetes.svg",
+      "glyph": "svg/kubernetes.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "docker",
+    "name": "Docker",
+    "aliases": [
+      "docker engine",
+      "container runtime",
+      "docker container",
+      "dockerfile",
+      "container image"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/docker.svg",
+      "glyph": "svg/docker.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "terraform",
+    "name": "Terraform",
+    "aliases": [
+      "terraform iac",
+      "infrastructure as code",
+      "hcl",
+      "iac plan",
+      "infra provisioning"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/terraform.svg",
+      "glyph": "svg/terraform.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "ansible",
+    "name": "Ansible",
+    "aliases": [
+      "ansible playbook",
+      "configuration management",
+      "playbook automation",
+      "agentless config",
+      "yaml playbooks"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/ansible.svg",
+      "glyph": "svg/ansible.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "jenkins",
+    "name": "Jenkins",
+    "aliases": [
+      "jenkins ci",
+      "ci server",
+      "build pipeline",
+      "jenkinsfile",
+      "continuous integration"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/jenkins.svg",
+      "glyph": "svg/jenkins.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "github",
+    "name": "GitHub",
+    "aliases": [
+      "git hub",
+      "code hosting",
+      "pull requests",
+      "git repository",
+      "source control host"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/github.svg",
+      "glyph": "svg/github.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "gitlab",
+    "name": "GitLab",
+    "aliases": [
+      "git lab",
+      "devops platform",
+      "gitlab ci",
+      "merge requests",
+      "ci cd platform"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/gitlab.svg",
+      "glyph": "svg/gitlab.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "vercel",
+    "name": "Vercel",
+    "aliases": [
+      "vercel platform",
+      "frontend cloud",
+      "preview deployments",
+      "edge functions host",
+      "jamstack hosting"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/vercel.svg",
+      "glyph": "svg/vercel.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "spark",
+    "name": "Spark",
+    "aliases": [
+      "apache spark",
+      "spark cluster",
+      "distributed compute engine",
+      "rdd",
+      "batch analytics"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/spark.svg",
+      "glyph": "svg/spark.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "flink",
+    "name": "Flink",
+    "aliases": [
+      "apache flink",
+      "stream processing",
+      "stateful streams",
+      "event time windows",
+      "streaming engine"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/flink.svg",
+      "glyph": "svg/flink.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "trino",
+    "name": "Trino",
+    "aliases": [
+      "presto",
+      "trino sql",
+      "federated queries",
+      "distributed sql engine",
+      "query federation"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/trino.svg",
+      "glyph": "svg/trino.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "airflow",
+    "name": "Airflow",
+    "aliases": [
+      "apache airflow",
+      "workflow scheduler",
+      "dag scheduler",
+      "data orchestrator",
+      "pipeline scheduler"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/airflow.svg",
+      "glyph": "svg/airflow.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "minio",
+    "name": "MinIO",
+    "aliases": [
+      "min io",
+      "s3 compatible storage",
+      "object bucket",
+      "erasure coding",
+      "object store"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/minio.svg",
+      "glyph": "svg/minio.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "vault",
+    "name": "Vault",
+    "aliases": [
+      "hashicorp vault",
+      "secrets vault",
+      "secret management",
+      "key vault door",
+      "dynamic secrets"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/vault.svg",
+      "glyph": "svg/vault.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "keycloak",
+    "name": "Keycloak",
+    "aliases": [
+      "key cloak",
+      "identity provider",
+      "sso server",
+      "oidc provider",
+      "iam server"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/keycloak.svg",
+      "glyph": "svg/keycloak.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "consul",
+    "name": "Consul",
+    "aliases": [
+      "hashicorp consul",
+      "service discovery",
+      "service registry",
+      "health checked catalog",
+      "consul mesh"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/consul.svg",
+      "glyph": "svg/consul.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "etcd",
+    "name": "etcd",
+    "aliases": [
+      "etcd cluster",
+      "raft key value",
+      "kubernetes datastore",
+      "consensus kv store",
+      "distributed key value"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/etcd.svg",
+      "glyph": "svg/etcd.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "zookeeper",
+    "name": "ZooKeeper",
+    "aliases": [
+      "apache zookeeper",
+      "zk ensemble",
+      "znode tree",
+      "coordination service",
+      "distributed coordination"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/zookeeper.svg",
+      "glyph": "svg/zookeeper.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "prometheus",
+    "name": "Prometheus",
+    "aliases": [
+      "prometheus server",
+      "metrics scraper",
+      "promql",
+      "pull metrics",
+      "time series monitoring"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/prometheus.svg",
+      "glyph": "svg/prometheus.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "grafana",
+    "name": "Grafana",
+    "aliases": [
+      "grafana dashboards",
+      "dashboard",
+      "visualization dashboards",
+      "panels",
+      "observability dashboard"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/grafana.svg",
+      "glyph": "svg/grafana.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "jaeger",
+    "name": "Jaeger",
+    "aliases": [
+      "jaeger tracing",
+      "distributed tracing",
+      "trace waterfall",
+      "spans",
+      "opentracing"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/jaeger.svg",
+      "glyph": "svg/jaeger.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "loki",
+    "name": "Loki",
+    "aliases": [
+      "grafana loki",
+      "log aggregation",
+      "log streams",
+      "logql",
+      "label indexed logs"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/loki.svg",
+      "glyph": "svg/loki.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "sentry",
+    "name": "Sentry",
+    "aliases": [
+      "sentry error tracking",
+      "error monitoring",
+      "exception tracking",
+      "crash reporting",
+      "stack traces"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/sentry.svg",
+      "glyph": "svg/sentry.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "stripe",
+    "name": "Stripe",
+    "aliases": [
+      "stripe payments",
+      "payment processor",
+      "card payments",
+      "stripe api",
+      "billing api"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/stripe.svg",
+      "glyph": "svg/stripe.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  },
+  {
+    "id": "twilio",
+    "name": "Twilio",
+    "aliases": [
+      "twilio api",
+      "sms api",
+      "voice messaging api",
+      "communications platform",
+      "programmable messaging"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/twilio.svg",
+      "glyph": "svg/twilio.glyph.svg"
+    },
+    "batch": 3,
+    "vendor": "oss"
+  }
+]

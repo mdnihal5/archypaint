@@ -1,0 +1,716 @@
+[
+  {
+    "id": "azure-virtual-machines",
+    "name": "Azure Virtual Machines",
+    "aliases": [
+      "azure vm",
+      "virtual machine",
+      "vm",
+      "iaas"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/azure-virtual-machines.svg",
+      "glyph": "svg/azure-virtual-machines.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-aks",
+    "name": "Azure Kubernetes Service",
+    "aliases": [
+      "aks",
+      "azure kubernetes",
+      "managed kubernetes",
+      "k8s cluster"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/azure-aks.svg",
+      "glyph": "svg/azure-aks.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-functions",
+    "name": "Azure Functions",
+    "aliases": [
+      "functions",
+      "azure function",
+      "serverless",
+      "faas"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/azure-functions.svg",
+      "glyph": "svg/azure-functions.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-app-service",
+    "name": "Azure App Service",
+    "aliases": [
+      "app service",
+      "web app",
+      "paas web hosting",
+      "azure web apps"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/azure-app-service.svg",
+      "glyph": "svg/azure-app-service.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-container-apps",
+    "name": "Azure Container Apps",
+    "aliases": [
+      "container apps",
+      "aca",
+      "serverless containers",
+      "autoscaling containers"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/azure-container-apps.svg",
+      "glyph": "svg/azure-container-apps.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-container-instances",
+    "name": "Azure Container Instances",
+    "aliases": [
+      "container instances",
+      "aci",
+      "single container",
+      "on-demand container"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/azure-container-instances.svg",
+      "glyph": "svg/azure-container-instances.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-batch",
+    "name": "Azure Batch",
+    "aliases": [
+      "batch",
+      "hpc",
+      "parallel jobs",
+      "job scheduling"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/azure-batch.svg",
+      "glyph": "svg/azure-batch.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-logic-apps",
+    "name": "Azure Logic Apps",
+    "aliases": [
+      "logic apps",
+      "workflow",
+      "low-code workflow",
+      "integration workflow"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/azure-logic-apps.svg",
+      "glyph": "svg/azure-logic-apps.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-devops",
+    "name": "Azure DevOps",
+    "aliases": [
+      "devops",
+      "azure pipelines",
+      "ci/cd",
+      "boards and pipelines"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/azure-devops.svg",
+      "glyph": "svg/azure-devops.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-blob-storage",
+    "name": "Azure Blob Storage",
+    "aliases": [
+      "blob storage",
+      "blobs",
+      "object storage azure",
+      "unstructured storage"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/azure-blob-storage.svg",
+      "glyph": "svg/azure-blob-storage.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-files",
+    "name": "Azure Files",
+    "aliases": [
+      "azure file share",
+      "smb share",
+      "file shares",
+      "cloud file storage"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/azure-files.svg",
+      "glyph": "svg/azure-files.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-disk",
+    "name": "Azure Managed Disks",
+    "aliases": [
+      "managed disks",
+      "azure disk",
+      "block storage azure",
+      "vhd"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/azure-disk.svg",
+      "glyph": "svg/azure-disk.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-queue-storage",
+    "name": "Azure Queue Storage",
+    "aliases": [
+      "queue storage",
+      "storage queue",
+      "simple queue",
+      "azure queues"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/azure-queue-storage.svg",
+      "glyph": "svg/azure-queue-storage.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-table-storage",
+    "name": "Azure Table Storage",
+    "aliases": [
+      "table storage",
+      "azure tables",
+      "nosql key-value",
+      "key attribute store"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/azure-table-storage.svg",
+      "glyph": "svg/azure-table-storage.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-sql-database",
+    "name": "Azure SQL Database",
+    "aliases": [
+      "sql database",
+      "azure sql",
+      "managed sql server",
+      "relational database azure"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/azure-sql-database.svg",
+      "glyph": "svg/azure-sql-database.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-cosmos-db",
+    "name": "Azure Cosmos DB",
+    "aliases": [
+      "cosmos db",
+      "cosmosdb",
+      "globally distributed database",
+      "multi-model nosql"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/azure-cosmos-db.svg",
+      "glyph": "svg/azure-cosmos-db.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-database-postgresql",
+    "name": "Azure Database for PostgreSQL",
+    "aliases": [
+      "postgresql",
+      "postgres",
+      "azure postgres",
+      "flexible server postgres"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/azure-database-postgresql.svg",
+      "glyph": "svg/azure-database-postgresql.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-database-mysql",
+    "name": "Azure Database for MySQL",
+    "aliases": [
+      "mysql",
+      "azure mysql",
+      "flexible server mysql",
+      "managed mysql"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/azure-database-mysql.svg",
+      "glyph": "svg/azure-database-mysql.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-synapse",
+    "name": "Azure Synapse Analytics",
+    "aliases": [
+      "synapse",
+      "synapse analytics",
+      "data warehouse azure",
+      "sql data warehouse"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/azure-synapse.svg",
+      "glyph": "svg/azure-synapse.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-cache-redis",
+    "name": "Azure Cache for Redis",
+    "aliases": [
+      "redis",
+      "azure redis",
+      "managed redis",
+      "in-memory cache azure"
+    ],
+    "category": "cache",
+    "files": {
+      "detailed": "svg/azure-cache-redis.svg",
+      "glyph": "svg/azure-cache-redis.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-load-balancer",
+    "name": "Azure Load Balancer",
+    "aliases": [
+      "load balancer",
+      "azure lb",
+      "layer 4 load balancer",
+      "round robin"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/azure-load-balancer.svg",
+      "glyph": "svg/azure-load-balancer.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-application-gateway",
+    "name": "Azure Application Gateway",
+    "aliases": [
+      "application gateway",
+      "app gateway",
+      "layer 7 load balancer",
+      "waf gateway"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/azure-application-gateway.svg",
+      "glyph": "svg/azure-application-gateway.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-front-door",
+    "name": "Azure Front Door",
+    "aliases": [
+      "front door",
+      "global load balancer",
+      "edge router",
+      "azure afd"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/azure-front-door.svg",
+      "glyph": "svg/azure-front-door.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-cdn",
+    "name": "Azure CDN",
+    "aliases": [
+      "cdn",
+      "content delivery network",
+      "edge caching",
+      "azure content delivery"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/azure-cdn.svg",
+      "glyph": "svg/azure-cdn.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-dns",
+    "name": "Azure DNS",
+    "aliases": [
+      "dns",
+      "azure dns zones",
+      "domain name system",
+      "name resolution"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/azure-dns.svg",
+      "glyph": "svg/azure-dns.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-vnet",
+    "name": "Azure Virtual Network",
+    "aliases": [
+      "virtual network",
+      "vnet",
+      "private network azure",
+      "subnets"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/azure-vnet.svg",
+      "glyph": "svg/azure-vnet.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-api-management",
+    "name": "Azure API Management",
+    "aliases": [
+      "api management",
+      "apim",
+      "api gateway azure",
+      "developer portal"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/azure-api-management.svg",
+      "glyph": "svg/azure-api-management.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-expressroute",
+    "name": "Azure ExpressRoute",
+    "aliases": [
+      "expressroute",
+      "express route",
+      "private connectivity",
+      "dedicated circuit"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/azure-expressroute.svg",
+      "glyph": "svg/azure-expressroute.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-firewall",
+    "name": "Azure Firewall",
+    "aliases": [
+      "firewall",
+      "azure fw",
+      "network firewall",
+      "packet filtering"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/azure-firewall.svg",
+      "glyph": "svg/azure-firewall.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-entra-id",
+    "name": "Microsoft Entra ID",
+    "aliases": [
+      "entra id",
+      "azure active directory",
+      "azure ad",
+      "identity directory"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/azure-entra-id.svg",
+      "glyph": "svg/azure-entra-id.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-key-vault",
+    "name": "Azure Key Vault",
+    "aliases": [
+      "key vault",
+      "secrets vault",
+      "keys and certificates",
+      "hsm vault"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/azure-key-vault.svg",
+      "glyph": "svg/azure-key-vault.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-sentinel",
+    "name": "Microsoft Sentinel",
+    "aliases": [
+      "sentinel",
+      "azure sentinel",
+      "siem",
+      "security monitoring"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/azure-sentinel.svg",
+      "glyph": "svg/azure-sentinel.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-service-bus",
+    "name": "Azure Service Bus",
+    "aliases": [
+      "service bus",
+      "servicebus",
+      "enterprise message broker",
+      "topics and queues"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/azure-service-bus.svg",
+      "glyph": "svg/azure-service-bus.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-event-hubs",
+    "name": "Azure Event Hubs",
+    "aliases": [
+      "event hubs",
+      "eventhubs",
+      "event ingestion",
+      "kafka-compatible streaming"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/azure-event-hubs.svg",
+      "glyph": "svg/azure-event-hubs.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-event-grid",
+    "name": "Azure Event Grid",
+    "aliases": [
+      "event grid",
+      "eventgrid",
+      "event routing",
+      "reactive events"
+    ],
+    "category": "queue",
+    "files": {
+      "detailed": "svg/azure-event-grid.svg",
+      "glyph": "svg/azure-event-grid.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-data-factory",
+    "name": "Azure Data Factory",
+    "aliases": [
+      "data factory",
+      "adf",
+      "etl pipelines",
+      "data integration"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/azure-data-factory.svg",
+      "glyph": "svg/azure-data-factory.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-databricks",
+    "name": "Azure Databricks",
+    "aliases": [
+      "databricks",
+      "lakehouse",
+      "spark analytics",
+      "delta lake"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/azure-databricks.svg",
+      "glyph": "svg/azure-databricks.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-stream-analytics",
+    "name": "Azure Stream Analytics",
+    "aliases": [
+      "stream analytics",
+      "asa",
+      "real-time analytics",
+      "streaming queries"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/azure-stream-analytics.svg",
+      "glyph": "svg/azure-stream-analytics.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-machine-learning",
+    "name": "Azure Machine Learning",
+    "aliases": [
+      "azure ml",
+      "machine learning",
+      "ml studio",
+      "model training"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/azure-machine-learning.svg",
+      "glyph": "svg/azure-machine-learning.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-openai-service",
+    "name": "Azure OpenAI Service",
+    "aliases": [
+      "azure openai",
+      "openai service",
+      "llm endpoint",
+      "gpt models"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/azure-openai-service.svg",
+      "glyph": "svg/azure-openai-service.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-monitor",
+    "name": "Azure Monitor",
+    "aliases": [
+      "monitor",
+      "azure monitor metrics",
+      "metrics and alerts",
+      "observability azure"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/azure-monitor.svg",
+      "glyph": "svg/azure-monitor.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  },
+  {
+    "id": "azure-application-insights",
+    "name": "Azure Application Insights",
+    "aliases": [
+      "application insights",
+      "app insights",
+      "apm",
+      "distributed tracing azure"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/azure-application-insights.svg",
+      "glyph": "svg/azure-application-insights.glyph.svg"
+    },
+    "batch": 5,
+    "vendor": "azure"
+  }
+]

@@ -1,0 +1,1028 @@
+[
+  {
+    "id": "sse-endpoint",
+    "name": "SSE endpoint",
+    "aliases": [
+      "server-sent events",
+      "event stream",
+      "one-way stream",
+      "eventsource"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/sse-endpoint.svg",
+      "glyph": "svg/sse-endpoint.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "long-polling",
+    "name": "Long polling",
+    "aliases": [
+      "comet",
+      "hanging request",
+      "poll",
+      "held connection"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/long-polling.svg",
+      "glyph": "svg/long-polling.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "push-notification-service",
+    "name": "Push notification service",
+    "aliases": [
+      "push",
+      "notifications",
+      "fcm",
+      "apns",
+      "alerts to devices"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/push-notification-service.svg",
+      "glyph": "svg/push-notification-service.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "webhook",
+    "name": "Webhook",
+    "aliases": [
+      "callback",
+      "http callback",
+      "event hook",
+      "reverse api"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/webhook.svg",
+      "glyph": "svg/webhook.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "webrtc",
+    "name": "WebRTC peers",
+    "aliases": [
+      "p2p",
+      "peer to peer",
+      "video call",
+      "peer connection"
+    ],
+    "category": "client",
+    "files": {
+      "detailed": "svg/webrtc.svg",
+      "glyph": "svg/webrtc.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "stream-processor",
+    "name": "Stream processor",
+    "aliases": [
+      "flink",
+      "stream processing",
+      "real-time processing",
+      "event processor"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/stream-processor.svg",
+      "glyph": "svg/stream-processor.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "batch-processor",
+    "name": "Batch processor",
+    "aliases": [
+      "batch",
+      "bulk processing",
+      "spark batch",
+      "offline processing"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/batch-processor.svg",
+      "glyph": "svg/batch-processor.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "etl-pipeline",
+    "name": "ETL pipeline",
+    "aliases": [
+      "etl",
+      "elt",
+      "extract transform load",
+      "data pipeline"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/etl-pipeline.svg",
+      "glyph": "svg/etl-pipeline.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "cdc-connector",
+    "name": "CDC connector",
+    "aliases": [
+      "change data capture",
+      "debezium",
+      "wal tail",
+      "binlog"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/cdc-connector.svg",
+      "glyph": "svg/cdc-connector.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "workflow-orchestrator",
+    "name": "Workflow orchestrator",
+    "aliases": [
+      "dag",
+      "airflow",
+      "scheduler dag",
+      "task graph",
+      "orchestration"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/workflow-orchestrator.svg",
+      "glyph": "svg/workflow-orchestrator.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "data-lake",
+    "name": "Data lake",
+    "aliases": [
+      "lake",
+      "raw storage",
+      "s3 lake",
+      "object lake"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/data-lake.svg",
+      "glyph": "svg/data-lake.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "data-lakehouse",
+    "name": "Data lakehouse",
+    "aliases": [
+      "lakehouse",
+      "delta lake",
+      "iceberg",
+      "hudi",
+      "lake plus warehouse"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/data-lakehouse.svg",
+      "glyph": "svg/data-lakehouse.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "feature-store",
+    "name": "Feature store",
+    "aliases": [
+      "ml features",
+      "online store",
+      "feast",
+      "feature platform",
+      "embeddings store"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/feature-store.svg",
+      "glyph": "svg/feature-store.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "consensus-node",
+    "name": "Consensus group",
+    "aliases": [
+      "raft",
+      "paxos",
+      "quorum",
+      "agreement",
+      "consensus"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/consensus-node.svg",
+      "glyph": "svg/consensus-node.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "leader-node",
+    "name": "Leader node",
+    "aliases": [
+      "primary node",
+      "raft leader",
+      "master node",
+      "coordinator"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/leader-node.svg",
+      "glyph": "svg/leader-node.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "follower-node",
+    "name": "Follower node",
+    "aliases": [
+      "replica node",
+      "raft follower",
+      "standby node",
+      "secondary node"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/follower-node.svg",
+      "glyph": "svg/follower-node.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "lock-service",
+    "name": "Lock service",
+    "aliases": [
+      "distributed lock",
+      "mutex",
+      "zookeeper lock",
+      "lease",
+      "redlock"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/lock-service.svg",
+      "glyph": "svg/lock-service.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "leader-election",
+    "name": "Leader election",
+    "aliases": [
+      "election",
+      "voting",
+      "elect leader",
+      "failover election"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/leader-election.svg",
+      "glyph": "svg/leader-election.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "service-registry",
+    "name": "Service registry",
+    "aliases": [
+      "service discovery",
+      "consul",
+      "eureka",
+      "directory",
+      "name service"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/service-registry.svg",
+      "glyph": "svg/service-registry.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "gossip-cluster",
+    "name": "Gossip cluster",
+    "aliases": [
+      "gossip protocol",
+      "membership",
+      "swim",
+      "peer mesh",
+      "epidemic"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/gossip-cluster.svg",
+      "glyph": "svg/gossip-cluster.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "oauth-provider",
+    "name": "OAuth provider",
+    "aliases": [
+      "oidc",
+      "authorization server",
+      "delegated auth",
+      "openid connect",
+      "idp"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/oauth-provider.svg",
+      "glyph": "svg/oauth-provider.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "sso",
+    "name": "Single sign-on",
+    "aliases": [
+      "single sign on",
+      "saml",
+      "federated login",
+      "one login",
+      "identity provider"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/sso.svg",
+      "glyph": "svg/sso.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "kms-hsm",
+    "name": "KMS / HSM",
+    "aliases": [
+      "key management",
+      "hardware security module",
+      "keystore",
+      "crypto module",
+      "kms"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/kms-hsm.svg",
+      "glyph": "svg/kms-hsm.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "certificate-authority",
+    "name": "Certificate authority",
+    "aliases": [
+      "ca",
+      "pki",
+      "tls certificate",
+      "x509",
+      "cert issuer"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/certificate-authority.svg",
+      "glyph": "svg/certificate-authority.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "access-token",
+    "name": "Access token",
+    "aliases": [
+      "jwt",
+      "bearer token",
+      "session token",
+      "credential",
+      "ticket"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/access-token.svg",
+      "glyph": "svg/access-token.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "api-key",
+    "name": "API key",
+    "aliases": [
+      "apikey",
+      "secret key",
+      "developer key",
+      "access key",
+      "client secret"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/api-key.svg",
+      "glyph": "svg/api-key.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "mfa",
+    "name": "Multi-factor auth",
+    "aliases": [
+      "2fa",
+      "otp",
+      "two factor",
+      "totp",
+      "second factor"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/mfa.svg",
+      "glyph": "svg/mfa.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "rbac",
+    "name": "Role-based access",
+    "aliases": [
+      "roles",
+      "permissions",
+      "authorization",
+      "iam roles",
+      "acl"
+    ],
+    "category": "security",
+    "files": {
+      "detailed": "svg/rbac.svg",
+      "glyph": "svg/rbac.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "dashboard",
+    "name": "Dashboard",
+    "aliases": [
+      "grafana",
+      "charts",
+      "monitoring dashboard",
+      "panels",
+      "metrics view"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/dashboard.svg",
+      "glyph": "svg/dashboard.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "health-check",
+    "name": "Health check",
+    "aliases": [
+      "heartbeat",
+      "liveness probe",
+      "readiness probe",
+      "uptime",
+      "ping check"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/health-check.svg",
+      "glyph": "svg/health-check.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "audit-log",
+    "name": "Audit log",
+    "aliases": [
+      "audit trail",
+      "event log",
+      "ledger",
+      "activity log",
+      "compliance log"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/audit-log.svg",
+      "glyph": "svg/audit-log.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "slo-monitor",
+    "name": "SLO monitor",
+    "aliases": [
+      "sli",
+      "error budget",
+      "service level objective",
+      "gauge",
+      "reliability target"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/slo-monitor.svg",
+      "glyph": "svg/slo-monitor.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "error-tracker",
+    "name": "Error tracker",
+    "aliases": [
+      "bug tracker",
+      "exception tracking",
+      "crash reporting",
+      "sentry",
+      "issue tracker"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/error-tracker.svg",
+      "glyph": "svg/error-tracker.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "ci-cd-pipeline",
+    "name": "CI/CD pipeline",
+    "aliases": [
+      "build pipeline",
+      "continuous integration",
+      "deployment pipeline",
+      "jenkins",
+      "github actions"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/ci-cd-pipeline.svg",
+      "glyph": "svg/ci-cd-pipeline.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "container-registry",
+    "name": "Container registry",
+    "aliases": [
+      "image registry",
+      "docker registry",
+      "oci registry",
+      "image repository",
+      "ecr"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/container-registry.svg",
+      "glyph": "svg/container-registry.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "artifact-store",
+    "name": "Artifact store",
+    "aliases": [
+      "artifact repository",
+      "package registry",
+      "nexus",
+      "build artifacts",
+      "binary repository"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/artifact-store.svg",
+      "glyph": "svg/artifact-store.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "feature-flag-service",
+    "name": "Feature flag service",
+    "aliases": [
+      "feature toggle",
+      "launchdarkly",
+      "flags",
+      "toggles",
+      "experiment flags"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/feature-flag-service.svg",
+      "glyph": "svg/feature-flag-service.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "config-service",
+    "name": "Config service",
+    "aliases": [
+      "configuration",
+      "settings service",
+      "parameter store",
+      "remote config",
+      "sliders"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/config-service.svg",
+      "glyph": "svg/config-service.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "canary-deploy",
+    "name": "Canary deploy",
+    "aliases": [
+      "canary release",
+      "progressive rollout",
+      "gradual rollout",
+      "traffic split",
+      "staged release"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/canary-deploy.svg",
+      "glyph": "svg/canary-deploy.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "blue-green-deploy",
+    "name": "Blue-green deploy",
+    "aliases": [
+      "blue green",
+      "zero downtime",
+      "environment swap",
+      "cutover",
+      "switchover"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/blue-green-deploy.svg",
+      "glyph": "svg/blue-green-deploy.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "sharded-cluster",
+    "name": "Sharded cluster",
+    "aliases": [
+      "shards",
+      "partitioned database",
+      "horizontal partitioning",
+      "mongos",
+      "vitess"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/sharded-cluster.svg",
+      "glyph": "svg/sharded-cluster.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "replica-set",
+    "name": "Replica set",
+    "aliases": [
+      "replication group",
+      "primary secondary",
+      "mongodb replica set",
+      "replicated database",
+      "failover set"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/replica-set.svg",
+      "glyph": "svg/replica-set.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "primary-replica-pair",
+    "name": "Primary + replica",
+    "aliases": [
+      "master slave",
+      "leader follower db",
+      "streaming replication",
+      "hot standby",
+      "read replica pair"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/primary-replica-pair.svg",
+      "glyph": "svg/primary-replica-pair.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "backup-archive",
+    "name": "Backup archive",
+    "aliases": [
+      "snapshot",
+      "cold storage",
+      "disaster recovery",
+      "restore point",
+      "glacier"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/backup-archive.svg",
+      "glyph": "svg/backup-archive.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "vector-database",
+    "name": "Vector database",
+    "aliases": [
+      "embeddings store",
+      "similarity search",
+      "pgvector",
+      "ann index",
+      "semantic index"
+    ],
+    "category": "data",
+    "files": {
+      "detailed": "svg/vector-database.svg",
+      "glyph": "svg/vector-database.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "cache-aside",
+    "name": "Cache-aside",
+    "aliases": [
+      "lazy loading",
+      "look-aside cache",
+      "cache pattern",
+      "app managed cache",
+      "cache first"
+    ],
+    "category": "cache",
+    "files": {
+      "detailed": "svg/cache-aside.svg",
+      "glyph": "svg/cache-aside.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "write-behind-cache",
+    "name": "Write-behind cache",
+    "aliases": [
+      "write-back cache",
+      "async write",
+      "deferred write",
+      "lazy persist",
+      "buffered writes"
+    ],
+    "category": "cache",
+    "files": {
+      "detailed": "svg/write-behind-cache.svg",
+      "glyph": "svg/write-behind-cache.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "read-through-cache",
+    "name": "Read-through cache",
+    "aliases": [
+      "cache in front",
+      "transparent cache",
+      "loading cache",
+      "cache miss fetch",
+      "proxy cache"
+    ],
+    "category": "cache",
+    "files": {
+      "detailed": "svg/read-through-cache.svg",
+      "glyph": "svg/read-through-cache.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "region",
+    "name": "Region",
+    "aliases": [
+      "geo region",
+      "data center region",
+      "cloud region",
+      "geography",
+      "location"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/region.svg",
+      "glyph": "svg/region.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "availability-zone",
+    "name": "Availability zone",
+    "aliases": [
+      "az",
+      "zone",
+      "fault domain",
+      "data center",
+      "isolated zone"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/availability-zone.svg",
+      "glyph": "svg/availability-zone.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "virtual-network",
+    "name": "Virtual network",
+    "aliases": [
+      "vpc",
+      "vnet",
+      "private network",
+      "overlay network",
+      "network boundary"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/virtual-network.svg",
+      "glyph": "svg/virtual-network.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "subnet",
+    "name": "Subnet",
+    "aliases": [
+      "cidr block",
+      "public subnet",
+      "private subnet",
+      "network segment",
+      "address range"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/subnet.svg",
+      "glyph": "svg/subnet.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "load-test",
+    "name": "Load test",
+    "aliases": [
+      "stress test",
+      "benchmark",
+      "traffic generator",
+      "jmeter",
+      "k6"
+    ],
+    "category": "compute",
+    "files": {
+      "detailed": "svg/load-test.svg",
+      "glyph": "svg/load-test.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "payment-gateway",
+    "name": "Payment gateway",
+    "aliases": [
+      "payments",
+      "card processor",
+      "checkout",
+      "psp",
+      "billing"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/payment-gateway.svg",
+      "glyph": "svg/payment-gateway.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "email-provider",
+    "name": "Email provider",
+    "aliases": [
+      "smtp",
+      "transactional email",
+      "mail service",
+      "sendgrid-like",
+      "ses-like"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/email-provider.svg",
+      "glyph": "svg/email-provider.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "sms-provider",
+    "name": "SMS provider",
+    "aliases": [
+      "text messaging",
+      "sms gateway",
+      "twilio-like",
+      "messaging api",
+      "otp sms"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/sms-provider.svg",
+      "glyph": "svg/sms-provider.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "maps-service",
+    "name": "Maps service",
+    "aliases": [
+      "geocoding",
+      "geo api",
+      "location service",
+      "routing api",
+      "map tiles"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/maps-service.svg",
+      "glyph": "svg/maps-service.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "third-party-api",
+    "name": "Third-party API",
+    "aliases": [
+      "external api",
+      "vendor api",
+      "rest api",
+      "partner api",
+      "saas integration"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/third-party-api.svg",
+      "glyph": "svg/third-party-api.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "llm-endpoint",
+    "name": "LLM endpoint",
+    "aliases": [
+      "language model",
+      "ai api",
+      "inference endpoint",
+      "model serving",
+      "gpt",
+      "chat completion"
+    ],
+    "category": "external",
+    "files": {
+      "detailed": "svg/llm-endpoint.svg",
+      "glyph": "svg/llm-endpoint.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "cdn-edge-node",
+    "name": "CDN edge node",
+    "aliases": [
+      "edge server",
+      "point of presence",
+      "pop",
+      "edge location",
+      "edge cache"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/cdn-edge-node.svg",
+      "glyph": "svg/cdn-edge-node.glyph.svg"
+    },
+    "batch": 2
+  },
+  {
+    "id": "iot-gateway",
+    "name": "IoT gateway",
+    "aliases": [
+      "edge gateway",
+      "sensor hub",
+      "device gateway",
+      "mqtt gateway",
+      "field gateway"
+    ],
+    "category": "network",
+    "files": {
+      "detailed": "svg/iot-gateway.svg",
+      "glyph": "svg/iot-gateway.glyph.svg"
+    },
+    "batch": 2
+  }
+]

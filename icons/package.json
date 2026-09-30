@@ -1,0 +1,14 @@
+{
+  "name": "archypaint-icons",
+  "version": "0.1.0",
+  "description": "Two-tier (24px glyph + 64px detailed) system-design icon set, recoloured with a single CSS colour.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "files": ["svg", "dist/sprite.svg", "dist/manifest.json", "LICENSE"],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "sheet": "node scripts/contact-sheet.mjs",
+    "sheet:dark": "node scripts/contact-sheet.mjs --dark"
+  }
+}
