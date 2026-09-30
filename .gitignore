@@ -1,0 +1,6 @@
+node_modules
+dist
+icons/dist
+.probe
+*.log
+icons/.work
