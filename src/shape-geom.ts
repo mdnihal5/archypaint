@@ -107,7 +107,7 @@ export function rayPoly(poly: readonly number[], ox: number, oy: number, dx: num
   return best === Infinity ? null : [ox + dx * best, oy + dy * best];
 }
 
-const SIDE_DIR: readonly Pt[] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+const SIDE_DIR: readonly Pt[] = [[0, -1], [1, 0], [0, 1], [-1, 0], [-1, -1], [1, -1], [1, 1], [-1, 1]];
 
 /**
  * Connector port on the REAL outline for polygon-like shapes (triangle, parallelogram, star, cloud, hexagon):

@@ -1,4 +1,4 @@
-import { bezierAt, effectiveRoute, portPoint, type Rect } from "./connectors";
+import { PORT_COUNT, bezierAt, effectiveRoute, portPoint, type Rect } from "./connectors";
 import type { GroupIndex } from "./groups";
 import { drawCalcEl } from "./calc-view";
 import { drawIconEl } from "./icons";
@@ -272,7 +272,7 @@ export class Renderer {
     const hr = this.hoverRect;
     if (hr) {
       ctx.lineWidth = 1.5 / z;
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < PORT_COUNT; i++) {
         const pp = portPoint(hr, i);
         ctx.beginPath(); ctx.arc(pp[0], pp[1], (i === this.hoverPort ? 6 : 4.5) / z, 0, Math.PI * 2);
         ctx.fillStyle = i === this.hoverPort ? th.red : th.paper; ctx.strokeStyle = th.red; ctx.fill(); ctx.stroke();

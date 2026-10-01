@@ -102,3 +102,30 @@ describe("batched reroute", () => {
     expect(computeArrowPts(ar, sceneRectOf(s)).length).toBeGreaterThanOrEqual(4);
   });
 });
+
+describe("corner ports (4-7)", () => {
+  const R = { x: 0, y: 0, w: 100, h: 60 };
+  it("sit on the corners of a sharp box and inset on a rounded one", () => {
+    expect(portPoint(R, 4)).toEqual([0, 0]);
+    expect(portPoint(R, 5)).toEqual([100, 0]);
+    expect(portPoint(R, 6)).toEqual([100, 60]);
+    expect(portPoint(R, 7)).toEqual([0, 60]);
+    const [x, y] = portPoint({ ...R, radius: 10 }, 4);
+    expect(x).toBeCloseTo(2.93, 1); expect(y).toBeCloseTo(2.93, 1);
+  });
+  it("land on the real outline of ellipses and diamonds", () => {
+    const [ex, ey] = portPoint({ ...R, kind: "ellipse" }, 5);
+    expect(((ex - 50) / 50) ** 2 + ((ey - 30) / 30) ** 2).toBeCloseTo(1, 5);
+    expect(portPoint({ ...R, kind: "diamond" }, 6)).toEqual([75, 45]);
+  });
+  it("route out of the side that faces the other end, with finite output", () => {
+    const far: Anchor = { rect: null, pt: [400, 30], port: -1 };
+    const a: Anchor = { rect: R, pt: [0, 0], port: 5 };
+    const pts = routeArrow(a, far, 1);
+    expect(pts.every(Number.isFinite)).toBe(true);
+    expect([pts[0], pts[1]]).toEqual([100, 0]);
+    expect(pts[2]).toBeGreaterThan(100); // far to the right: leaves sideways, not upward
+    const up = routeArrow(a, { rect: null, pt: [110, -300], port: -1 }, 1);
+    expect(up[3]).toBeLessThan(0); // far above: leaves upward
+  });
+});

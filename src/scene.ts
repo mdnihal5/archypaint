@@ -11,7 +11,8 @@ export type Route = 0 | 1 | 2; // straight, elbow, curve
 export type Head = 0 | 1 | 2; // none, arrow, dot
 
 /** side ports: 0 top, 1 right, 2 bottom, 3 left, -1 automatic */
-export type Port = -1 | 0 | 1 | 2 | 3;
+/** -1 = automatic, 0-3 = top/right/bottom/left side midpoints, 4-7 = top-left/top-right/bottom-right/bottom-left corners */
+export type Port = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export interface El {
   id: string;

@@ -1,7 +1,7 @@
 import type { El, EdgeStyle, Port, Route, Scene } from "./scene";
 import { outlinePort } from "./shape-geom";
 
-export interface Rect { x: number; y: number; w: number; h: number; /** element kind, so ports of polygon shapes land on the real outline */ kind?: string }
+export interface Rect { x: number; y: number; w: number; h: number; /** element kind, so ports of polygon shapes land on the real outline */ kind?: string; /** corner radius, so corner ports sit on the rounded outline */ radius?: number }
 /** one end of a connector: either glued to a shape's port (rect set) or a free point */
 export interface Anchor { rect: Rect | null; pt: readonly [number, number]; port: Port }
 
@@ -14,8 +14,24 @@ export function effectiveRoute(route: Route, edge: EdgeStyle): Route {
   return route === 1 && edge === 2 ? 2 : route;
 }
 
+/** ports per shape: 4 side midpoints + 4 corners */
+export const PORT_COUNT = 8;
+const K45 = Math.SQRT1_2;
+/** the two sides a corner port can leave through: [horizontal, vertical] */
+const CORNER_SIDES: readonly [number, number][] = [[3, 0], [1, 0], [1, 2], [3, 2]];
+
+function cornerPoint(r: Rect, c: number): P {
+  const sx = c === 1 || c === 2 ? 1 : -1, sy = c >= 2 ? 1 : -1;
+  const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+  if (r.kind === "ellipse") return [cx + sx * (r.w / 2) * K45, cy + sy * (r.h / 2) * K45];
+  if (r.kind === "diamond") return [cx + sx * r.w / 4, cy + sy * r.h / 4];
+  const inset = Math.min(r.radius ?? 0, r.w / 2, r.h / 2) * (1 - K45);
+  return [sx < 0 ? r.x + inset : r.x + r.w - inset, sy < 0 ? r.y + inset : r.y + r.h - inset];
+}
+
 export function portPoint(r: Rect, side: number): P {
   if (r.kind !== undefined) { const o = outlinePort(r, side); if (o) return [o[0], o[1]]; }
+  if (side >= 4) return cornerPoint(r, side - 4);
   switch (side) {
     case 0: return [r.x + r.w / 2, r.y];
     case 1: return [r.x + r.w, r.y + r.h / 2];
@@ -37,6 +53,10 @@ function resolve(a: Anchor, other: Anchor): Resolved {
   const tx = other.rect ? other.rect.x + other.rect.w / 2 : other.pt[0];
   const ty = other.rect ? other.rect.y + other.rect.h / 2 : other.pt[1];
   if (a.rect) {
+    if (a.port >= 4) { // a corner leaves through whichever adjacent side faces the other end more
+      const p = portPoint(a.rect, a.port), [h, v] = CORNER_SIDES[a.port - 4]!;
+      return { p, side: Math.abs(tx - p[0]) > Math.abs(ty - p[1]) ? h : v, stub: STUB };
+    }
     const side = a.port >= 0 ? a.port : nearestSide(a.rect, tx, ty);
     return { p: portPoint(a.rect, side), side, stub: STUB };
   }

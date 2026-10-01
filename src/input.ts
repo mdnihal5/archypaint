@@ -1,9 +1,9 @@
-import { anchorsOf, computeArrowPts, effectiveRoute, portPoint, routeArrow, sceneRectOf, type Anchor, type Rect } from "./connectors";
+import { PORT_COUNT, anchorsOf, computeArrowPts, effectiveRoute, portPoint, routeArrow, sceneRectOf, type Anchor, type Rect } from "./connectors";
 import type { EditorAPI, EditorEvent } from "./editor-api";
 import type { GroupIndex } from "./groups";
 import type { History } from "./history";
 import type { Renderer } from "./renderer";
-import { handlePoints, type El, type ElInit, type Kind, type Scene } from "./scene";
+import { handlePoints, type El, type ElInit, type Kind, type Port, type Scene } from "./scene";
 import type { AlignMode } from "./align";
 import { frameChildren, isContainer, nextBadgeNumber } from "./edit-ops";
 import type { Viewport } from "./viewport";
@@ -211,6 +211,7 @@ export class Controller {
             this.arrowEl = e; this.endIsDst = i === 1; this.mode = "arrowEnd";
             this.core.hist.begin(); this.core.hist.touch(e);
             r.dragging.add(e.id); r.livePts.set(e.id, [...e.pts]);
+            r.invalidate(true, true); // repaint the static layer without it, or the old arrow stays under the live one
             return true;
           }
         }
@@ -248,6 +249,8 @@ export class Controller {
     for (const id of r.selected) {
       const e = scene.els.get(id);
       if (!e || e.locked) continue;
+      // a connector glued to a shape that is not moving stays put: it only stretches with its shapes, it never floats off them
+      if (e.kind === "arrow" && ((e.src && !r.selected.has(e.src)) || (e.dst && !r.selected.has(e.dst)))) continue;
       this.origins.set(id, { x: e.x, y: e.y });
       r.dragging.add(id);
       if (e.kind !== "arrow") { x0 = Math.min(x0, e.x); y0 = Math.min(y0, e.y); x1 = Math.max(x1, e.x + e.w); y1 = Math.max(y1, e.y + e.h); }
@@ -273,7 +276,7 @@ export class Controller {
 
   private beginArrow(wx: number, wy: number): void {
     const a = this.anchorAt(wx, wy);
-    this.aStart = a.rect ? { rect: a.rect, pt: [wx, wy], port: a.port as -1 | 0 | 1 | 2 | 3 } : { rect: null, pt: [wx, wy], port: -1 };
+    this.aStart = a.rect ? { rect: a.rect, pt: [wx, wy], port: a.port as Port } : { rect: null, pt: [wx, wy], port: -1 };
     this.aStartId = a.id; this.aStartPort = a.port;
     this.mode = "arrow";
   }
@@ -289,7 +292,7 @@ export class Controller {
     }
     if (!best) return { id: "", rect: null, port: -1 };
     let port = -1, bd = 14 / z;
-    for (let s = 0; s < 4; s++) {
+    for (let s = 0; s < PORT_COUNT; s++) {
       const p = portPoint(best, s);
       const d = Math.hypot(p[0] - wx, p[1] - wy);
       if (d < bd) { bd = d; port = s; }
@@ -358,7 +361,7 @@ export class Controller {
     if (isArrowTool(this.tool)) {
       const a = this.anchorAt(wx, wy);
       const changed = r.hoverRect !== a.rect || r.hoverPort !== a.port;
-      r.hoverRect = a.rect ? { x: a.rect.x, y: a.rect.y, w: a.rect.w, h: a.rect.h, kind: a.rect.kind } : null; r.hoverPort = a.port;
+      r.hoverRect = a.rect ? { x: a.rect.x, y: a.rect.y, w: a.rect.w, h: a.rect.h, kind: a.rect.kind, radius: a.rect.radius } : null; r.hoverPort = a.port;
       if (changed) r.invalidate(false, true);
       return;
     }
@@ -427,7 +430,7 @@ export class Controller {
   private finishMove(): void {
     const r = this.r, core = this.core, scene = this.scene;
     const dx = r.dragDx, dy = r.dragDy;
-    if (Math.abs(dx) > 0.001 || Math.abs(dy) > 0.001 || this.dupTx) {
+    if (this.origins.size && (Math.abs(dx) > 0.001 || Math.abs(dy) > 0.001 || this.dupTx)) {
       core.hist.begin();
       for (const [id, o] of this.origins) {
         const e = scene.els.get(id);
@@ -493,9 +496,9 @@ export class Controller {
 
   private endAnchor(wx: number, wy: number): Anchor {
     const a = this.anchorAt(wx, wy);
-    this.r.hoverRect = a.rect ? { x: a.rect.x, y: a.rect.y, w: a.rect.w, h: a.rect.h, kind: a.rect.kind } : null; this.r.hoverPort = a.port;
+    this.r.hoverRect = a.rect ? { x: a.rect.x, y: a.rect.y, w: a.rect.w, h: a.rect.h, kind: a.rect.kind, radius: a.rect.radius } : null; this.r.hoverPort = a.port;
     this.endTarget = a.id; this.endPort = a.port;
-    return a.rect ? { rect: a.rect, pt: [wx, wy], port: a.port as -1 | 0 | 1 | 2 | 3 } : { rect: null, pt: [wx, wy], port: -1 };
+    return a.rect ? { rect: a.rect, pt: [wx, wy], port: a.port as Port } : { rect: null, pt: [wx, wy], port: -1 };
   }
   private endTarget = ""; private endPort = -1;
 
@@ -528,7 +531,7 @@ export class Controller {
         core.hist.begin();
         const bb = bboxOf(g.pts);
         const a = core.newEl({
-          kind: "arrow", ...bb, pts: g.pts, src: srcId, dst: dstId, sp: this.aStartPort as -1 | 0 | 1 | 2 | 3, dp: this.endPort as -1 | 0 | 1 | 2 | 3,
+          kind: "arrow", ...bb, pts: g.pts, src: srcId, dst: dstId, sp: this.aStartPort as Port, dp: this.endPort as Port,
           route: d.route, edge: d.edge, dash: d.dash, cat: d.cat, fill: 0, radius: 0, head: g.head,
         });
         core.hist.commit("arrow");
@@ -544,8 +547,8 @@ export class Controller {
     const core = this.core, r = this.r, e = this.arrowEl!;
     const pts = r.livePts.get(e.id);
     if (pts) {
-      if (this.endIsDst) { e.dst = this.endTarget; e.dp = this.endPort as -1 | 0 | 1 | 2 | 3; }
-      else { e.src = this.endTarget; e.sp = this.endPort as -1 | 0 | 1 | 2 | 3; }
+      if (this.endIsDst) { e.dst = this.endTarget; e.dp = this.endPort as Port; }
+      else { e.src = this.endTarget; e.sp = this.endPort as Port; }
       core.applyArrow(e, pts);
       core.hist.commit("edit arrow");
       core.emit("change"); core.emit("history");

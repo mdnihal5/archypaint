@@ -7,7 +7,7 @@ import { GroupIndex } from "./groups";
 import { History } from "./history";
 import { Controller, type Core, type Tool } from "./input";
 import { Renderer } from "./renderer";
-import { Scene, type El, type ElInit, type ElJSON, type GroupInfo, type SceneJSON } from "./scene";
+import { Scene, type El, type ElInit, type ElJSON, type GroupInfo, type Port, type SceneJSON } from "./scene";
 import { braceVertical, NEW_KINDS } from "./shape-geom";
 import { CATEGORIES, type Theme } from "./theme";
 import { installImageInput } from "./images-input";
@@ -617,6 +617,6 @@ function sanitize(j: ElJSON): ElJSON {
     n: Math.max(0, Math.min(99999, Math.floor(num(j.n, 0)))), o: ([0, 1, 2, 3].includes(j.o) ? j.o : 0) as 0 | 1 | 2 | 3,
     src: str(j.src), dst: str(j.dst), locked: !!j.locked, dash: (j.dash === 1 ? 1 : 0) as 0 | 1,
     route: ([0, 1, 2].includes(j.route) ? j.route : 1) as 0 | 1 | 2, head: ([0, 1, 2].includes(j.head) ? j.head : 1) as 0 | 1 | 2,
-    sp: ([-1, 0, 1, 2, 3].includes(j.sp) ? j.sp : -1) as -1 | 0 | 1 | 2 | 3, dp: ([-1, 0, 1, 2, 3].includes(j.dp) ? j.dp : -1) as -1 | 0 | 1 | 2 | 3,
+    sp: ([-1, 0, 1, 2, 3, 4, 5, 6, 7].includes(j.sp) ? j.sp : -1) as Port, dp: ([-1, 0, 1, 2, 3, 4, 5, 6, 7].includes(j.dp) ? j.dp : -1) as Port,
   };
 }
