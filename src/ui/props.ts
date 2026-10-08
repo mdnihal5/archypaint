@@ -23,6 +23,7 @@ export function mountProps(ctx: Ctx, parent: HTMLElement): PropsPanel {
   };
 
   const count = h("span", { class: "ap-note" });
+  const deleteBtn = h("button", { class: "ap-btn icon ap-danger", attrs: { type: "button", title: "Delete (⌫)", "aria-label": "Delete selection" }, on: { click: () => { editor.deleteSelection(); ctx.refresh(); } } }, glyph("trash", 16));
   const sw = CATEGORIES.map((n, i) => h("button", { class: "ap-sw", style: { "--c": `var(--cat${i})` }, attrs: { type: "button", title: n, "aria-label": `Category ${n}`, "aria-pressed": "false" }, on: { click: () => set({ cat: i }) } }));
   const fill = seg("Fill", FILL, "fill");
   const edge = seg("Edge", EDGE, "edge");
@@ -65,7 +66,7 @@ export function mountProps(ctx: Ctx, parent: HTMLElement): PropsPanel {
   const nameRow = h("div", {}, h("div", { class: "ap-label", text: "Group name" }), name);
 
   const el = h("section", { class: "ap-card ap-props", attrs: { "aria-label": "Properties" } },
-    h("div", { class: "ap-lh" }, h("span", { class: "ap-label", text: "Selection" }), count),
+    h("div", { class: "ap-lh" }, h("div", { class: "ap-lh-group" }, h("span", { class: "ap-label", text: "Selection" }), count), deleteBtn),
     h("div", {}, h("div", { class: "ap-label", text: "Category" }), h("div", { class: "ap-swatches" }, ...sw)),
     h("div", {}, h("div", { class: "ap-label", text: "Fill" }), fill.el),
     h("div", {}, h("div", { class: "ap-label", text: "Edge" }), edge.el),
@@ -109,6 +110,7 @@ export function mountProps(ctx: Ctx, parent: HTMLElement): PropsPanel {
       setDisabled(distH, blocks.size < 3); setDisabled(distV, blocks.size < 3);
     }
     setPressed(lockBtn, els.length > 0 && els.every((e) => e.locked));
+    setDisabled(deleteBtn, els.length === 0 || els.every((e) => e.locked));
     dashNow = commonValue(els, (e) => e.dash);
     setPressed(dash, dashNow === 1);
     setDisabled(ungroupBtn as HTMLButtonElement, !els.some((e) => e.groupIds.length > 0));

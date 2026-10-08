@@ -1,4 +1,4 @@
-import { bezierAt } from "../connectors";
+import { bezierAt, effectiveRoute } from "../connectors";
 import type { El } from "../scene";
 import type { Theme } from "../theme";
 import type { Ctx } from "./ctx";
@@ -64,7 +64,12 @@ export function mountFlow(ctx: Ctx, root: HTMLElement): void {
     const p = e.pts, n = p.length;
     if (n < 4) return null;
     const poly: number[] = [];
-    if (n === 8 && e.route === 2) { for (let i = 0; i <= BEZIER_STEPS; i++) { bezierAt(p, i / BEZIER_STEPS, pt); poly.push(pt[0], pt[1]); } }
+    // matches connectors.ts's arrowDist (hit-testing) and routeArrow: a soft-edged ELBOW
+    // (route 1, edge 2) also routes as an 8-number cubic bezier, same as a literal curve route.
+    // Checking e.route alone (not effectiveRoute) missed that case: the dot walked the 4 raw
+    // control points as straight polyline vertices instead of sampling the curve between them,
+    // visibly cutting the corner instead of tracking the arrow's actual rendered path.
+    if (n === 8 && effectiveRoute(e.route, e.edge) === 2) { for (let i = 0; i <= BEZIER_STEPS; i++) { bezierAt(p, i / BEZIER_STEPS, pt); poly.push(pt[0], pt[1]); } }
     else for (let i = 0; i < n; i++) poly.push(p[i]!);
     const cum = [0];
     let len = 0;

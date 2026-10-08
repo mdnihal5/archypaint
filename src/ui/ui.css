@@ -162,6 +162,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--paper)
 .ap-input.hot { border-color: var(--red-ink); border-width: 1.5px; }
 .ap-note { font-size: 11px; color: var(--mid); margin: 0; }
 .ap-lh { display: flex; justify-content: space-between; align-items: center; }
+.ap-lh-group { display: flex; align-items: baseline; gap: 6px; }
+.ap-btn.ap-danger:hover:not(:disabled) { border-color: var(--red-ink); color: var(--red-ink); background: var(--red-wash); }
 .ap-vscroll { position: relative; flex: 1 1 auto; overflow: auto; margin: 0 -12px; border-top: 1px solid var(--line-soft); min-height: 0; contain: strict; }
 .ap-vspacer { position: relative; width: 100%; }
 .ap-vrows { position: absolute; left: 0; right: 0; top: 0; will-change: transform; }
