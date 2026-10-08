@@ -51,6 +51,7 @@ const G = {
   close: `<path d="M6 6l12 12M18 6L6 18"/>`,
   chevron: `<path d="M9 6l6 6-6 6"/>`,
   check: `<path d="M5 12.5l4.5 4.5L19 7.5"/>`,
+  trash: `<path d="M4 7h16M9 7V4.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V7"/><path d="M6.5 7l1 13a1.5 1.5 0 0 0 1.5 1.4h6a1.5 1.5 0 0 0 1.5-1.4l1-13"/><path d="M10 11v6M14 11v6"/>`,
 } as const;
 
 export type GlyphName = keyof typeof G;
