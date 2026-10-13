@@ -103,7 +103,7 @@ export function sizeOf(n: GNode): { w: number; h: number } {
   const lines = n.label.split("\n");
   let longest = 0;
   for (const l of lines) if (l.length > longest) longest = l.length;
-  if (n.iconId) return { w: Math.round(clamp(longest * 8 + 16, 80, 180)), h: 98 }; // the icon tile is min(w, h - label strip)
+  if (n.iconId) return { w: Math.round(clamp(longest * 8 + 16, 64, 150)), h: 66 }; // the icon tile is min(w, h - label strip) = 48
   let w = clamp(longest * 8.2 + 36, 96, 280), h = Math.max(56, 30 + 18 * lines.length);
   switch (n.shape) {
     case "diamond": w *= 1.3; h *= 1.5; break;
