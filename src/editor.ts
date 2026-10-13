@@ -14,7 +14,7 @@ import { installImageInput } from "./images-input";
 import { measureText, TextEditor } from "./text-edit";
 
 /** an icon placed from the palette: a tile this many world units square (label strip included) */
-const ICON_SIZE = 72;
+const ICON_SIZE = 48; // placed icons: about two thirds of the old 72
 import { Viewport } from "./viewport";
 
 export interface EditorDeps { stage: HTMLElement; staticCanvas: HTMLCanvasElement; liveCanvas: HTMLCanvasElement; theme: Theme }
