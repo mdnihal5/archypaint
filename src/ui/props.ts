@@ -61,14 +61,14 @@ export function mountProps(ctx: Ctx, parent: HTMLElement): PropsPanel {
   const distV = ib("distV", "Distribute vertically (⌥⇧Y, needs 3+)", () => editor.distribute("v"));
   const sizeRow = h("div", { class: "ap-iconrow", attrs: { role: "group", "aria-label": "Distribute and match size" } },
     distH, distV, ib("matchW", "Match width", () => editor.matchSize("w")), ib("matchH", "Match height", () => editor.matchSize("h")), ib("matchBoth", "Match size (⌥⇧S)", () => editor.matchSize("both")));
-  const alignBlock = h("div", { class: "ap-alignblock" }, h("div", { class: "ap-label", text: "Align" }), alignRow, h("div", { class: "ap-label", text: "Distribute · match size" }), sizeRow);
+  const alignBlock = h("div", { class: "ap-alignblock ap-span" }, h("div", { class: "ap-label", text: "Align" }), alignRow, h("div", { class: "ap-label", text: "Distribute · match size" }), sizeRow);
   const lockBtn = h("button", { class: "ap-btn", attrs: { type: "button", "aria-pressed": "false", title: "Lock: cannot be moved, resized, edited or deleted (⇧⌘L)" }, on: { click: () => { editor.toggleLock(); ctx.refresh(); } } }, h("span", { text: "lock" }), h("span", { class: "ap-kbd", text: "⇧⌘L" }));
   const styleRow = h("div", { class: "ap-row2" },
     h("button", { class: "ap-btn", attrs: { type: "button", title: "Copy style (⌥⌘C)" }, on: { click: () => { editor.copyStyle(); ctx.refresh(); } } }, h("span", { text: "copy" }), h("span", { class: "ap-kbd", text: "⌥⌘C" })),
     h("button", { class: "ap-btn", attrs: { type: "button", title: "Paste style (⌥⌘V)" }, on: { click: () => { editor.pasteStyle(); ctx.refresh(); } } }, h("span", { text: "paste" }), h("span", { class: "ap-kbd", text: "⌥⌘V" })));
 
   const arr = (label: string, key: string, fn: () => void) =>
-    h("button", { class: "ap-btn", attrs: { type: "button" }, on: { click: () => { fn(); ctx.refresh(); } } }, h("span", { text: label }), h("span", { class: "ap-kbd", text: key }));
+    h("button", { class: "ap-btn", attrs: { type: "button", title: `${label} (${key})` }, on: { click: () => { fn(); ctx.refresh(); } } }, h("span", { text: label }), h("span", { class: "ap-kbd", text: key }));
   let pendingFocus = false;
   const groupBtn = arr("group", "⌘G", () => { if (editor.group()) pendingFocus = true; });
   const ungroupBtn = arr("ungroup", "⇧⌘G", () => editor.ungroup());
@@ -80,21 +80,17 @@ export function mountProps(ctx: Ctx, parent: HTMLElement): PropsPanel {
   name.addEventListener("blur", commit);
   const nameRow = h("div", {}, h("div", { class: "ap-label", text: "Group name" }), name);
 
+  const psec = (label: string, ...kids: HTMLElement[]) => h("div", {}, h("div", { class: "ap-label", text: label }), ...kids);
   const el = h("section", { class: "ap-card ap-props", attrs: { "aria-label": "Properties" } },
-    h("div", { class: "ap-lh" }, h("div", { class: "ap-lh-group" }, h("span", { class: "ap-label", text: "Selection" }), count), deleteBtn),
-    h("div", {}, h("div", { class: "ap-label", text: "Colour" }), h("div", { class: "ap-swatches" }, ...sw), h("div", { class: "ap-hexrow" }, hexDot, hexInput)),
-    h("div", {}, h("div", { class: "ap-label", text: "Fill" }), fill.el),
-    h("div", {}, h("div", { class: "ap-label", text: "Edge" }), edge.el),
+    h("div", { class: "ap-lh ap-span" }, h("div", { class: "ap-lh-group" }, h("span", { class: "ap-label", text: "Selection" }), count), deleteBtn),
+    h("div", { class: "ap-span" }, h("div", { class: "ap-label", text: "Colour" }), h("div", { class: "ap-swatches" }, ...sw), h("div", { class: "ap-hexrow" }, hexDot, hexInput)),
+    psec("Fill", fill.el), psec("Edge", edge.el),
     h("div", {}, dash), routeRow, braceRow, laneRow, alignBlock,
-    h("div", { class: "ap-label", text: "Arrange" }),
-    h("div", { class: "ap-row2" }, arr("front", "⌘⇧]", () => editor.bringToFront()), arr("forward", "⌘]", () => editor.bringForward()),
-      arr("backward", "⌘[", () => editor.sendBackward()), arr("back", "⌘⇧[", () => editor.sendToBack())),
-    h("div", { class: "ap-label", text: "Group" }),
-    h("div", { class: "ap-row2" }, groupBtn, ungroupBtn),
-    nameRow,
-    h("div", { class: "ap-label", text: "Lock · style" }),
-    h("div", {}, lockBtn), styleRow,
-    h("p", { class: "ap-note", text: "double-click a group to rename it · z-order acts on the whole group" }));
+    psec("Arrange", h("div", { class: "ap-row2" }, arr("front", "⌘⇧]", () => editor.bringToFront()), arr("forward", "⌘]", () => editor.bringForward()),
+      arr("backward", "⌘[", () => editor.sendBackward()), arr("back", "⌘⇧[", () => editor.sendToBack()))),
+    psec("Group", h("div", { class: "ap-row2" }, groupBtn, ungroupBtn), nameRow),
+    psec("Lock · style", h("div", {}, lockBtn)), h("div", { class: "ap-stylerow" }, styleRow),
+    h("p", { class: "ap-note ap-span", text: "double-click a group to rename it · z-order acts on the whole group" }));
   parent.append(el);
 
   let vis = false;
