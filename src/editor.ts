@@ -9,7 +9,7 @@ import { Controller, type Core, type Tool } from "./input";
 import { Renderer } from "./renderer";
 import { Scene, type El, type ElInit, type ElJSON, type GroupInfo, type Port, type SceneJSON } from "./scene";
 import { braceVertical, NEW_KINDS } from "./shape-geom";
-import { CATEGORIES, type Theme } from "./theme";
+import { COLOUR_NAMES, type Theme } from "./theme";
 import { installImageInput } from "./images-input";
 import { measureText, TextEditor } from "./text-edit";
 
@@ -415,7 +415,7 @@ export function createEditor(d: EditorDeps): Editor {
     pasteStyle() { if (styleClip && sel().size) api.setStyle({ ...styleClip }); },
     insertLegend() {
       const lg = [...sel()].map((id) => scene.els.get(id)).find((e) => e?.kind === "legend");
-      const built = buildLegend(scene.els.values(), CATEGORIES);
+      const built = buildLegend(scene.els.values(), COLOUR_NAMES);
       return run("legend", () => {
         if (lg) { hist.touch(lg); scene.set(lg, lg.x, lg.y, built.w, built.h); scene.patch(lg, { text: built.text }); setSel([lg.id]); return lg; }
         const z = vp.zoom, cx = vp.x + vp.w / z / 2, cy = vp.y + vp.h / z / 2;
@@ -610,7 +610,7 @@ function sanitize(j: ElJSON): ElJSON {
   const str = (v: unknown) => (typeof v === "string" ? v.slice(0, 2000) : "");
   return {
     ...j, x: num(j.x, 0), y: num(j.y, 0), w: Math.max(1, num(j.w, 100)), h: Math.max(1, num(j.h, 60)),
-    cat: Math.max(0, Math.min(7, Math.floor(num(j.cat, 0)))), fill: ([0, 1, 2].includes(j.fill) ? j.fill : 1) as 0 | 1 | 2,
+    cat: Math.max(0, Math.min(COLOUR_NAMES.length - 1, Math.floor(num(j.cat, 0)))), fill: ([0, 1, 2].includes(j.fill) ? j.fill : 1) as 0 | 1 | 2,
     edge: ([0, 1, 2].includes(j.edge) ? j.edge : 1) as 0 | 1 | 2, radius: Math.max(0, num(j.radius, 8)), text: str(j.text), iconId: str(j.iconId), img: str(j.img).slice(0, 64),
     groupIds: Array.isArray(j.groupIds) ? j.groupIds.filter((g) => typeof g === "string") : [],
     pts: Array.isArray(j.pts) ? j.pts.filter((v) => typeof v === "number" && Number.isFinite(v)).slice(0, 64) : [],

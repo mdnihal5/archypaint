@@ -109,7 +109,7 @@ describe("Excalidraw import: refusing bad input", () => {
   });
   it("survives hostile customData", () => {
     const r = fromExcalidraw(file([ex("rectangle", "a", { customData: { archypaint: { kind: "arrow", cat: "x", fill: 99, iconId: 5, radius: -1 } } })]));
-    expect(r.ok && r.scene.els[0]).toMatchObject({ kind: "rect", cat: 6, fill: 0, radius: 0 }); // invalid customData ignored: values come from the Excalidraw attributes
+    expect(r.ok && r.scene.els[0]).toMatchObject({ kind: "rect", cat: 22, fill: 0, radius: 0 }); // invalid customData ignored: values come from the Excalidraw attributes (its default near-black stroke now maps to charcoal)
   });
 });
 

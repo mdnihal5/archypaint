@@ -177,7 +177,9 @@ describe("groups, z-order, style, clipboard", () => {
     expect(ed.paste(s)).toBe(true); // only the one valid element is pasted, and it is sanitised
     expect(ed.scene.els.size).toBe(before + 1);
     const pasted = [...ed.scene.els.values()].pop()!;
-    expect(pasted.cat).toBe(7); expect(pasted.fill).toBe(1); expect(pasted.text.length).toBe(2000); expect(pasted.pts).toEqual([21, 23]); // sanitised, then offset by the paste step
+    expect(pasted.cat).toBe(23); expect(pasted.fill).toBe(1); expect(pasted.text.length).toBe(2000); expect(pasted.pts).toEqual([21, 23]); // sanitised, then offset by the paste step
+    expect(ed.paste("archypaint:" + JSON.stringify({ els: [{ ...snap, cat: 12 }], groups: [] }))).toBe(true);
+    expect([...ed.scene.els.values()].pop()!.cat).toBe(12); // the extended colours survive copy/paste
     expect(ed.paste("archypaint:" + JSON.stringify({ els: [{ ...snap, x: "evil" }] }))).toBe(false);
     expect(ed.paste("not json")).toBe(false);
     expect(ed.paste("archypaint:" + JSON.stringify({ els: [] }))).toBe(false);

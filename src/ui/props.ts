@@ -4,7 +4,7 @@ import type { AlignMode } from "../align";
 import { glyph, type GlyphName } from "./glyphs";
 import { h, setAttr, setDisabled, setHidden, setPressed, setText } from "./dom";
 import { commonGroupId, commonValue, selectionEls } from "./props-model";
-import { CATEGORIES } from "../theme";
+import { COLOUR_NAMES } from "../theme";
 
 const FILL = ["outline", "tint", "solid"] as const;
 const EDGE = ["sharp", "round", "soft"] as const;
@@ -24,7 +24,7 @@ export function mountProps(ctx: Ctx, parent: HTMLElement): PropsPanel {
 
   const count = h("span", { class: "ap-note" });
   const deleteBtn = h("button", { class: "ap-btn icon ap-danger", attrs: { type: "button", title: "Delete (⌫)", "aria-label": "Delete selection" }, on: { click: () => { editor.deleteSelection(); ctx.refresh(); } } }, glyph("trash", 16));
-  const sw = CATEGORIES.map((n, i) => h("button", { class: "ap-sw", style: { "--c": `var(--cat${i})` }, attrs: { type: "button", title: n, "aria-label": `Category ${n}`, "aria-pressed": "false" }, on: { click: () => set({ cat: i }) } }));
+  const sw = COLOUR_NAMES.map((n, i) => h("button", { class: "ap-sw", style: { "--c": `var(--cat${i})` }, attrs: { type: "button", title: n, "aria-label": `Colour ${n}`, "aria-pressed": "false" }, on: { click: () => set({ cat: i }) } }));
   const fill = seg("Fill", FILL, "fill");
   const edge = seg("Edge", EDGE, "edge");
   const route = seg("Route", ROUTE, "route");
@@ -67,7 +67,7 @@ export function mountProps(ctx: Ctx, parent: HTMLElement): PropsPanel {
 
   const el = h("section", { class: "ap-card ap-props", attrs: { "aria-label": "Properties" } },
     h("div", { class: "ap-lh" }, h("div", { class: "ap-lh-group" }, h("span", { class: "ap-label", text: "Selection" }), count), deleteBtn),
-    h("div", {}, h("div", { class: "ap-label", text: "Category" }), h("div", { class: "ap-swatches" }, ...sw)),
+    h("div", {}, h("div", { class: "ap-label", text: "Colour" }), h("div", { class: "ap-swatches" }, ...sw)),
     h("div", {}, h("div", { class: "ap-label", text: "Fill" }), fill.el),
     h("div", {}, h("div", { class: "ap-label", text: "Edge" }), edge.el),
     h("div", {}, dash), routeRow, braceRow, laneRow, alignBlock,
@@ -86,7 +86,9 @@ export function mountProps(ctx: Ctx, parent: HTMLElement): PropsPanel {
   const radio = (s: { btns: HTMLButtonElement[] }, v: number | undefined) => s.btns.forEach((b, i) => setPressed(b, v === i, "aria-checked"));
   const render = () => {
     const sel = editor.selection();
+    const wasVis = vis;
     vis = sel.size > 0;
+    if (vis && !wasVis) ctx.closeMenu?.(); // the menu and the properties panel never show together
     setHidden(el, !vis);
     if (!vis) { gid = null; return; }
     const els = selectionEls(editor.scene.els, sel);

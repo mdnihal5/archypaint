@@ -42,24 +42,24 @@ const SHAPE_SVG: Record<string, string> = {
 const GENERIC_SHAPE = '<rect x="4" y="6" width="16" height="12" rx="1.5" stroke-dasharray="3 2.5"/>';
 
 const CSS = `
-.ap-pal{position:fixed;inset:0;z-index:50;font-family:'JetBrains Mono','DejaVu Sans Mono',monospace;color:var(--ink,#26323b)}
+.ap-pal{position:fixed;inset:0;z-index:50;font-family:'JetBrains Mono','DejaVu Sans Mono',monospace;color:var(--ink,#1b1b1f)}
 .ap-pal[hidden]{display:none}
-.ap-pal-panel{position:absolute;left:96px;top:72px;width:min(680px,calc(100vw - 128px));background:var(--card,#fffaf2);
-  border:1.5px solid var(--ink,#26323b);box-shadow:6px 6px 0 color-mix(in srgb,var(--ink,#26323b) 14%,transparent)}
+.ap-pal-panel{position:absolute;left:96px;top:72px;width:min(680px,calc(100vw - 128px));background:var(--card,#ffffff);
+  border:1px solid color-mix(in srgb,var(--ink,#1b1b1f) 30%,transparent);border-radius:18px;overflow:hidden;box-shadow:0 18px 48px -12px rgba(0,0,0,.35)}
 .ap-pal-line{display:flex;align-items:center;gap:12px;padding:14px 18px 6px}
 .ap-pal-slash{font-size:32px;font-weight:700;color:var(--red,#c2412d);line-height:1}
 .ap-pal-input{flex:1;min-width:0;font:inherit;font-size:28px;background:transparent;border:0;outline:0;color:inherit;
   caret-color:var(--red,#c2412d);padding:0}
-.ap-pal-input::placeholder{color:var(--mid,#5f6a73);opacity:.65}
-.ap-pal-hint{padding:0 18px 10px 48px;font-size:12px;color:var(--mid,#5f6a73);opacity:.85}
-.ap-pal-chips{display:flex;flex-wrap:wrap;gap:4px 14px;padding:8px 18px;border-top:1px solid color-mix(in srgb,var(--ink,#26323b) 25%,transparent);
-  font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mid,#5f6a73)}
+.ap-pal-input::placeholder{color:var(--mid,#5c5c66);opacity:.65}
+.ap-pal-hint{padding:0 18px 10px 48px;font-size:12px;color:var(--mid,#5c5c66);opacity:.85}
+.ap-pal-chips{display:flex;flex-wrap:wrap;gap:4px 14px;padding:8px 18px;border-top:1px solid color-mix(in srgb,var(--ink,#1b1b1f) 25%,transparent);
+  font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mid,#5c5c66)}
 .ap-pal-chips button{all:unset;cursor:pointer;padding:1px 0;border-bottom:2px solid transparent}
 .ap-pal-chips button[aria-pressed=true]{color:var(--red,#c2412d);border-bottom-color:var(--red,#c2412d)}
-.ap-pal-list{max-height:min(56vh,528px);overflow-y:auto;border-top:1px solid color-mix(in srgb,var(--ink,#26323b) 25%,transparent)}
+.ap-pal-list{max-height:min(56vh,528px);overflow-y:auto;border-top:1px solid color-mix(in srgb,var(--ink,#1b1b1f) 25%,transparent)}
 .ap-pal-row{display:block}
 .ap-pal-row[hidden]{display:none}
-.ap-pal-head{padding:8px 18px 3px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid,#5f6a73)}
+.ap-pal-head{padding:8px 18px 3px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid,#5c5c66)}
 .ap-pal-head[hidden]{display:none}
 .ap-pal-item{display:flex;align-items:center;gap:12px;height:44px;padding:0 18px;cursor:pointer;border-left:3px solid transparent}
 .ap-pal-item[aria-selected=true]{background:color-mix(in srgb,var(--red,#c2412d) 13%,transparent);border-left-color:var(--red,#c2412d)}
@@ -67,20 +67,20 @@ const CSS = `
   border:1.5px solid currentColor;background:color-mix(in srgb,currentColor 13%,transparent)}
 .ap-pal-badge svg{width:22px;height:22px;display:block}
 .ap-pal-name{font-size:14px;white-space:nowrap}
-.ap-pal-meta{font-size:11px;color:var(--mid,#5f6a73);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.ap-pal-tag{margin-left:auto;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid,#5f6a73);flex:none}
-.ap-pal-empty{padding:18px;font-size:13px;color:var(--mid,#5f6a73)}
+.ap-pal-meta{font-size:11px;color:var(--mid,#5c5c66);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ap-pal-tag{margin-left:auto;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid,#5c5c66);flex:none}
+.ap-pal-empty{padding:18px;font-size:13px;color:var(--mid,#5c5c66)}
 .ap-pal-src{border-top:0;padding-top:0}
 .ap-pal-src button{text-transform:none;letter-spacing:.02em}
-.ap-pal-note{padding:6px 18px;font-size:11px;color:var(--mid,#5f6a73);border-top:1px solid color-mix(in srgb,var(--ink,#26323b) 25%,transparent)}
+.ap-pal-note{padding:6px 18px;font-size:11px;color:var(--mid,#5c5c66);border-top:1px solid color-mix(in srgb,var(--ink,#1b1b1f) 25%,transparent)}
 .ap-pal-note[hidden],.ap-pal-packs[hidden],.ap-pal-msg[hidden]{display:none}
-.ap-pal-packs{display:flex;flex-wrap:wrap;gap:6px 12px;padding:6px 18px;font-size:11px;color:var(--mid,#5f6a73);border-top:1px solid color-mix(in srgb,var(--ink,#26323b) 25%,transparent)}
+.ap-pal-packs{display:flex;flex-wrap:wrap;gap:6px 12px;padding:6px 18px;font-size:11px;color:var(--mid,#5c5c66);border-top:1px solid color-mix(in srgb,var(--ink,#1b1b1f) 25%,transparent)}
 .ap-pal-packs span{display:inline-flex;gap:6px;align-items:center}
 .ap-pal-packs button,.ap-pal-load{all:unset;cursor:pointer;font-size:11px;color:var(--red,#c2412d);border-bottom:1px solid currentColor}
-.ap-pal-msg{padding:6px 18px;font-size:11px;color:var(--ink,#26323b);border-top:1px solid color-mix(in srgb,var(--ink,#26323b) 25%,transparent)}
+.ap-pal-msg{padding:6px 18px;font-size:11px;color:var(--ink,#1b1b1f);border-top:1px solid color-mix(in srgb,var(--ink,#1b1b1f) 25%,transparent)}
 .ap-pal-msg[data-err=true]{color:var(--red,#c2412d)}
 .ap-pal-foot .ap-pal-load{margin-left:auto}
-.ap-pal-foot{display:flex;gap:16px;padding:8px 18px;font-size:11px;color:var(--mid,#5f6a73);border-top:1px solid color-mix(in srgb,var(--ink,#26323b) 25%,transparent)}
+.ap-pal-foot{display:flex;gap:16px;padding:8px 18px;font-size:11px;color:var(--mid,#5c5c66);border-top:1px solid color-mix(in srgb,var(--ink,#1b1b1f) 25%,transparent)}
 `;
 
 interface RowEls {

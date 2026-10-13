@@ -25,6 +25,6 @@ describe.each([["light", light], ["dark", dark]] as const)("%s theme tokens", (_
       expect(contrast(t[fg]!, t[bg]!), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5);
   });
   it("category colours are distinguishable from the panel (>= 3:1, non-text UI)", () => {
-    for (let i = 0; i < 8; i++) expect(contrast(t[`cat${i}`]!, t.panel!), `cat${i}`).toBeGreaterThanOrEqual(3);
+    for (let i = 0; i < 24; i++) expect(contrast(t[`cat${i}`]!, t.panel!), `cat${i}`).toBeGreaterThanOrEqual(3);
   });
 });
