@@ -160,7 +160,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--paper)
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font: 10px var(--mono); cursor: pointer; padding: 0; }
 
 /* ---------- right column: properties + layers ---------- */
-.ap-right { position: absolute; right: var(--edge); top: calc(var(--frame) + var(--gap) + 52px); bottom: calc(var(--frame) + var(--gap) + var(--tb-h) + 12px); width: 288px;
+.ap-right { position: absolute; right: var(--edge); top: calc(var(--frame) + var(--gap) + 52px); bottom: calc(var(--frame) + var(--gap) + var(--tb-h) + 12px + 46px); width: 420px;
   display: flex; flex-direction: column; gap: 10px; }
 .ap-right[data-any="false"] { display: none; }
 .ap-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--lift); box-sizing: border-box; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
@@ -270,3 +270,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--paper)
 .ap-hexdot { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line); background: var(--c, transparent); flex: none; }
 .ap-hex { height: 28px; font-size: 12px; flex: 1; min-width: 0; }
 .ap-hex[aria-invalid="true"] { border-color: #d6453a; }
+
+/* ---------- properties: two columns, so the panel is wide instead of tall (keeps clear of the menu button) ---------- */
+.ap-props { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; align-content: start; }
+.ap-props .ap-span { grid-column: 1 / -1; }
+.ap-props .ap-stylerow { align-self: end; }
+.ap-props .ap-row2 .ap-kbd { display: none; }
+.ap-props .ap-row2 .ap-btn { justify-content: center; }
