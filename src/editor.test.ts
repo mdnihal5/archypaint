@@ -177,7 +177,9 @@ describe("groups, z-order, style, clipboard", () => {
     expect(ed.paste(s)).toBe(true); // only the one valid element is pasted, and it is sanitised
     expect(ed.scene.els.size).toBe(before + 1);
     const pasted = [...ed.scene.els.values()].pop()!;
-    expect(pasted.cat).toBe(7); expect(pasted.fill).toBe(1); expect(pasted.text.length).toBe(2000); expect(pasted.pts).toEqual([21, 23]); // sanitised, then offset by the paste step
+    expect(pasted.cat).toBe(23); expect(pasted.fill).toBe(1); expect(pasted.text.length).toBe(2000); expect(pasted.pts).toEqual([21, 23]); // sanitised, then offset by the paste step
+    expect(ed.paste("archypaint:" + JSON.stringify({ els: [{ ...snap, cat: 12 }], groups: [] }))).toBe(true);
+    expect([...ed.scene.els.values()].pop()!.cat).toBe(12); // the extended colours survive copy/paste
     expect(ed.paste("archypaint:" + JSON.stringify({ els: [{ ...snap, x: "evil" }] }))).toBe(false);
     expect(ed.paste("not json")).toBe(false);
     expect(ed.paste("archypaint:" + JSON.stringify({ els: [] }))).toBe(false);
@@ -248,5 +250,35 @@ describe("teardown and idle behaviour", () => {
     for (let i = 0; i < 400; i++) ed.setStyle({ cat: i % 8 === a.cat ? (i + 1) % 8 : i % 8 });
     let n = 0; while (ed.canUndo()) { ed.undo(); n++; }
     expect(n).toBeLessThanOrEqual(200);
+  });
+});
+
+describe("custom hex colour", () => {
+  it("applies a validated hex to the selection, undoes, and ignores junk", () => {
+    ed.setTool("rect"); drag(100, 100, 220, 180);
+    const a = sh("rect").pop()!;
+    ed.select([a.id]);
+    ed.setStyle({ hex: "#FFA500" });
+    expect(ed.scene.els.get(a.id)!.hex).toBe("#ffa500");
+    ed.setStyle({ hex: "javascript:alert(1)" });
+    expect(ed.scene.els.get(a.id)!.hex).toBeUndefined(); // junk is normalised to "no custom colour", never stored
+    ed.setStyle({ hex: "fff" });
+    expect(ed.scene.els.get(a.id)!.hex).toBe("#ffffff");
+    ed.undo();
+    expect(ed.scene.els.get(a.id)!.hex).toBeUndefined();
+    ed.redo();
+    expect(ed.scene.els.get(a.id)!.hex).toBe("#ffffff");
+  });
+  it("picking a colour slot clears the custom hex; copy/paste style carries it; paste sanitises it", () => {
+    ed.setTool("rect"); drag(100, 100, 220, 180); ed.setTool("rect"); drag(400, 100, 520, 180);
+    const [a, b] = sh("rect") as [typeof ed.scene.els extends Map<string, infer E> ? E : never, typeof ed.scene.els extends Map<string, infer E> ? E : never];
+    ed.select([a.id]); ed.setStyle({ hex: "#112233" });
+    ed.copyStyle(); ed.select([b.id]); ed.pasteStyle();
+    expect(ed.scene.els.get(b.id)!.hex).toBe("#112233");
+    ed.select([b.id]); ed.setStyle({ cat: 3, hex: "" });
+    expect(ed.scene.els.get(b.id)!.hex).toBeUndefined();
+    const snap = ed.scene.snapshot(ed.scene.els.get(a.id)!);
+    expect(ed.paste("archypaint:" + JSON.stringify({ els: [{ ...snap, hex: "\"><script>x</script>" }], groups: [] }))).toBe(true);
+    expect([...ed.scene.els.values()].pop()!.hex).toBeUndefined();
   });
 });

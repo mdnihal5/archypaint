@@ -32,6 +32,10 @@ export interface Ctx {
   modalOpen(): boolean;
   /** set by the find bar: opens it (menu item) */
   openFind?: () => void;
+  /** set by the bottom bar: where the menu button lives (bottom-left) */
+  menuSlot?: HTMLElement;
+  /** set by the top module: closes the main menu (the properties panel calls it when it opens, so they never overlap) */
+  closeMenu?: () => void;
 }
 
 export function makeUpdaterApi(d: Disposer, editor: EditorAPI) {

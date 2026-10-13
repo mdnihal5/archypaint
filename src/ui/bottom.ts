@@ -2,7 +2,7 @@ import type { Ctx } from "./ctx";
 import { glyph, type GlyphName } from "./glyphs";
 import { h, setDisabled, setText } from "./dom";
 
-/** Bottom-left: zoom out / percent (click = reset) / zoom in / fit, then undo / redo. */
+/** Bottom-left: zoom out / percent (click = reset) / zoom in / fit, then undo / redo. Bottom-right: the menu button's slot (the top module mounts the button). */
 export function mountBottom(ctx: Ctx, root: HTMLElement): void {
   const { editor } = ctx;
   const ib = (g: GlyphName, label: string, fn: () => void) =>
@@ -13,8 +13,10 @@ export function mountBottom(ctx: Ctx, root: HTMLElement): void {
   const zoomGroup = h("div", { class: "ap-group", attrs: { role: "group", "aria-label": "Zoom" } },
     ib("minus", "Zoom out (−)", () => editor.zoomBy(1 / 1.2)), zoom, ib("plus", "Zoom in (+)", () => editor.zoomBy(1.2)), ib("fit", "Fit to content (⇧1)", () => editor.zoomToFit()));
   const histGroup = h("div", { class: "ap-group", attrs: { role: "group", "aria-label": "History" } }, undo, redo);
+  const menuSlot = h("div", { class: "ap-menuslot" });
+  ctx.menuSlot = menuSlot;
   const wrap = h("div", { class: "ap-bottom" }, zoomGroup, histGroup);
-  root.append(wrap);
+  root.append(wrap, menuSlot);
 
   let lastPct = -1;
   const render = () => {

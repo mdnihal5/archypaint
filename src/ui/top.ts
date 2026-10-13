@@ -20,6 +20,7 @@ export function mountTop(ctx: Ctx, root: HTMLElement, right: { toggleNarrow(): v
   const closeMenu = (refocus = true) => {
     if (!menu) return;
     menuD?.dispose(); menuD = null; menu.remove(); menu = null;
+    document.documentElement.dataset.menu = "closed";
     btn.setAttribute("aria-expanded", "false");
     if (refocus) btn.focus();
   };
@@ -51,7 +52,7 @@ export function mountTop(ctx: Ctx, root: HTMLElement, right: { toggleNarrow(): v
   const openMenu = () => {
     if (menu) { closeMenu(); return; }
     const sel = editor.selection().size > 0;
-    menu = h("div", { class: "ap-menu ap-hit", attrs: { role: "menu", "aria-label": "Main menu" } },
+    const left = h("div", { class: "ap-mcol" },
       sec("File"),
       item("New", "", guarded(() => io.newDoc())),
       item("Open…", "⌘O", guarded(() => io.open())),
@@ -64,7 +65,9 @@ export function mountTop(ctx: Ctx, root: HTMLElement, right: { toggleNarrow(): v
       item("Copy as PNG", "", act(() => io.copyPng({ scale: 2, background: true }))),
       item("Import Excalidraw…", "", guarded(() => io.importExcalidraw())),
       item("Export Excalidraw", "", act(() => io.exportExcalidraw())),
-      sep(), sec("View"),
+      ...extra("arrange", "Arrange"), ...extra("view", "Present"), ...extra("file", "Share & import"));
+    const right = h("div", { class: "ap-mcol" },
+      sec("View"),
       segRow("Theme", [["light", "light"], ["dark", "dark"], ["system", "system"]], () => settings.get().theme, (v) => settings.set({ theme: v })),
       segRow("Background", [["grid", "grid"], ["plain", "plain"]], () => settings.get().bg, (v) => settings.set({ bg: v })),
       onoff("Sheet frame", () => settings.get().frame, (v) => settings.set({ frame: v })),
@@ -77,13 +80,14 @@ export function mountTop(ctx: Ctx, root: HTMLElement, right: { toggleNarrow(): v
       item("Legend of categories and lines", "", act(() => { editor.insertLegend(); })),
       item("Renumber step badges", "", act(() => editor.renumberBadges())),
       ...actionItems("insert"),
-      ...extra("arrange", "Arrange"), ...extra("view", "Present"), ...extra("file", "Share & import"),
       sep(), sec("New shapes"),
       segRow("Edge", [[0, "sharp"], [1, "round"], [2, "soft"]], () => editor.defaults.edge, (v) => editor.setDefaults({ edge: v as 0 | 1 | 2 })),
       segRow("Fill", [[0, "outline"], [1, "tint"], [2, "solid"]], () => editor.defaults.fill, (v) => editor.setDefaults({ fill: v as 0 | 1 | 2 })),
       sep(),
       item("Keyboard shortcuts", "?", () => { closeMenu(false); ctx.showShortcuts(); }));
+    menu = h("div", { class: "ap-menu ap-hit", attrs: { role: "menu", "aria-label": "Main menu" } }, left, right);
     root.append(menu);
+    document.documentElement.dataset.menu = "open";
     btn.setAttribute("aria-expanded", "true");
     const d = (menuD = new Disposer());
     const m = menu;
@@ -109,8 +113,23 @@ export function mountTop(ctx: Ctx, root: HTMLElement, right: { toggleNarrow(): v
   const narrow = (g: "sliders" | "layers", label: string) =>
     h("button", { class: "ap-btn icon ap-narrow-btn", attrs: { type: "button", title: label, "aria-label": label }, on: { click: () => right.toggleNarrow() } }, glyph(g, 18));
 
-  const bar = h("div", { class: "ap-top" }, btn, nameInput, state, narrow("sliders", "Properties"), narrow("layers", "Layers"));
+  const bar = h("div", { class: "ap-top" }, nameInput, state, narrow("sliders", "Properties"), narrow("layers", "Layers"));
   root.append(bar);
+  (ctx.menuSlot ?? bar).append(btn);
+  ctx.closeMenu = () => closeMenu(false);
+
+  /* ---------- theme toggle, top right: flips between light and dark (system stays in the menu) ---------- */
+  const themeBtn = h("button", { class: "ap-btn icon ap-theme ap-hit", attrs: { type: "button" } });
+  const syncTheme = () => {
+    const dark = document.documentElement.dataset.theme === "dark";
+    themeBtn.replaceChildren(glyph(dark ? "sun" : "moon", 18));
+    setAttr(themeBtn, "title", dark ? "Switch to light theme" : "Switch to dark theme");
+    setAttr(themeBtn, "aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
+  };
+  themeBtn.addEventListener("click", () => { settings.set({ theme: document.documentElement.dataset.theme === "dark" ? "light" : "dark" }); syncTheme(); });
+  ctx.d.add(settings.subscribe((_s, changed) => { if (changed.includes("theme")) syncTheme(); }));
+  root.append(themeBtn);
+  syncTheme();
 
   let status: SaveStatus = "saved";
   const render = () => {
@@ -129,7 +148,7 @@ export function mountTop(ctx: Ctx, root: HTMLElement, right: { toggleNarrow(): v
     u.schedule();
   }));
   ctx.onSlowTick(() => { if (state.textContent === "saved" && editor.dirty()) u.schedule(); });
-  ctx.d.add(() => { closeMenu(false); bar.remove(); });
+  ctx.d.add(() => { closeMenu(false); bar.remove(); themeBtn.remove(); btn.remove(); ctx.closeMenu = undefined; });
   render();
   return { nameInput, refresh: () => u.schedule() };
 }

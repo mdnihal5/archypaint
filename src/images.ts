@@ -8,7 +8,7 @@
  */
 import type { El } from "./scene";
 import { requestImageRepaint, setImageDrawer } from "./renderer";
-import type { Theme } from "./theme";
+import { colourOf, type Theme } from "./theme";
 
 export const IMAGE_LIMITS = {
   maxInputBytes: 8 * 1024 * 1024,
@@ -552,7 +552,7 @@ export function imageCacheStats(): { entries: number; bytes: number } { return {
 const LABEL = 18;
 
 function placeholder(ctx: CanvasRenderingContext2D, e: El, th: Theme, x: number, y: number, w: number, h: number, dashed: boolean): void {
-  const col = th.cats[e.cat % th.cats.length]!;
+  const col = colourOf(th, e);
   ctx.globalAlpha = th.tint * 1.4; ctx.fillStyle = col; ctx.fillRect(x, y, w, h);
   ctx.globalAlpha = 0.6; ctx.strokeStyle = col; ctx.lineWidth = 1.5;
   if (dashed) ctx.setLineDash([6, 4]);
@@ -574,7 +574,7 @@ export function drawImageEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: 
   } else {
     const k = Math.min(bw / bmp.width, bh / bmp.height);
     const dw = bmp.width * k, dh = bmp.height * k, dx = bx + (bw - dw) / 2, dy = by + (bh - dh) / 2;
-    if (e.fill === 1) { ctx.globalAlpha = th.tint; ctx.fillStyle = th.cats[e.cat % th.cats.length]!; ctx.fillRect(bx, by, bw, bh); ctx.globalAlpha = 1; }
+    if (e.fill === 1) { ctx.globalAlpha = th.tint; ctx.fillStyle = colourOf(th, e); ctx.fillRect(bx, by, bw, bh); ctx.globalAlpha = 1; }
     const r = e.edge === 0 ? 0 : Math.min(e.radius, dw / 2, dh / 2);
     if (r > 0.5) { ctx.save(); ctx.beginPath(); ctx.roundRect(dx, dy, dw, dh, r); ctx.clip(); ctx.drawImage(bmp as unknown as CanvasImageSource, dx, dy, dw, dh); ctx.restore(); }
     else ctx.drawImage(bmp as unknown as CanvasImageSource, dx, dy, dw, dh);

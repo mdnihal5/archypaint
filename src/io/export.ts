@@ -2,7 +2,7 @@ import type { EditorAPI } from "../editor-api";
 import { ensureCalc } from "../calc-view";
 import * as Renderer from "../renderer";
 import type { El } from "../scene";
-import { LIGHT, type Theme } from "../theme";
+import { LIGHT, colourOf, onSolid, type Theme } from "../theme";
 import * as Icons from "../icons";
 import { arrowHead, arrowLabelPos, arrowPathD, buildSvg, planExport, unionBounds } from "./svg";
 import type { ExportOpts } from "./index";
@@ -31,7 +31,7 @@ type DrawEl = (ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number, lod: 
 
 /** minimal fallback if the renderer's drawEl is unavailable: keeps export working even if the renderer is reorganised */
 const basicDraw: DrawEl = (ctx, e, th) => {
-  const c = th.cats[e.cat % th.cats.length]!;
+  const c = colourOf(th, e);
   ctx.beginPath();
   if (e.kind === "ellipse") ctx.ellipse(e.x + e.w / 2, e.y + e.h / 2, e.w / 2, e.h / 2, 0, 0, Math.PI * 2);
   else if (e.kind === "diamond") { ctx.moveTo(e.x + e.w / 2, e.y); ctx.lineTo(e.x + e.w, e.y + e.h / 2); ctx.lineTo(e.x + e.w / 2, e.y + e.h); ctx.lineTo(e.x, e.y + e.h / 2); ctx.closePath(); }
@@ -41,12 +41,12 @@ const basicDraw: DrawEl = (ctx, e, th) => {
     if (e.fill) { ctx.globalAlpha = e.fill === 1 ? th.tint : 1; ctx.fillStyle = c; ctx.fill(); }
     ctx.globalAlpha = 1; ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.stroke();
   }
-  if (e.text) { ctx.fillStyle = e.fill === 2 && e.kind !== "text" ? th.paper : th.ink; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(e.text, e.x + e.w / 2, e.y + e.h / 2); }
+  if (e.text) { ctx.fillStyle = e.fill === 2 && e.kind !== "text" ? onSolid(th, c) : th.ink; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(e.text, e.x + e.w / 2, e.y + e.h / 2); }
 };
 const drawShape: DrawEl = ((Renderer as unknown as { drawEl?: DrawEl }).drawEl) ?? basicDraw;
 
 function drawArrow(ctx: CanvasRenderingContext2D, e: El, th: Theme): void {
-  const c = th.cats[e.cat % th.cats.length]!;
+  const c = colourOf(th, e);
   ctx.globalAlpha = 1; ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.lineCap = "round";
   ctx.setLineDash(e.dash ? [7, 6] : []);
   ctx.stroke(new Path2D(arrowPathD(e)));

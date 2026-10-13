@@ -1,4 +1,4 @@
-import { bezierAt, effectiveRoute } from "../connectors";
+import { bezierAt, effectiveRoute, roundedPolyline } from "../connectors";
 import type { El } from "../scene";
 import type { Theme } from "../theme";
 import type { Ctx } from "./ctx";
@@ -70,6 +70,8 @@ export function mountFlow(ctx: Ctx, root: HTMLElement): void {
     // control points as straight polyline vertices instead of sampling the curve between them,
     // visibly cutting the corner instead of tracking the arrow's actual rendered path.
     if (n === 8 && effectiveRoute(e.route, e.edge) === 2) { for (let i = 0; i <= BEZIER_STEPS; i++) { bezierAt(p, i / BEZIER_STEPS, pt); poly.push(pt[0], pt[1]); } }
+    // round-edged elbows are DRAWN with rounded corners (renderer arcTo): walk those arcs, not the sharp corner points
+    else if (e.edge === 1 && n > 4) for (const v of roundedPolyline(p)) poly.push(v);
     else for (let i = 0; i < n; i++) poly.push(p[i]!);
     const cum = [0];
     let len = 0;

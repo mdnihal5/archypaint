@@ -21,6 +21,8 @@ export interface El {
   z: number;
   version: number;
   cat: number;
+  /** optional custom colour (#rrggbb); overrides `cat` for drawing when set */
+  hex?: string | undefined;
   fill: FillStyle;
   radius: number;
   text: string;

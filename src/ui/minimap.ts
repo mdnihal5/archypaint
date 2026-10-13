@@ -80,7 +80,7 @@ export function mountMinimap(ctx: Ctx, root: HTMLElement): void {
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       g.fillStyle = theme.red; g.strokeStyle = theme.red; g.lineWidth = 1.5;
       const rx = toMiniX(map, view.x), ry = toMiniY(map, view.y), rw = view.w * map.scale, rh = view.h * map.scale;
-      g.globalAlpha = 0.1; g.fillRect(rx, ry, rw, rh); g.globalAlpha = 1; g.strokeRect(rx, ry, rw, rh);
+      g.globalAlpha = theme.paper === "#ffffff" ? 0.05 : 0.1; g.fillRect(rx, ry, rw, rh); g.globalAlpha = 1; g.strokeRect(rx, ry, rw, rh);
     }
   };
   const u = ctx.update("minimap", render);

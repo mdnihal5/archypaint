@@ -1,5 +1,5 @@
 import type { ElJSON, GroupInfo, SceneJSON } from "../scene";
-import { LIGHT, type Theme } from "../theme";
+import { LIGHT, colourOf, normHex, type Theme } from "../theme";
 import { NEW_KINDS, legendRows } from "../shape-geom";
 import { APP, FORMAT_VERSION, LIMITS, validateFile } from "./format";
 
@@ -37,16 +37,21 @@ function hexToRgb(h: string): [number, number, number] | null {
 }
 const toHex = (r: number, g: number, b: number) => "#" + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("");
 
-/** nearest category by RGB distance; ties resolve to the lower index so the mapping is deterministic */
+/** reference tones for mapping imported (usually deep) Excalidraw colours onto the eight base categories; fixed so the mapping does not move when the theme palette is retuned */
+const BASE_REF = ["#2b6f9e", "#a25a17", "#2d7b4d", "#6a4fa3", "#0e777e", "#9b3d6b", "#4d5a64", "#7a6a3a"] as const;
+
+/** nearest colour by RGB distance over the fixed reference tones (indexes 0..7) and the theme's own colours (any index), so a colour this app exported maps straight back; ties resolve to the lower index so the mapping is deterministic */
 export function nearestCat(hex: string, th: Theme = LIGHT): { cat: number; dist: number } {
   const c = hexToRgb(hex);
   if (!c) return { cat: 0, dist: Infinity };
   let best = 0, bd = Infinity;
-  th.cats.forEach((h, i) => {
+  const consider = (h: string, i: number) => {
     const r = hexToRgb(h)!;
     const d = Math.hypot(c[0] - r[0], c[1] - r[1], c[2] - r[2]);
-    if (d < bd) { bd = d; best = i; }
-  });
+    if (d < bd || (d === bd && i < best)) { bd = d; best = i; }
+  };
+  BASE_REF.forEach(consider);
+  th.cats.forEach(consider);
   return { cat: best, dist: bd };
 }
 const mix = (hex: string, w: number): string => { const c = hexToRgb(hex) ?? [0, 0, 0]; return toHex(c[0] + (255 - c[0]) * w, c[1] + (255 - c[1]) * w, c[2] + (255 - c[2]) * w); };
@@ -193,6 +198,7 @@ export function fromExcalidraw(input: unknown, th: Theme = LIGHT): ExResult {
     if (cd) {
       if (typeof cd.kind === "string" && KINDS.includes(cd.kind) && ((cd.kind === "icon" || cd.kind === "calc" || NEW_KINDS.has(cd.kind)) ? t in SHAPES : cd.kind === base.kind)) base.kind = cd.kind as ElJSON["kind"];
       const ci = num(cd.cat); if (ci !== null && Number.isInteger(ci) && ci >= 0 && ci < 256) base.cat = ci;
+      const hx = normHex(cd.hex); if (hx) base.hex = hx;
       for (const [k, allowed] of [["fill", [0, 1, 2]], ["edge", [0, 1, 2]], ["route", [0, 1, 2]], ["dash", [0, 1]], ["head", [0, 1, 2]], ["sp", [-1, 0, 1, 2, 3]], ["dp", [-1, 0, 1, 2, 3]]] as const) {
         const v = num(cd[k]); if (v !== null && (allowed as readonly number[]).includes(v)) (base as unknown as Record<string, number>)[k] = v;
       }
@@ -259,7 +265,7 @@ export function toExcalidraw(scene: SceneJSON, th: Theme = LIGHT, images?: Recor
   const addBound = (id: string, b: { type: string; id: string }) => { const l = bound.get(id); if (l) l.push(b); else bound.set(id, [b]); };
 
   const common = (e: ElJSON, type: string): Obj => {
-    const c = th.cats[e.cat % th.cats.length]!;
+    const c = colourOf(th, e);
     return {
       id: e.id, type, x: e.x, y: e.y, width: e.w, height: e.h, angle: 0,
       strokeColor: c, backgroundColor: "transparent", fillStyle: "solid", strokeWidth: 2, strokeStyle: e.dash ? "dashed" : "solid",
@@ -268,7 +274,7 @@ export function toExcalidraw(scene: SceneJSON, th: Theme = LIGHT, images?: Recor
       boundElements: [], updated: 1, link: null, locked: e.locked,
     };
   };
-  const meta = (e: ElJSON): Obj => ({ [APP]: { kind: e.kind, cat: e.cat, fill: e.fill, edge: e.edge, radius: e.radius, iconId: e.iconId, route: e.route, dash: e.dash, head: e.head, sp: e.sp, dp: e.dp, n: e.n, o: e.o, ...(e.kind === "legend" ? { rawText: e.text } : {}), ...(e.kind === "image" ? { img: e.img } : {}) } });
+  const meta = (e: ElJSON): Obj => ({ [APP]: { kind: e.kind, cat: e.cat, ...(e.hex ? { hex: e.hex } : {}), fill: e.fill, edge: e.edge, radius: e.radius, iconId: e.iconId, route: e.route, dash: e.dash, head: e.head, sp: e.sp, dp: e.dp, n: e.n, o: e.o, ...(e.kind === "legend" ? { rawText: e.text } : {}), ...(e.kind === "image" ? { img: e.img } : {}) } });
 
   const labels: Obj[] = [];
   const label = (containerId: string, text: string, cx: number, cy: number, boxW: number): void => {
@@ -285,7 +291,7 @@ export function toExcalidraw(scene: SceneJSON, th: Theme = LIGHT, images?: Recor
   };
 
   for (const e of els) {
-    const c = th.cats[e.cat % th.cats.length]!;
+    const c = colourOf(th, e);
     if (e.kind === "arrow") {
       const pts: Array<[number, number]> = [];
       for (let i = 0; i + 1 < e.pts.length; i += 2) pts.push([e.pts[i]! - e.pts[0]!, e.pts[i + 1]! - e.pts[1]!]);

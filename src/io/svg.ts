@@ -1,5 +1,5 @@
 import type { ElLike } from "./format";
-import type { Theme } from "../theme";
+import { colourOf, onSolid, type Theme } from "../theme";
 import type { CalcRow } from "../calc";
 import { CALC_LINE, CALC_PAD } from "../calc-view";
 import { CONTAINER_KINDS, FRAME_HEADER, LEGEND_PAD, LEGEND_ROW_H, LEGEND_TITLE_H, PATH_KINDS, labelPoint, laneCells, legendRows, shapeParts } from "../shape-geom";
@@ -131,17 +131,17 @@ export function buildSvg(els: readonly ElLike[], th: Theme, o: SvgOpts): string 
   const list = [...els].sort((a, b) => a.z - b.z);
   const b = unionBounds(list) ?? { x: 0, y: 0, w: 64, h: 64 };
   const x = b.x - o.padding, y = b.y - o.padding, w = Math.max(1, b.w + o.padding * 2), h = Math.max(1, b.h + o.padding * 2);
-  const col = (e: ElLike) => th.cats[e.cat % th.cats.length]!;
+  const col = (e: ElLike) => colourOf(th, e);
   const used = new Map<string, string>(); // symbol id -> <symbol> markup
   const body: string[] = [];
 
   const shapeFill = (e: ElLike, c: string) => e.fill === 0 ? `fill="none"` : e.fill === 1 ? `fill="${c}" fill-opacity="${th.tint}"` : `fill="${c}"`;
-  const stroke = (e: ElLike, c: string, sw = 2) => `stroke="${c}" stroke-width="${sw}"${e.dash ? ` stroke-dasharray="7 6"` : ""} stroke-linejoin="round" stroke-linecap="round"`;
+  const stroke = (e: ElLike, c: string, sw = 2) => `stroke="${c}" stroke-width="${sw}"${e.dash ? ` stroke-dasharray="8 4"` : ""} stroke-linejoin="round" stroke-linecap="round"`;
 
   for (const e of list) {
     const c = col(e);
     const cx = e.x + e.w / 2, cy = e.y + e.h / 2;
-    const labelFill = e.fill === 2 && e.kind !== "text" ? th.paper : th.ink;
+    const labelFill = e.fill === 2 && e.kind !== "text" ? onSolid(th, colourOf(th, e)) : th.ink;
     if (e.kind === "rect") {
       body.push(`<rect x="${n(e.x)}" y="${n(e.y)}" width="${n(e.w)}" height="${n(e.h)}" rx="${e.edge === 0 ? 0 : n(Math.min(e.radius, Math.min(e.w, e.h) / 2))}" ${shapeFill(e, c)} ${stroke(e, c)}/>`);
       if (e.text) body.push(labelText(e.text, cx, cy, labelFill));
@@ -164,7 +164,7 @@ export function buildSvg(els: readonly ElLike[], th: Theme, o: SvgOpts): string 
       if (!p) continue;
       const container = CONTAINER_KINDS.has(e.kind);
       const dashed = e.kind === "frame" ? e.dash !== 0 : e.dash === 1;
-      const st = `stroke="${c}" stroke-width="2"${dashed ? ` stroke-dasharray="9 7"` : ""} stroke-linejoin="${e.edge === 0 ? "miter" : "round"}" stroke-linecap="round"`;
+      const st = `stroke="${c}" stroke-width="2"${dashed ? ` stroke-dasharray="9 5"` : ""} stroke-linejoin="${e.edge === 0 ? "miter" : "round"}" stroke-linecap="round"`;
       if (p.open) body.push(`<path d="${p.body}" fill="none" ${st}/>`);
       else {
         const fillAttr = e.fill === 0 ? `fill="none"` : e.fill === 1 ? `fill="${c}" fill-opacity="${container ? th.tint * 0.55 : th.tint}"` : container ? `fill="${c}" fill-opacity="0.16"` : `fill="${c}"`;
@@ -174,8 +174,8 @@ export function buildSvg(els: readonly ElLike[], th: Theme, o: SvgOpts): string 
         if (e.kind === "frame") { if (e.text) body.push(`<text x="${n(e.x + 12)}" y="${n(e.y + FRAME_HEADER / 2 + 4.5)}" font-size="13" fill="${c}">${esc(e.text)}</text>`); }
         else if (e.kind === "lane") {
           for (const cell of laneCells(e)) body.push(`<text transform="translate(${n(cell.cx)} ${n(cell.cy + 4.5)})${cell.rot ? " rotate(-90)" : ""}" text-anchor="middle" font-size="13" fill="${th.ink}">${esc(cell.text)}</text>`);
-        } else if (e.kind === "badge") body.push(labelText(String(e.n), cx, cy + 1, e.fill === 2 ? th.paper : th.ink, Math.max(10, Math.round(Math.min(e.w, e.h) * 0.46))));
-        else if (e.text) { const [lx, ly] = labelPoint(e); body.push(labelText(e.text, lx, ly, e.fill === 2 ? th.paper : th.ink)); }
+        } else if (e.kind === "badge") body.push(labelText(String(e.n), cx, cy + 1, e.fill === 2 ? onSolid(th, colourOf(th, e)) : th.ink, Math.max(10, Math.round(Math.min(e.w, e.h) * 0.46))));
+        else if (e.text) { const [lx, ly] = labelPoint(e); body.push(labelText(e.text, lx, ly, e.fill === 2 ? onSolid(th, colourOf(th, e)) : th.ink)); }
       }
     } else if (e.kind === "calc") {
       const f = Math.max(8, Math.min(18, e.w * 0.06, e.h * 0.25));
@@ -183,7 +183,7 @@ export function buildSvg(els: readonly ElLike[], th: Theme, o: SvgOpts): string 
       body.push(`<path d="M${n(e.x)} ${n(e.y)}H${n(e.x + e.w)}V${n(e.y + e.h - f)}L${n(e.x + e.w - f)} ${n(e.y + e.h)}H${n(e.x)}Z" ${fillAttr} stroke="${c}" stroke-width="2" stroke-linejoin="round"/>`);
       body.push(`<path d="M${n(e.x + e.w - f)} ${n(e.y + e.h)}V${n(e.y + e.h - f)}H${n(e.x + e.w)}" fill="none" stroke="${c}" stroke-width="1.5" stroke-opacity="0.7" stroke-linejoin="round"/>`);
       const rows: CalcRow[] = o.calc ? o.calc(e.text) : e.text.split("\n", 40).map((t) => ({ kind: "line", name: "", expr: t, text: "", value: null, err: "" }));
-      const ink = e.fill === 2 ? th.paper : th.ink;
+      const ink = e.fill === 2 ? onSolid(th, colourOf(th, e)) : th.ink;
       rows.forEach((r, i) => {
         if (r.kind === "blank") return;
         const ry = e.y + CALC_PAD + i * CALC_LINE + CALC_LINE / 2 + 4.5, lx = e.x + CALC_PAD, rx = e.x + e.w - CALC_PAD;
@@ -210,7 +210,7 @@ export function buildSvg(els: readonly ElLike[], th: Theme, o: SvgOpts): string 
       body.push(`<rect x="${n(e.x)}" y="${n(e.y)}" width="${n(e.w)}" height="${n(e.h)}" rx="${n(r)}" ${shapeFill(e, c)} ${stroke(e, c, 1.8)}/>`);
       const tier = Math.max(e.w, e.h) >= 40 ? "detail" : "glyph";
       const inner = o.icons(e.iconId, tier);
-      const glyphColor = e.fill === 2 ? th.paper : c;
+      const glyphColor = e.fill === 2 ? onSolid(th, c) : c;
       if (inner && !SAFE_INNER.test(inner)) {
         const id = symId(e.iconId, tier);
         if (!used.has(id)) used.set(id, `<symbol id="${id}" viewBox="0 0 ${tier === "detail" ? 64 : 24} ${tier === "detail" ? 64 : 24}">${inner}</symbol>`);
