@@ -1,3 +1,4 @@
+import { normHex } from "../theme";
 import type { ElJSON, GroupInfo, SceneJSON } from "../scene";
 
 /** The `.archypaint` file format: versioned, validated, deterministic (one element per line, fixed key order). */
@@ -96,7 +97,7 @@ function plain(v: unknown, path: string): Record<string, unknown> {
 
 /* ---------------------------------------------------------------- element field tables */
 
-const EL_KNOWN = new Set(["id", "kind", "x", "y", "w", "h", "z", "version", "cat", "fill", "edge", "radius", "text", "groupIds", "iconId", "img", "locked", "n", "o", "src", "dst", "sp", "dp", "route", "dash", "head", "pts"]);
+const EL_KNOWN = new Set(["id", "kind", "x", "y", "w", "h", "z", "version", "cat", "hex", "fill", "edge", "radius", "text", "groupIds", "iconId", "img", "locked", "n", "o", "src", "dst", "sp", "dp", "route", "dash", "head", "pts"]);
 const ROOT_KNOWN = new Set(["app", "version", "meta", "view", "settings", "scene"]);
 
 function readEl(raw: unknown, i: number, extras: Record<string, Record<string, unknown>>): ElJSON {
@@ -142,6 +143,7 @@ function readEl(raw: unknown, i: number, extras: Record<string, Record<string, u
     head: opt(raw.head, 1, (v) => oneOf(v, `${p}.head`, [0, 1, 2] as const)),
     pts,
   };
+  const hx = normHex(raw.hex); if (hx) el.hex = hx;
   let ex: Record<string, unknown> | null = null;
   for (const k of Object.keys(raw)) if (!EL_KNOWN.has(k)) (ex ??= {})[k] = plain({ v: raw[k] }, `${p}.${k}`).v;
   if (ex) extras[id] = ex;
@@ -280,6 +282,7 @@ export function orderEl(e: ElLike, extra?: Record<string, unknown>): string {
   const o: Record<string, unknown> = { id: e.id, kind: e.kind, x: r3(e.x), y: r3(e.y), w: r3(e.w), h: r3(e.h), z: e.z, version: e.version, cat: e.cat, fill: e.fill, edge: e.edge, radius: r3(e.radius) };
   if (e.text) o.text = e.text;
   if (e.locked) o.locked = true;
+  if (e.hex) o.hex = e.hex;
   if (e.groupIds.length) o.groupIds = e.groupIds;
   if (e.kind === "icon") o.iconId = e.iconId;
   if (e.kind === "image") o.img = e.img;

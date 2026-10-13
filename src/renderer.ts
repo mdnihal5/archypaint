@@ -4,14 +4,14 @@ import { drawCalcEl } from "./calc-view";
 import { drawIconEl } from "./icons";
 import { handlePoints, type El, type Kind, type Scene } from "./scene";
 import { CONTAINER_KINDS, FRAME_HEADER, LANE_COL_HEADER, LANE_HEADER, LEGEND_PAD, LEGEND_ROW_H, LEGEND_TITLE_H, PATH_KINDS, labelPoint, laneCells, legendRows, shapeParts } from "./shape-geom";
-import type { Theme } from "./theme";
+import { colourOf, onSolid, type Theme } from "./theme";
 import type { Viewport } from "./viewport";
 
 const FONT = "13px 'JetBrains Mono','DejaVu Sans Mono',monospace";
 const LINE_H = 18;
 
 export interface GhostShape { kind: Kind; x: number; y: number; w: number; h: number; radius?: number; o?: 0 | 1 | 2 | 3 }
-export interface ArrowStyle { cat: number; route: 0 | 1 | 2; edge: 0 | 1 | 2; dash: 0 | 1; head: 0 | 1 | 2; text: string }
+export interface ArrowStyle { cat: number; hex?: string | undefined; route: 0 | 1 | 2; edge: 0 | 1 | 2; dash: 0 | 1; head: 0 | 1 | 2; text: string }
 export interface GhostArrow extends ArrowStyle { pts: number[] }
 
 /**
@@ -196,7 +196,7 @@ export class Renderer {
       const col = th.cats[g.cat % th.cats.length]!;
       ctx.globalAlpha = 0.05; ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(x, y, b.w, b.h, 14); ctx.fill();
       ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = Math.max(1.6, 1 / z);
-      ctx.setLineDash([8, 6]); ctx.stroke(); ctx.setLineDash([]);
+      ctx.setLineDash([8, 4]); ctx.stroke(); ctx.setLineDash([]);
       if (g.name && z >= 0.3) {
         ctx.fillStyle = col; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
         ctx.fillText(g.name, x + 12, y - 8);
@@ -358,7 +358,7 @@ const tmp: [number, number] = [0, 0];
 export function drawArrow(ctx: CanvasRenderingContext2D, e: ArrowStyle, th: Theme, z: number, pts: readonly number[], lod: boolean): void {
   const n = pts.length;
   if (n < 4) return;
-  const col = th.cats[e.cat % th.cats.length]!;
+  const col = colourOf(th, e);
   ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = Math.max(2, 1 / z); ctx.lineJoin = e.edge === 0 ? "miter" : "round"; ctx.lineCap = "round";
   const curve = effectiveRoute(e.route, e.edge) === 2 && n === 8;
   ctx.beginPath();
@@ -372,7 +372,7 @@ export function drawArrow(ctx: CanvasRenderingContext2D, e: ArrowStyle, th: Them
     }
     ctx.lineTo(pts[n - 2]!, pts[n - 1]!);
   } else for (let i = 2; i < n; i += 2) ctx.lineTo(pts[i]!, pts[i + 1]!);
-  if (e.dash) ctx.setLineDash([8, 6]);
+  if (e.dash) ctx.setLineDash([8, 4]);
   ctx.stroke();
   if (e.dash) ctx.setLineDash([]);
   if (lod) return;
@@ -440,7 +440,7 @@ function drawLegend(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number):
 
 /** every kind drawn from shapeParts(): cylinder, cloud, hexagon, parallelogram, triangle, star, note, brace, badge, frame, lane */
 function drawPathKind(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number, lod: boolean, hideText: boolean): void {
-  const col = th.cats[e.cat % th.cats.length]!;
+  const col = colourOf(th, e);
   const c = partsFor(e);
   if (!c) return;
   const lw = Math.max(2, 1 / z);
@@ -461,12 +461,12 @@ function drawPathKind(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number
   }
   ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = lw;
   const dashed = e.kind === "frame" ? e.dash !== 0 : e.dash === 1;
-  if (dashed) ctx.setLineDash([9, 7]);
+  if (dashed) ctx.setLineDash([9, 5]);
   ctx.stroke(c.body);
   if (dashed) ctx.setLineDash([]);
   if (c.detail) {
     // on a solid fill the rim / fold would vanish in the same colour: draw it in paper instead
-    if (e.fill === 2 && e.kind !== "lane") ctx.strokeStyle = th.paper;
+    if (e.fill === 2 && e.kind !== "lane") ctx.strokeStyle = onSolid(th, col);
     ctx.globalAlpha = e.kind === "lane" ? 0.8 : 0.75; ctx.lineWidth = e.kind === "lane" ? 1.4 : Math.max(1.5, 1 / z); ctx.stroke(c.detail); ctx.globalAlpha = 1;
   }
   if (z < 0.3 || hideText) return;
@@ -486,12 +486,12 @@ function drawPathKind(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number
   if (e.kind === "badge") {
     const d = Math.min(e.w, e.h);
     ctx.font = `700 ${Math.max(10, Math.round(d * 0.46))}px 'JetBrains Mono','DejaVu Sans Mono',monospace`;
-    ctx.fillStyle = e.fill === 2 ? th.paper : th.ink; ctx.fillText(String(e.n), e.x + e.w / 2, e.y + e.h / 2 + 1);
+    ctx.fillStyle = e.fill === 2 ? onSolid(th, colourOf(th, e)) : th.ink; ctx.fillText(String(e.n), e.x + e.w / 2, e.y + e.h / 2 + 1);
     ctx.font = FONT; return;
   }
   if (e.text) {
     const [lx, ly] = labelPoint(e);
-    ctx.fillStyle = e.fill === 2 ? th.paper : th.ink;
+    ctx.fillStyle = e.fill === 2 ? onSolid(th, colourOf(th, e)) : th.ink;
     drawLabel(ctx, e.text, lx, ly);
   }
 }
@@ -517,7 +517,7 @@ export function drawEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: numbe
   if (e.kind === "arrow") { drawArrow(ctx, e, th, z, e.pts, lod); return; }
   if (PATH_KINDS.has(e.kind)) { drawPathKind(ctx, e, th, z, lod, hideText); ctx.globalAlpha = 1; return; }
   if (e.kind === "legend") { if (lod) { ctx.globalAlpha = 0.4; ctx.fillStyle = th.mid; ctx.fillRect(e.x, e.y, e.w, e.h); ctx.globalAlpha = 1; } else drawLegend(ctx, e, th, z); return; }
-  const col = th.cats[e.cat % th.cats.length]!;
+  const col = colourOf(th, e);
   if (lod) { ctx.globalAlpha = 0.55; ctx.fillStyle = col; ctx.fillRect(e.x, e.y, e.w, e.h); return; }
   if (e.kind === "icon") { drawIconEl(ctx, e, th, z, hideText); ctx.globalAlpha = 1; return; } // label included: it must not be drawn twice
   if (e.kind === "image") {
@@ -533,7 +533,7 @@ export function drawEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: numbe
   }
   if (e.text && z >= 0.3 && !hideText) {
     ctx.globalAlpha = 1; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillStyle = e.fill === 2 && e.kind !== "text" ? th.paper : th.ink;
+    ctx.fillStyle = e.fill === 2 && e.kind !== "text" ? onSolid(th, colourOf(th, e)) : th.ink;
     drawLabel(ctx, e.text, e.x + e.w / 2, e.y + e.h / 2);
   }
   ctx.globalAlpha = 1;

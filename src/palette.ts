@@ -44,7 +44,7 @@ const GENERIC_SHAPE = '<rect x="4" y="6" width="16" height="12" rx="1.5" stroke-
 const CSS = `
 .ap-pal{position:fixed;inset:0;z-index:50;font-family:'JetBrains Mono','DejaVu Sans Mono',monospace;color:var(--ink,#1b1b1f)}
 .ap-pal[hidden]{display:none}
-.ap-pal-panel{position:absolute;left:96px;top:72px;width:min(680px,calc(100vw - 128px));background:var(--card,#ffffff);
+.ap-pal-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(720px,calc(100vw - 48px));max-height:calc(100vh - 48px);display:flex;flex-direction:column;background:var(--card,#ffffff);
   border:1px solid color-mix(in srgb,var(--ink,#1b1b1f) 30%,transparent);border-radius:18px;overflow:hidden;box-shadow:0 18px 48px -12px rgba(0,0,0,.35)}
 .ap-pal-line{display:flex;align-items:center;gap:12px;padding:14px 18px 6px}
 .ap-pal-slash{font-size:32px;font-weight:700;color:var(--red,#c2412d);line-height:1}
@@ -56,7 +56,7 @@ const CSS = `
   font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mid,#5c5c66)}
 .ap-pal-chips button{all:unset;cursor:pointer;padding:1px 0;border-bottom:2px solid transparent}
 .ap-pal-chips button[aria-pressed=true]{color:var(--red,#c2412d);border-bottom-color:var(--red,#c2412d)}
-.ap-pal-list{max-height:min(56vh,528px);overflow-y:auto;border-top:1px solid color-mix(in srgb,var(--ink,#1b1b1f) 25%,transparent)}
+.ap-pal-list{height:min(52vh,496px);min-height:0;overflow-y:auto;flex:0 1 auto;border-top:1px solid color-mix(in srgb,var(--ink,#1b1b1f) 25%,transparent)}
 .ap-pal-row{display:block}
 .ap-pal-row[hidden]{display:none}
 .ap-pal-head{padding:8px 18px 3px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid,#5c5c66)}

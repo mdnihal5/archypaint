@@ -1,6 +1,6 @@
 import { calcRows, CALC_LINE, CALC_PAD } from "./calc-view";
 import type { El } from "./scene";
-import type { Theme } from "./theme";
+import { colourOf, onSolid, type Theme } from "./theme";
 
 // Lazy chunk (loaded with the evaluator): the capacity-note draw routine lives here so the entry bundle only holds a tiny dispatch.
 const FONT = "13px 'JetBrains Mono','DejaVu Sans Mono',monospace";
@@ -8,7 +8,7 @@ const BOLD_FONT = "700 13px 'JetBrains Mono','DejaVu Sans Mono',monospace";
 
 /** capacity note: the sticky-note look with a right-aligned result column. Results come from a per-version cache (calc-view), never a per-frame evaluation. */
 export function drawCalc(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number, lod: boolean, hideText: boolean): void {
-  const col = th.cats[e.cat % th.cats.length]!;
+  const col = colourOf(th, e);
   const f = Math.max(8, Math.min(18, e.w * 0.06, e.h * 0.25));
   ctx.beginPath();
   ctx.moveTo(e.x, e.y); ctx.lineTo(e.x + e.w, e.y); ctx.lineTo(e.x + e.w, e.y + e.h - f); ctx.lineTo(e.x + e.w - f, e.y + e.h); ctx.lineTo(e.x, e.y + e.h); ctx.closePath();
@@ -29,14 +29,14 @@ export function drawCalc(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: num
     const resText = r.err ? r.err : r.text ? `→ ${r.text}` : "";
     const resW = resText ? (resText.length + 1) * 7.9 : 0;
     ctx.textAlign = "left";
-    ctx.fillStyle = r.kind === "comment" ? th.mid : solid ? th.paper : th.ink;
+    ctx.fillStyle = r.kind === "comment" ? th.mid : solid ? onSolid(th, col) : th.ink;
     ctx.globalAlpha = r.kind === "comment" ? 0.9 : 1;
     ctx.fillText(r.kind === "comment" ? `# ${r.expr}` : r.expr, left, y, Math.max(40, right - left - resW - 8));
     ctx.globalAlpha = 1;
     if (!resText) continue;
     ctx.textAlign = "right";
     if (r.err) { ctx.fillStyle = th.red; ctx.fillText(`! ${r.err}`, right, y, Math.max(40, right - left - 40)); }
-    else { ctx.fillStyle = solid ? th.paper : th.ink; ctx.font = BOLD_FONT; ctx.fillText(resText, right, y, Math.max(40, right - left - 40)); ctx.font = FONT; }
+    else { ctx.fillStyle = solid ? onSolid(th, col) : th.ink; ctx.font = BOLD_FONT; ctx.fillText(resText, right, y, Math.max(40, right - left - 40)); ctx.font = FONT; }
   }
   ctx.textAlign = "center";
 }

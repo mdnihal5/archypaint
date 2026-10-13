@@ -52,7 +52,7 @@ export function mountTop(ctx: Ctx, root: HTMLElement, right: { toggleNarrow(): v
   const openMenu = () => {
     if (menu) { closeMenu(); return; }
     const sel = editor.selection().size > 0;
-    menu = h("div", { class: "ap-menu ap-hit", attrs: { role: "menu", "aria-label": "Main menu" } },
+    const left = h("div", { class: "ap-mcol" },
       sec("File"),
       item("New", "", guarded(() => io.newDoc())),
       item("Open…", "⌘O", guarded(() => io.open())),
@@ -65,7 +65,9 @@ export function mountTop(ctx: Ctx, root: HTMLElement, right: { toggleNarrow(): v
       item("Copy as PNG", "", act(() => io.copyPng({ scale: 2, background: true }))),
       item("Import Excalidraw…", "", guarded(() => io.importExcalidraw())),
       item("Export Excalidraw", "", act(() => io.exportExcalidraw())),
-      sep(), sec("View"),
+      ...extra("arrange", "Arrange"), ...extra("view", "Present"), ...extra("file", "Share & import"));
+    const right = h("div", { class: "ap-mcol" },
+      sec("View"),
       segRow("Theme", [["light", "light"], ["dark", "dark"], ["system", "system"]], () => settings.get().theme, (v) => settings.set({ theme: v })),
       segRow("Background", [["grid", "grid"], ["plain", "plain"]], () => settings.get().bg, (v) => settings.set({ bg: v })),
       onoff("Sheet frame", () => settings.get().frame, (v) => settings.set({ frame: v })),
@@ -78,12 +80,12 @@ export function mountTop(ctx: Ctx, root: HTMLElement, right: { toggleNarrow(): v
       item("Legend of categories and lines", "", act(() => { editor.insertLegend(); })),
       item("Renumber step badges", "", act(() => editor.renumberBadges())),
       ...actionItems("insert"),
-      ...extra("arrange", "Arrange"), ...extra("view", "Present"), ...extra("file", "Share & import"),
       sep(), sec("New shapes"),
       segRow("Edge", [[0, "sharp"], [1, "round"], [2, "soft"]], () => editor.defaults.edge, (v) => editor.setDefaults({ edge: v as 0 | 1 | 2 })),
       segRow("Fill", [[0, "outline"], [1, "tint"], [2, "solid"]], () => editor.defaults.fill, (v) => editor.setDefaults({ fill: v as 0 | 1 | 2 })),
       sep(),
       item("Keyboard shortcuts", "?", () => { closeMenu(false); ctx.showShortcuts(); }));
+    menu = h("div", { class: "ap-menu ap-hit", attrs: { role: "menu", "aria-label": "Main menu" } }, left, right);
     root.append(menu);
     document.documentElement.dataset.menu = "open";
     btn.setAttribute("aria-expanded", "true");

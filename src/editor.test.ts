@@ -252,3 +252,33 @@ describe("teardown and idle behaviour", () => {
     expect(n).toBeLessThanOrEqual(200);
   });
 });
+
+describe("custom hex colour", () => {
+  it("applies a validated hex to the selection, undoes, and ignores junk", () => {
+    ed.setTool("rect"); drag(100, 100, 220, 180);
+    const a = sh("rect").pop()!;
+    ed.select([a.id]);
+    ed.setStyle({ hex: "#FFA500" });
+    expect(ed.scene.els.get(a.id)!.hex).toBe("#ffa500");
+    ed.setStyle({ hex: "javascript:alert(1)" });
+    expect(ed.scene.els.get(a.id)!.hex).toBeUndefined(); // junk is normalised to "no custom colour", never stored
+    ed.setStyle({ hex: "fff" });
+    expect(ed.scene.els.get(a.id)!.hex).toBe("#ffffff");
+    ed.undo();
+    expect(ed.scene.els.get(a.id)!.hex).toBeUndefined();
+    ed.redo();
+    expect(ed.scene.els.get(a.id)!.hex).toBe("#ffffff");
+  });
+  it("picking a colour slot clears the custom hex; copy/paste style carries it; paste sanitises it", () => {
+    ed.setTool("rect"); drag(100, 100, 220, 180); ed.setTool("rect"); drag(400, 100, 520, 180);
+    const [a, b] = sh("rect") as [typeof ed.scene.els extends Map<string, infer E> ? E : never, typeof ed.scene.els extends Map<string, infer E> ? E : never];
+    ed.select([a.id]); ed.setStyle({ hex: "#112233" });
+    ed.copyStyle(); ed.select([b.id]); ed.pasteStyle();
+    expect(ed.scene.els.get(b.id)!.hex).toBe("#112233");
+    ed.select([b.id]); ed.setStyle({ cat: 3, hex: "" });
+    expect(ed.scene.els.get(b.id)!.hex).toBeUndefined();
+    const snap = ed.scene.snapshot(ed.scene.els.get(a.id)!);
+    expect(ed.paste("archypaint:" + JSON.stringify({ els: [{ ...snap, hex: "\"><script>x</script>" }], groups: [] }))).toBe(true);
+    expect([...ed.scene.els.values()].pop()!.hex).toBeUndefined();
+  });
+});

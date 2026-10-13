@@ -4,7 +4,7 @@ import type { AlignMode } from "../align";
 import { glyph, type GlyphName } from "./glyphs";
 import { h, setAttr, setDisabled, setHidden, setPressed, setText } from "./dom";
 import { commonGroupId, commonValue, selectionEls } from "./props-model";
-import { COLOUR_NAMES } from "../theme";
+import { COLOUR_NAMES, normHex } from "../theme";
 
 const FILL = ["outline", "tint", "solid"] as const;
 const EDGE = ["sharp", "round", "soft"] as const;
@@ -24,7 +24,22 @@ export function mountProps(ctx: Ctx, parent: HTMLElement): PropsPanel {
 
   const count = h("span", { class: "ap-note" });
   const deleteBtn = h("button", { class: "ap-btn icon ap-danger", attrs: { type: "button", title: "Delete (⌫)", "aria-label": "Delete selection" }, on: { click: () => { editor.deleteSelection(); ctx.refresh(); } } }, glyph("trash", 16));
-  const sw = COLOUR_NAMES.map((n, i) => h("button", { class: "ap-sw", style: { "--c": `var(--cat${i})` }, attrs: { type: "button", title: n, "aria-label": `Colour ${n}`, "aria-pressed": "false" }, on: { click: () => set({ cat: i }) } }));
+  const sw = COLOUR_NAMES.map((n, i) => h("button", { class: "ap-sw", style: { "--c": `var(--cat${i})` }, attrs: { type: "button", title: n, "aria-label": `Colour ${n}`, "aria-pressed": "false" }, on: { click: () => set({ cat: i, hex: "" }) } }));
+  const hexDot = h("span", { class: "ap-hexdot", attrs: { "aria-hidden": "true" } });
+  const hexInput = h("input", { class: "ap-input ap-hex", attrs: { type: "text", placeholder: "custom hex, e.g. ff8800", "aria-label": "Custom colour (hex)", maxlength: 7, autocomplete: "off", spellcheck: "false" } });
+  let hexNow = "";
+  const hexSync = () => { hexInput.value = hexNow; setAttr(hexInput, "aria-invalid", "false"); hexDot.style.setProperty("--c", hexNow || "transparent"); };
+  const applyHex = () => {
+    const raw = hexInput.value.trim();
+    if (raw === "") { if (hexNow !== "") set({ hex: "" }); return; }
+    const n = normHex(raw);
+    if (!n) { setAttr(hexInput, "aria-invalid", "true"); return; }
+    hexInput.value = n; setAttr(hexInput, "aria-invalid", "false");
+    if (n !== hexNow) set({ hex: n });
+  };
+  hexInput.addEventListener("input", () => { const raw = hexInput.value.trim(); setAttr(hexInput, "aria-invalid", raw !== "" && !normHex(raw) ? "true" : "false"); });
+  hexInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { applyHex(); hexInput.blur(); } else if (e.key === "Escape") { hexSync(); hexInput.blur(); } });
+  hexInput.addEventListener("blur", applyHex);
   const fill = seg("Fill", FILL, "fill");
   const edge = seg("Edge", EDGE, "edge");
   const route = seg("Route", ROUTE, "route");
@@ -67,7 +82,7 @@ export function mountProps(ctx: Ctx, parent: HTMLElement): PropsPanel {
 
   const el = h("section", { class: "ap-card ap-props", attrs: { "aria-label": "Properties" } },
     h("div", { class: "ap-lh" }, h("div", { class: "ap-lh-group" }, h("span", { class: "ap-label", text: "Selection" }), count), deleteBtn),
-    h("div", {}, h("div", { class: "ap-label", text: "Colour" }), h("div", { class: "ap-swatches" }, ...sw)),
+    h("div", {}, h("div", { class: "ap-label", text: "Colour" }), h("div", { class: "ap-swatches" }, ...sw), h("div", { class: "ap-hexrow" }, hexDot, hexInput)),
     h("div", {}, h("div", { class: "ap-label", text: "Fill" }), fill.el),
     h("div", {}, h("div", { class: "ap-label", text: "Edge" }), edge.el),
     h("div", {}, dash), routeRow, braceRow, laneRow, alignBlock,
@@ -94,7 +109,10 @@ export function mountProps(ctx: Ctx, parent: HTMLElement): PropsPanel {
     const els = selectionEls(editor.scene.els, sel);
     setText(count, sel.size === 1 ? (els[0]?.kind ?? "1 selected") : `${sel.size} selected`);
     const cat = commonValue(els, (e) => e.cat);
-    sw.forEach((b, i) => setPressed(b, cat === i));
+    const hex = commonValue(els, (e) => e.hex ?? "");
+    hexNow = hex ?? "";
+    if (document.activeElement !== hexInput) hexSync();
+    sw.forEach((b, i) => setPressed(b, !hex && cat === i));
     radio(fill, commonValue(els, (e) => e.fill));
     radio(edge, commonValue(els, (e) => e.edge));
     const arrows = els.some((e) => e.kind === "arrow");

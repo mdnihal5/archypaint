@@ -1,6 +1,6 @@
 import type { CalcRow } from "./calc";
 import type { El } from "./scene";
-import type { Theme } from "./theme";
+import { colourOf, type Theme } from "./theme";
 
 /**
  * Entry-side glue for capacity notes (kind "calc"). The evaluator (src/calc.ts, ~5 KB) is a lazy chunk: the renderer asks
@@ -58,6 +58,6 @@ export function calcRows(e: { version: number; text: string }): CalcRow[] | null
 export function drawCalcEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number, lod: boolean, hideText: boolean): void {
   if (draw) { draw(ctx, e, th, z, lod, hideText); return; }
   kick();
-  ctx.globalAlpha = th.tint; ctx.fillStyle = th.cats[e.cat % th.cats.length]!; ctx.fillRect(e.x, e.y, e.w, e.h);
+  ctx.globalAlpha = th.tint; ctx.fillStyle = colourOf(th, e); ctx.fillRect(e.x, e.y, e.w, e.h);
   ctx.globalAlpha = 1; ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = 2; ctx.strokeRect(e.x, e.y, e.w, e.h);
 }

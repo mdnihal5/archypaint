@@ -3,7 +3,7 @@ import type { El, Scene, EdgeStyle, FillStyle } from "./scene";
 import type { Tool } from "./input";
 import type { Viewport } from "./viewport";
 
-export interface StyleProps { cat: number; fill: FillStyle; edge: EdgeStyle; radius: number; dash: 0 | 1; route: 0 | 1 | 2; /** orientation of braces (0-3) and swimlanes (0 rows, 1 columns) */ o?: 0 | 1 | 2 | 3 }
+export interface StyleProps { cat: number; /** custom #rrggbb, "" clears it */ hex?: string; fill: FillStyle; edge: EdgeStyle; radius: number; dash: 0 | 1; route: 0 | 1 | 2; /** orientation of braces (0-3) and swimlanes (0 rows, 1 columns) */ o?: 0 | 1 | 2 | 3 }
 
 export type EditorEvent = "change" | "selection" | "tool" | "history" | "viewport";
 

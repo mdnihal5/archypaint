@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { anchorsOf, arrowDist, bboxOfPts, computeArrowPts, effectiveRoute, nearestSide, portPoint, rerouteBound, routeArrow, sceneRectOf, type Anchor } from "./connectors";
+import { anchorsOf, arrowDist, bboxOfPts, computeArrowPts, effectiveRoute, nearestSide, portPoint, rerouteBound, roundedPolyline, routeArrow, sceneRectOf, type Anchor } from "./connectors";
 import { Scene } from "./scene";
 
 const A = (x: number, y: number, w: number, h: number, port: -1 | 0 | 1 | 2 | 3 = -1): Anchor => ({ rect: { x, y, w, h }, pt: [x + w / 2, y + h / 2], port });
@@ -127,5 +127,25 @@ describe("corner ports (4-7)", () => {
     expect(pts[2]).toBeGreaterThan(100); // far to the right: leaves sideways, not upward
     const up = routeArrow(a, { rect: null, pt: [110, -300], port: -1 }, 1);
     expect(up[3]).toBeLessThan(0); // far above: leaves upward
+  });
+});
+
+describe("roundedPolyline (the path round-cornered elbows are drawn along)", () => {
+  it("replaces a right-angle corner by a circular arc of radius 16 and keeps the ends", () => {
+    const out = roundedPolyline([0, 0, 100, 0, 100, 100]);
+    expect(out.slice(0, 2)).toEqual([0, 0]);
+    expect(out.slice(-2)).toEqual([100, 100]);
+    const pts: [number, number][] = []; for (let i = 0; i < out.length; i += 2) pts.push([out[i]!, out[i + 1]!]);
+    expect(pts).toContainEqual([84, 0]); expect(pts.some(([x, y]) => Math.abs(x - 100) < 1e-9 && Math.abs(y - 16) < 1e-9)).toBe(true);
+    for (const [x, y] of pts.filter(([x, y]) => x > 84 && y < 16)) expect(Math.hypot(x - 84, y - 16)).toBeCloseTo(16, 6); // every arc sample lies on the circle centred (84,16)
+    expect(pts.some(([x, y]) => x === 100 && y === 0)).toBe(false); // the sharp corner is never visited
+  });
+  it("clamps the radius to half of a short segment and survives degenerate input", () => {
+    const out = roundedPolyline([0, 0, 20, 0, 20, 100]);
+    expect(out.some((v: number, i: number) => i % 2 === 0 && v > 10 && v < 20)).toBe(true);
+    expect(roundedPolyline([0, 0, 10, 10])).toEqual([0, 0, 10, 10]);
+    expect(() => roundedPolyline([0, 0, 0, 0, 5, 5])).not.toThrow();
+    expect(() => roundedPolyline([0, 0, 50, 0, 0, 0])).not.toThrow(); // folds straight back
+    expect(roundedPolyline([0, 0, 50, 0, 100, 0]).every(Number.isFinite)).toBe(true);
   });
 });

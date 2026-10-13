@@ -231,3 +231,34 @@ export function rerouteBound(scene: Scene, ids: ReadonlySet<string>): RerouteRes
   }
   return out;
 }
+
+/**
+ * The polyline an elbow arrow is actually DRAWN along when its corners are round (edge 1): the same circular arcs the
+ * renderer's arcTo makes (radius min(16, half of each adjoining segment)), sampled. The flow dots walk this, so they follow
+ * the visible line around corners instead of cutting to the sharp corner point.
+ */
+export function roundedPolyline(p: readonly number[], maxR = 16, steps = 6): number[] {
+  const n = p.length;
+  if (n < 6) return Array.from(p);
+  const out: number[] = [p[0]!, p[1]!];
+  for (let i = 2; i + 3 < n; i += 2) {
+    const px = p[i - 2]!, py = p[i - 1]!, cx = p[i]!, cy = p[i + 1]!, nx = p[i + 2]!, ny = p[i + 3]!;
+    const l1 = Math.hypot(px - cx, py - cy), l2 = Math.hypot(nx - cx, ny - cy);
+    if (!(l1 > 0 && l2 > 0)) { out.push(cx, cy); continue; }
+    const r = Math.min(maxR, l1 / 2, l2 / 2);
+    const ux = (px - cx) / l1, uy = (py - cy) / l1, vx = (nx - cx) / l2, vy = (ny - cy) / l2;
+    const phi = Math.acos(Math.max(-1, Math.min(1, ux * vx + uy * vy)));
+    if (phi < 1e-3 || Math.PI - phi < 1e-3) { out.push(cx, cy); continue; } // folded back or straight through: no arc
+    const d = r / Math.tan(phi / 2);
+    const t1x = cx + ux * d, t1y = cy + uy * d, t2x = cx + vx * d, t2y = cy + vy * d;
+    let bx = ux + vx, by = uy + vy; const bl = Math.hypot(bx, by); bx /= bl; by /= bl;
+    const h = r / Math.sin(phi / 2), ox = cx + bx * h, oy = cy + by * h;
+    const a1 = Math.atan2(t1y - oy, t1x - ox), a2 = Math.atan2(t2y - oy, t2x - ox);
+    let da = a2 - a1; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+    out.push(t1x, t1y);
+    for (let k = 1; k < steps; k++) { const a = a1 + (da * k) / steps; out.push(ox + Math.cos(a) * r, oy + Math.sin(a) * r); }
+    out.push(t2x, t2y);
+  }
+  out.push(p[n - 2]!, p[n - 1]!);
+  return out;
+}

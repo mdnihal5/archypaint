@@ -1,6 +1,6 @@
 import { iconHasDetail, iconInner, iconOps, TIER_GRID, type Op, type Tier } from "./icon-pack";
 import type { El } from "./scene";
-import type { Theme } from "./theme";
+import { colourOf, onSolid, type Theme } from "./theme";
 
 export { ensureIcons, ensurePack, onIconsReady, listIcons, iconMeta, ROOT_ATTRS, TIER_GRID, packLoaded } from "./icon-pack";
 export type { Tier, IconMeta } from "./icon-pack";
@@ -37,7 +37,7 @@ function drawOps(ctx: CanvasRenderingContext2D, ops: Op[], colour: string): void
 
 /** the icon element draws its own label (in the strip reserved inside its box); `hideText` while that label is being edited */
 export function drawIconEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, zoom: number, hideText = false): void {
-  const col = th.cats[e.cat % th.cats.length]!;
+  const col = colourOf(th, e);
   const reserve = e.text ? LABEL : 0;
   const tile = Math.max(4, Math.min(e.w, e.h - reserve));
   const tx = e.x + (e.w - tile) / 2, ty = e.y;
@@ -59,7 +59,7 @@ export function drawIconEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, zoom
       ctx.save();
       ctx.translate(tx + tile * inset, ty + tile * inset); ctx.scale(s, s);
       ctx.lineCap = "round"; ctx.lineJoin = "round";
-      drawOps(ctx, ops, e.fill === 2 ? th.paper : col);
+      drawOps(ctx, ops, e.fill === 2 ? onSolid(th, col) : col);
       ctx.restore();
       ctx.globalAlpha = 1;
     }
