@@ -157,13 +157,22 @@ describe("branching from a line", () => {
     ed.undo();
     expect(br.pts.slice(0, 2)).toEqual([350, 130]);
   });
-  it("deleting the host detaches the branch and keeps its geometry", () => {
+  it("deleting the host deletes its branches too; undo restores them on the host", () => {
     const { h } = host();
     const br = branch(h), before = [...br.pts];
     ed.select([h.id]); ed.deleteSelection();
-    expect(br.src).toBe(""); expect(br.pts).toEqual(before);
+    expect(ed.scene.els.has(br.id)).toBe(false);
     ed.undo();
-    expect(br.src).toBe(h.id);
+    const back = ed.scene.els.get(br.id)!;
+    expect(back.src).toBe(h.id); expect(back.pts).toEqual(before);
+  });
+  it("deleting a shape takes its line and the branch off that line with it", () => {
+    const { a, h } = host();
+    const br = branch(h);
+    ed.select([a.id]); ed.deleteSelection();
+    expect(ed.scene.els.has(h.id)).toBe(false); expect(ed.scene.els.has(br.id)).toBe(false);
+    ed.undo();
+    expect(ed.scene.els.get(br.id)!.src).toBe(h.id); expect(ed.scene.els.get(h.id)!.src).toBe(a.id);
   });
   it("a branch end can sit on the host at the far end too, and dragging a branch end onto another line rebinds it", () => {
     const { h } = host();

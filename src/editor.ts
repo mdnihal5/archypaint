@@ -162,6 +162,27 @@ export function createEditor(d: EditorDeps): Editor {
     }
   }
 
+  /**
+   * adds to `ids` every unlocked connector bound to something being deleted: a shape, a group losing all its members, or
+   * another connector (a branch off a deleted line), to a fixpoint. The removal goes through hist.touch, so undo brings
+   * every connector back with its bindings, labels and segments as they were.
+   */
+  function withEdges(ids: Set<string>): void {
+    for (let grew = true; grew;) {
+      grew = false;
+      const goneGroups = new Set<string>();
+      if (scene.groups.size) {
+        for (const id of ids) for (const g of scene.els.get(id)?.groupIds ?? []) {
+          if (!goneGroups.has(g) && groupIdx.membersOf(g).every((m) => ids.has(m))) goneGroups.add(g);
+        }
+      }
+      for (const a of scene.els.values()) {
+        if (a.kind !== "arrow" || ids.has(a.id) || scene.isLocked(a)) continue;
+        if (ids.has(a.src) || ids.has(a.dst) || goneGroups.has(a.src) || goneGroups.has(a.dst)) { ids.add(a.id); grew = true; }
+      }
+    }
+  }
+
   function pruneGroups(): void {
     const gone = new Set<string>();
     for (const g of [...scene.groups.keys()]) {
@@ -385,6 +406,7 @@ export function createEditor(d: EditorDeps): Editor {
       if (!doomed.length) return;
       run("delete", () => {
         const ids = new Set(doomed);
+        withEdges(ids);
         const lostGroups = new Set<string>();
         if (scene.groups.size) for (const id of ids) for (const g of scene.els.get(id)?.groupIds ?? []) lostGroups.add(g);
         for (const id of ids) {
@@ -393,7 +415,7 @@ export function createEditor(d: EditorDeps): Editor {
           hist.touch(e);
           scene.remove(e);
         }
-        // arrows still pointing at a deleted shape keep their geometry but lose the binding
+        // only locked arrows can still point at a deleted shape: they keep their geometry but lose the binding
         for (const a of scene.els.values()) {
           if (a.kind !== "arrow") continue;
           if (ids.has(a.src) || ids.has(a.dst)) { hist.touch(a); scene.patch(a, { src: ids.has(a.src) ? "" : a.src, dst: ids.has(a.dst) ? "" : a.dst }); }
