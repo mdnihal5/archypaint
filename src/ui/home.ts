@@ -2,7 +2,7 @@ import { fromHTML, h, setAttr, setText } from "./dom";
 import type { Ctx } from "./ctx";
 
 const EDGE = ["sharp", "round", "soft"] as const;
-const FILL = ["outline", "tint", "solid"] as const;
+const FILL = ["outline", "tint", "solid", "none"] as const;
 
 const ZONE_T = ["1", "2", "3", "4", "5", "6", "7", "8"];
 const ZONE_L = ["A", "B", "C", "D"];

@@ -1,4 +1,4 @@
-import type { El, EdgeStyle, Port, Route, Scene } from "./scene";
+import type { ArrowLabel, El, EdgeStyle, Port, Route, Scene } from "./scene";
 import { outlinePort } from "./shape-geom";
 
 export interface Rect { x: number; y: number; w: number; h: number; /** element kind, so ports of polygon shapes land on the real outline */ kind?: string; /** corner radius, so corner ports sit on the rounded outline */ radius?: number }
@@ -165,13 +165,21 @@ export function bboxOfPts(pts: readonly number[]): Rect {
   return { x: x0, y: y0, w: Math.max(1, x1 - x0), h: Math.max(1, y1 - y0) };
 }
 
-export type RectOf = (id: string) => Rect | null;
+/** where a branch end sits: the point a fraction t along arrow `id`'s path (false when `id` is not an arrow) */
+export type HostPt = (id: string, t: number, out: [number, number]) => boolean;
+/** id -> rectangle; may also carry `host`, which resolves arrow-bound (branch) ends. Drag previews wrap it and keep `host`. */
+export type RectOf = ((id: string) => Rect | null) & { host?: HostPt };
+
+const hp: [number, number] = [0, 0];
 
 /** anchors of an arrow; `rectOf` lets a drag preview substitute moved rectangles */
 export function anchorsOf(e: El, rectOf: RectOf): [Anchor, Anchor] {
   const n = e.pts.length;
   const s: [number, number] = [e.pts[0] ?? e.x, e.pts[1] ?? e.y], t: [number, number] = [e.pts[n - 2] ?? e.x + e.w, e.pts[n - 1] ?? e.y + e.h];
   const sr = e.src ? rectOf(e.src) : null, dr = e.dst ? rectOf(e.dst) : null;
+  // a branch end (bound to another arrow at fraction st / dt of its path) is a free point that follows the host's path
+  if (!sr && e.src && rectOf.host?.(e.src, e.st ?? 0.5, hp)) { s[0] = hp[0]; s[1] = hp[1]; }
+  if (!dr && e.dst && rectOf.host?.(e.dst, e.dt ?? 0.5, hp)) { t[0] = hp[0]; t[1] = hp[1]; }
   return [
     { rect: sr, pt: s, port: sr ? e.sp : -1 },
     { rect: dr, pt: t, port: dr ? e.dp : -1 },
@@ -180,11 +188,225 @@ export function anchorsOf(e: El, rectOf: RectOf): [Anchor, Anchor] {
 
 export function computeArrowPts(e: El, rectOf: RectOf): number[] {
   const [a, b] = anchorsOf(e, rectOf);
-  return routeArrow(a, b, effectiveRoute(e.route, e.edge));
+  const route = effectiveRoute(e.route, e.edge);
+  const pts = routeArrow(a, b, route);
+  return route === 1 && e.segs && e.segs.length ? applySegs(pts, e.segs) : pts;
 }
 
+/* ---- manual elbow segments ----------------------------------------------------------------------------------------- */
+
+/**
+ * An elbow arrow remembers where the user pushed its INTERIOR segments (not the two that touch the ends, so the ends never move).
+ * `segs` is flat pairs [code, d]: code = 2 * index + (vertical ? 1 : 0), index counting segments of the auto-routed path (0 = first),
+ * d = how far the segment sits from where the router puts it, perpendicular to itself. An offset from the router's own position
+ * (not an absolute coordinate) follows the arrow when its shapes move, so a big move can never strand the bend in empty space.
+ * An entry whose index or orientation no longer exists in the auto path (the route changed shape) is ignored, not applied wrongly.
+ */
+export const MAX_SEG_PAIRS = 8;
+/** an elbow segment shorter than this on screen gets no handle (it would sit on top of its neighbours' corners) */
+export const SEG_MIN_PX = 28;
+const segFlags: number[] = [];
+
+/** shift the recorded segments of an auto-routed orthogonal path (in place); every move keeps the path orthogonal */
+export function applySegs(p: number[], segs: readonly number[]): number[] {
+  const nv = p.length >> 1;
+  segFlags.length = 0;
+  for (let s = 0; s + 1 < segs.length; s += 2) {
+    const k = (segs[s]! as number) >> 1;
+    let f = 0; // 1 = horizontal, 2 = vertical
+    if (k >= 1 && k <= nv - 3) {
+      const dx = Math.abs(p[2 * k]! - p[2 * k + 2]!), dy = Math.abs(p[2 * k + 1]! - p[2 * k + 3]!);
+      if (dy < EPS && dx >= EPS) f = 1; else if (dx < EPS && dy >= EPS) f = 2;
+    }
+    segFlags.push(f);
+  }
+  for (let s = 0, i = 0; s + 1 < segs.length; s += 2, i++) {
+    const code = segs[s]!, d = segs[s + 1]!, k = code >> 1, f = segFlags[i]!;
+    if (!Number.isFinite(d) || f === 0 || (f === 2) !== ((code & 1) === 1)) continue;
+    const o = f === 1 ? 1 : 0;
+    p[2 * k + o] = p[2 * k + o]! + d; p[2 * k + 2 + o] = p[2 * k + 2 + o]! + d;
+  }
+  return p;
+}
+
+/** visit the interior segments of a polyline: index k, midpoint, orientation and length. Allocation-free. */
+export function eachInteriorSeg(p: readonly number[], fn: (k: number, mx: number, my: number, vertical: boolean, len: number) => void): void {
+  const nv = p.length >> 1;
+  for (let k = 1; k <= nv - 3; k++) {
+    const ax = p[2 * k]!, ay = p[2 * k + 1]!, bx = p[2 * k + 2]!, by = p[2 * k + 3]!;
+    const dx = Math.abs(ax - bx), dy = Math.abs(ay - by);
+    if (dx < EPS && dy < EPS) continue;
+    if (dy < EPS) fn(k, (ax + bx) / 2, ay, false, dx); else if (dx < EPS) fn(k, ax, (ay + by) / 2, true, dy);
+  }
+}
+
+/** `segs` with the entry for `code` set to offset `d` (a near-zero offset removes it); undefined when nothing is left */
+export function withSeg(segs: readonly number[] | undefined, code: number, d: number): number[] | undefined {
+  const out: number[] = [];
+  if (segs) for (let i = 0; i + 1 < segs.length; i += 2) if (segs[i] !== code) out.push(segs[i]!, segs[i + 1]!);
+  if (Math.abs(d) >= 0.5 && Number.isFinite(d) && out.length / 2 < MAX_SEG_PAIRS) out.push(code, Math.round(d * 100) / 100);
+  return out.length ? out : undefined;
+}
+
+/** coerce untrusted segment data into valid pairs (finite, bounded count and magnitude); undefined when none survive */
+export function cleanSegs(raw: unknown): number[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out: number[] = [];
+  for (let i = 0; i + 1 < raw.length && out.length / 2 < MAX_SEG_PAIRS; i += 2) {
+    const c = raw[i], d = raw[i + 1];
+    if (typeof c !== "number" || typeof d !== "number" || !Number.isInteger(c) || c < 2 || c > 1e4 || !Number.isFinite(d) || Math.abs(d) > 1e6 || out.includes(c)) continue;
+    out.push(c, d);
+  }
+  return out.length ? out : undefined;
+}
+
+/** an id names an element (an arrow is not a rectangle: it resolves through `.host`) or, failing that, a group (its padded bounds) */
 export function sceneRectOf(scene: Scene): RectOf {
-  return (id) => { const t = scene.els.get(id); return t && t.kind !== "arrow" ? t : null; };
+  const f: RectOf = (id) => {
+    const t = scene.els.get(id);
+    if (t) return t.kind !== "arrow" ? t : null;
+    return scene.groupRect ? scene.groupRect(id) : null;
+  };
+  f.host = (id, t, out) => {
+    const h = scene.els.get(id);
+    if (!h || h.kind !== "arrow") return false;
+    pointAtT(h.pts, isCurve(h), t, out);
+    return true;
+  };
+  return f;
+}
+
+/* ---- branches: an arrow end bound to a point on another arrow --------------------------------------------------------- */
+
+/** deepest chain of host arrows a branch may hang from (A on B on C ...). Deeper bindings are refused; load repairs them. */
+export const MAX_BRANCH_DEPTH = 4;
+
+/** how many hosts deep `e` hangs: 0 = bound to no arrow. Infinity when the chain is cyclic or longer than MAX_BRANCH_DEPTH. */
+export function hostDepth(scene: Scene, e: El, seen = 0): number {
+  if (seen > MAX_BRANCH_DEPTH) return Infinity;
+  let m = 0;
+  for (let i = 0; i < 2; i++) {
+    const id = i === 0 ? e.src : e.dst, h = id ? scene.els.get(id) : undefined;
+    if (h && h.kind === "arrow") m = Math.max(m, 1 + hostDepth(scene, h, seen + 1));
+  }
+  return m;
+}
+
+function reaches(scene: Scene, from: El, target: string, n: number): boolean {
+  if (n <= 0) return true; // too deep counts as a cycle
+  for (let i = 0; i < 2; i++) {
+    const id = i === 0 ? from.src : from.dst;
+    if (!id) continue;
+    if (id === target) return true;
+    const h = scene.els.get(id);
+    if (h && h.kind === "arrow" && reaches(scene, h, target, n - 1)) return true;
+  }
+  return false;
+}
+
+/** may arrow `arrowId` (an existing one, or "" for a new arrow) bind an end to arrow `hostId`? Refuses itself, cycles and over-deep chains. */
+export function canBindToArrow(scene: Scene, arrowId: string, hostId: string): boolean {
+  const h = scene.els.get(hostId);
+  if (!h || h.kind !== "arrow" || hostId === arrowId) return false;
+  if (arrowId && reaches(scene, h, arrowId, MAX_BRANCH_DEPTH + 1)) return false;
+  return 1 + hostDepth(scene, h) <= MAX_BRANCH_DEPTH;
+}
+
+/* ---- connector labels: positions along the routed path ------------------------------------------------------------- */
+
+const NO_LABELS: readonly ArrowLabel[] = [];
+const LEGACY: ArrowLabel[] = [{ t: 0.5, text: "" }];
+
+/**
+ * The labels an arrow carries. Files and callers written before multi-label support keep a single centred label in `text`;
+ * that reads as one label at t = 0.5 (the same object is reused, so treat the result as read-only and do not hold it).
+ */
+export function arrowLabels(e: { labels?: readonly ArrowLabel[] | undefined; text: string }): readonly ArrowLabel[] {
+  if (e.labels && e.labels.length) return e.labels;
+  if (!e.text) return NO_LABELS;
+  LEGACY[0]!.text = e.text;
+  return LEGACY;
+}
+
+export const MAX_LABELS = 12;
+export const MAX_LABEL_TEXT = 200;
+
+/** coerce untrusted label data (a file, the clipboard, an import) into valid labels: bad entries drop, t clamps to [0,1], text is bounded */
+export function cleanLabels(raw: unknown): ArrowLabel[] {
+  const out: ArrowLabel[] = [];
+  if (!Array.isArray(raw)) return out;
+  for (const l of raw) {
+    if (out.length >= MAX_LABELS) break;
+    if (typeof l !== "object" || l === null) continue;
+    const { t, text } = l as { t?: unknown; text?: unknown };
+    if (typeof text !== "string" || text === "") continue;
+    out.push({ t: typeof t === "number" && Number.isFinite(t) ? Math.max(0, Math.min(1, t)) : 0.5, text: text.slice(0, MAX_LABEL_TEXT) });
+  }
+  return out;
+}
+
+/** move a legacy single `text` on an arrow into `labels` (one label at t = 0.5); a no-op for anything else */
+export function migrateArrowText<T extends { kind: string; text: string; labels?: ArrowLabel[] | undefined }>(e: T): T {
+  if (e.kind !== "arrow") return e;
+  if (!e.labels || e.labels.length === 0) {
+    if (e.text) e.labels = [{ t: 0.5, text: e.text.slice(0, MAX_LABEL_TEXT) }];
+    else delete e.labels;
+  }
+  if (e.labels) e.text = "";
+  return e;
+}
+
+const SAMPLES = 24;
+
+/** visit the drawn path as straight pieces: the polyline itself, or 24 chords of the bezier. Allocation-free. */
+type SegFn = (ax: number, ay: number, bx: number, by: number) => void;
+function eachSeg(p: readonly number[], curve: boolean, fn: SegFn): void {
+  if (curve && p.length === 8) {
+    const q: [number, number] = [0, 0]; let lx = p[0]!, ly = p[1]!;
+    for (let i = 1; i <= SAMPLES; i++) { bezierAt(p, i / SAMPLES, q); fn(lx, ly, q[0], q[1]); lx = q[0]; ly = q[1]; }
+    return;
+  }
+  for (let i = 0; i + 3 < p.length; i += 2) fn(p[i]!, p[i + 1]!, p[i + 2]!, p[i + 3]!);
+}
+
+// module-level scratch + hoisted visitors: positioning a label allocates nothing (it runs for every label on every static frame)
+const st = { total: 0, target: 0, acc: 0, x: 0, y: 0, done: false, best: Infinity, bt: 0, px: 0, py: 0 };
+const sumLen = (ax: number, ay: number, bx: number, by: number): void => { st.total += Math.hypot(bx - ax, by - ay); };
+const seekPoint = (ax: number, ay: number, bx: number, by: number): void => {
+  if (st.done) return;
+  const l = Math.hypot(bx - ax, by - ay);
+  if (st.acc + l >= st.target) { const u = l ? (st.target - st.acc) / l : 0; st.x = ax + (bx - ax) * u; st.y = ay + (by - ay) * u; st.done = true; return; }
+  st.acc += l; st.x = bx; st.y = by;
+};
+const seekNearest = (ax: number, ay: number, bx: number, by: number): void => {
+  const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy, l = Math.sqrt(l2);
+  const u = l2 === 0 ? 0 : Math.max(0, Math.min(1, ((st.px - ax) * dx + (st.py - ay) * dy) / l2));
+  const d = Math.hypot(st.px - (ax + u * dx), st.py - (ay + u * dy));
+  if (d < st.best) { st.best = d; st.bt = (st.acc + u * l) / st.total; }
+  st.acc += l;
+};
+
+/** the point a fraction `t` of the way along the path (by length), written to `out`. A path of zero length yields its start. */
+export function pointAtT(p: readonly number[], curve: boolean, t: number, out: [number, number]): void {
+  st.total = 0; eachSeg(p, curve, sumLen);
+  st.x = p[0] ?? 0; st.y = p[1] ?? 0;
+  st.target = Math.max(0, Math.min(1, t)) * st.total; st.acc = 0; st.done = false;
+  eachSeg(p, curve, seekPoint);
+  out[0] = st.x; out[1] = st.y;
+}
+
+/** the t in [0,1] of the point on the path nearest to (px,py) — what dragging a label along its line sets */
+export function nearestT(p: readonly number[], curve: boolean, px: number, py: number): number {
+  st.total = 0; eachSeg(p, curve, sumLen);
+  if (st.total === 0) return 0.5;
+  st.best = Infinity; st.bt = 0; st.acc = 0; st.px = px; st.py = py;
+  eachSeg(p, curve, seekNearest);
+  return st.bt;
+}
+
+/** is the arrow drawn as a bezier (curve route and the 8-number control-point form)? */
+export function isCurve(e: { route: Route; edge: EdgeStyle; pts: readonly number[] }): boolean {
+  return effectiveRoute(e.route, e.edge) === 2 && e.pts.length === 8;
 }
 
 /** sampled point on a cubic given 8 numbers, t in [0,1] */
@@ -217,18 +439,55 @@ export function arrowDist(e: El, px: number, py: number): number {
 export interface RerouteResult { id: string; pts: number[] }
 
 /**
- * ONE batched pass: recompute every arrow whose src/dst is in `ids`. Arrows never bind to arrows,
- * so a single pass reaches the fixed point — there is no propagation and nothing to cap beyond the
- * arrow count itself (loop is a plain for-of over the arrows list).
+ * Recompute every arrow whose src/dst is in `ids`, then (branches) every arrow bound to one of those arrows, level by level.
+ * The closure is capped at MAX_BRANCH_DEPTH + 1 levels and each arrow is visited once, so a cycle cannot loop. Results come out
+ * hosts-first and each branch is routed against its host's fresh path.
  */
 export function rerouteBound(scene: Scene, ids: ReadonlySet<string>): RerouteResult[] {
-  const out: RerouteResult[] = [];
   const rectOf = sceneRectOf(scene);
+  let hit = ids;
+  if (scene.groups.size) {
+    // an arrow bound to a group follows when any member moves or resizes: widen the set with the moved elements' groups
+    let ext: Set<string> | null = null;
+    for (const id of ids) {
+      const m = scene.els.get(id);
+      if (m) for (const g of m.groupIds) (ext ??= new Set(ids)).add(g);
+    }
+    if (ext) hit = ext;
+  }
+  const todo: El[] = [];
+  let branches = false;
   for (const e of scene.els.values()) {
     if (e.kind !== "arrow") continue;
-    if (!(ids.has(e.src) || ids.has(e.dst))) continue;
-    out.push({ id: e.id, pts: computeArrowPts(e, rectOf) });
+    if (hit.has(e.src) || hit.has(e.dst)) todo.push(e);
+    if (!branches && ((e.src && scene.els.get(e.src)?.kind === "arrow") || (e.dst && scene.els.get(e.dst)?.kind === "arrow"))) branches = true;
   }
+  if (branches) {
+    const inSet = new Set<string>(todo.map((e) => e.id));
+    let frontier = new Set<string>([...inSet, ...ids]);
+    for (let lvl = 0; lvl <= MAX_BRANCH_DEPTH && frontier.size; lvl++) {
+      const next = new Set<string>();
+      for (const e of scene.els.values()) {
+        if (e.kind !== "arrow" || inSet.has(e.id) || !(frontier.has(e.src) || frontier.has(e.dst))) continue;
+        inSet.add(e.id); next.add(e.id); todo.push(e);
+      }
+      frontier = next;
+    }
+    const depth = new Map<string, number>();
+    for (const e of todo) depth.set(e.id, hostDepth(scene, e));
+    todo.sort((p, q) => depth.get(p.id)! - depth.get(q.id)!);
+  }
+  const out: RerouteResult[] = [];
+  if (!branches) { for (const e of todo) out.push({ id: e.id, pts: computeArrowPts(e, rectOf) }); return out; }
+  const fresh = new Map<string, number[]>();
+  const live: RectOf = (id) => rectOf(id);
+  live.host = (id, t, o) => {
+    const h = scene.els.get(id);
+    if (!h || h.kind !== "arrow") return false;
+    pointAtT(fresh.get(id) ?? h.pts, isCurve(h), t, o);
+    return true;
+  };
+  for (const e of todo) { const pts = computeArrowPts(e, live); fresh.set(e.id, pts); out.push({ id: e.id, pts }); }
   return out;
 }
 

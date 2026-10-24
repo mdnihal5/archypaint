@@ -1,5 +1,5 @@
 import { alignBoxes, distributeBoxes, matchSizes, unionOf, type AlignMode, type Box, type Delta } from "./align";
-import { bboxOfPts, computeArrowPts, rerouteBound, sceneRectOf } from "./connectors";
+import { MAX_LABEL_TEXT, MAX_LABELS, cleanSegs, arrowLabels, bboxOfPts, cleanLabels, computeArrowPts, isCurve, migrateArrowText, pointAtT, rerouteBound, sceneRectOf } from "./connectors";
 import { calcSize, ensureCalc, onCalcReady, SAMPLE as CALC_SAMPLE } from "./calc-view";
 import { buildLegend, renumberBadges as renumberPlan } from "./edit-ops";
 import type { EditorAPI, EditorEvent, StyleProps } from "./editor-api";
@@ -7,11 +7,15 @@ import { GroupIndex } from "./groups";
 import { History } from "./history";
 import { Controller, type Core, type Tool } from "./input";
 import { Renderer } from "./renderer";
-import { Scene, type El, type ElInit, type ElJSON, type GroupInfo, type Port, type SceneJSON } from "./scene";
+import { Scene, type ArrowLabel, type El, type ElInit, type ElJSON, type GroupInfo, type Port, type SceneJSON } from "./scene";
 import { braceVertical, NEW_KINDS } from "./shape-geom";
 import { COLOUR_NAMES, normHex, type Theme } from "./theme";
 import { installImageInput } from "./images-input";
-import { measureText, TextEditor } from "./text-edit";
+import { iconStrip } from "./icons";
+import { logoBox } from "./icon-pack";
+import { minLabelHeight } from "./wrap";
+import { isLogoId } from "./logos";
+import { measureText, TextEditor, textWidth, type EditAnchor, type EditTarget } from "./text-edit";
 
 /** an icon placed from the palette: a tile this many world units square (label strip included) */
 const ICON_SIZE = 48; // placed icons: about two thirds of the old 72
@@ -32,6 +36,9 @@ export type Editor = EditorAPI & {
 
 const EDGE_RADIUS = [0, 8, 18] as const;
 const CLIP_PREFIX = "archypaint:";
+/** kinds with no inline text editor at all / kinds that cannot be started by just typing (they have structured text or numbers) */
+const NO_EDIT = new Set(["brace", "legend"]);
+const NO_TYPE = new Set(["badge", "calc", "lane", "frame", "image"]);
 const KINDS = new Set(["rect", "ellipse", "diamond", "text", "arrow", "icon", "calc", "image", ...NEW_KINDS]);
 
 export function createEditor(d: EditorDeps): Editor {
@@ -41,6 +48,7 @@ export function createEditor(d: EditorDeps): Editor {
   const hist = new History(scene);
   const groupIdx = new GroupIndex(scene);
   renderer.groups = groupIdx;
+  scene.groupRect = (id) => groupIdx.bounds(id); // connectors bind to a group's padded boundary like to a shape
   const text = new TextEditor(d.stage, vp);
   const entered = new Set<string>();
   const subs = new Map<EditorEvent, Set<() => void>>();
@@ -117,7 +125,8 @@ export function createEditor(d: EditorDeps): Editor {
       const e = scene.add({
         ...rest, x: j.x + dx, y: j.y + dy, groupIds: j.groupIds.map((g) => gMap.get(g)!),
         pts: j.pts.map((v, i) => (i % 2 ? v + dy : v + dx)),
-        src: idMap.get(j.src) ?? "", dst: idMap.get(j.dst) ?? "",
+        src: idMap.get(j.src) ?? gMap.get(j.src) ?? "", dst: idMap.get(j.dst) ?? gMap.get(j.dst) ?? "", // an end bound to a duplicated group follows the copy
+        labels: j.labels?.map((l) => ({ ...l })), segs: j.segs ? [...j.segs] : undefined,
       } as ElInit);
       // scene.add assigned its own id; re-key to the pre-allocated one so bindings match
       scene.els.delete(e.id);
@@ -144,10 +153,21 @@ export function createEditor(d: EditorDeps): Editor {
     return { els, groups: [...gs.values()] };
   }
 
-  function pruneGroups(): void {
-    for (const g of [...scene.groups.keys()]) {
-      if (groupIdx.membersOf(g).length === 0) { hist.touchGroup(g); scene.groups.delete(g); }
+  /** connectors bound to a group that no longer exists keep their geometry but lose the binding */
+  function detachFromGroups(gone: ReadonlySet<string>): void {
+    if (!gone.size) return;
+    for (const a of scene.els.values()) {
+      if (a.kind !== "arrow" || !(gone.has(a.src) || gone.has(a.dst))) continue;
+      hist.touch(a); scene.patch(a, { src: gone.has(a.src) ? "" : a.src, dst: gone.has(a.dst) ? "" : a.dst });
     }
+  }
+
+  function pruneGroups(): void {
+    const gone = new Set<string>();
+    for (const g of [...scene.groups.keys()]) {
+      if (groupIdx.membersOf(g).length === 0) { hist.touchGroup(g); scene.groups.delete(g); gone.add(g); }
+    }
+    detachFromGroups(gone);
     scene.nonce++;
   }
 
@@ -201,7 +221,7 @@ export function createEditor(d: EditorDeps): Editor {
   // ---- text --------------------------------------------------------------------------------
 
   const commitText = (el: El, value: string, isNew: boolean): void => {
-    const v = value.replace(/\s+$/g, "");
+    let v = value.replace(/\s+$/g, "");
     if (el.kind === "badge") {
       const n = Math.floor(Number(v.trim()));
       if (Number.isFinite(n) && n >= 0 && n <= 99999 && n !== el.n) run("edit badge", () => { hist.touch(el); scene.patch(el, { n }); });
@@ -222,17 +242,92 @@ export function createEditor(d: EditorDeps): Editor {
     if (el.kind === "text" && v === "") { if (scene.els.has(el.id)) scene.remove(el); renderer.selected.delete(el.id); renderer.invalidate(true, true); emit("selection"); return; }
     run("edit text", () => {
       if (isNew) hist.created(el); else hist.touch(el);
-      if (el.kind === "text") { const m = measureText(v); const cx = el.x + el.w / 2, cy = el.y + el.h / 2; scene.set(el, cx - m.w / 2, cy - m.h / 2, m.w, m.h); }
+      if (el.kind === "text") { const m = measureText(v, el.fs); const cx = el.x + el.w / 2, cy = el.y + el.h / 2; scene.set(el, cx - m.w / 2, cy - m.h / 2, m.w, m.h); }
+      if (el.kind === "icon") {
+        // the name lives in a strip under the tile: the box grows by the strip when a name appears and shrinks when it goes, so the tile never changes size
+        v = v.replace(/\s*\n\s*/g, " ");
+        if ((el.text !== "") !== (v !== "")) scene.set(el, el.x, el.y, el.w, iconBoxH(el, el.fs, el.fs, v !== ""));
+        scene.patch(el, { text: v });
+        rerouteIds(new Set([el.id])); // a bound connector follows the new box
+        return;
+      }
       scene.patch(el, { text: v });
+      growToFit(el);
     });
   };
+
+  /**
+   * A shape whose wrapped label is taller than the shape can hold (with its padding) grows taller to fit it, the way a container does in Excalidraw.
+   * Height only: the width is the user's, and the wrap follows it. Callers run inside a transaction and have touched `el`. Never shrinks.
+   */
+  function growToFit(el: El): void {
+    const need = minLabelHeight(el, () => (t) => textWidth(t, el.fs || 0));
+    if (need > el.h + 0.5) { scene.set(el, el.x, el.y, el.w, need); rerouteIds(new Set([el.id])); }
+  }
+
+  /** height of an icon's box for a label state: the tile (unchanged) plus the strip when it has a name */
+  function iconBoxH(el: El, oldFs: number | undefined, newFs: number | undefined, hasLabel: boolean): number {
+    const tile = Math.max(4, Math.min(el.w, el.h - (el.text !== "" ? iconStrip(oldFs) : 0)));
+    return tile + (hasLabel ? iconStrip(newFs) : 0);
+  }
+
+  const openText = (target: EditTarget, onDone: (v: string) => void, onClosed?: () => void, initial?: string, anchor?: () => EditAnchor, caretEnd = false): void => {
+    text.open(target, (_t, v) => onDone(v), () => { onClosed?.(); emit("edit"); }, initial, anchor, caretEnd);
+    emit("edit");
+  };
+
+  /** the overlay for an icon's name: under its tile, one line */
+  const iconAnchor = (e: El) => (): EditAnchor => ({ cx: e.x + e.w / 2, cy: e.text ? e.y + e.h - iconStrip(e.fs) / 2 : e.y + e.h + iconStrip(e.fs) / 2, w: Math.max(e.w + 16, 80), fs: e.fs || 12, fit: true, single: true });
+
+  // ---- connector labels --------------------------------------------------------------------
+
+  /** a mutable copy of an arrow's labels (a legacy centred `text` becomes the first one) */
+  const labelsOf = (a: El): ArrowLabel[] => arrowLabels(a).map((l) => ({ t: l.t, text: l.text }));
+
+  function commitLabel(id: string, idx: number, t: number, value: string): void {
+    const a = scene.els.get(id);
+    if (!a || a.kind !== "arrow") return;
+    const v = value.replace(/\s+/g, " ").trim().slice(0, MAX_LABEL_TEXT);
+    const ls = labelsOf(a), cur = idx >= 0 ? ls[idx] : undefined;
+    if (cur ? cur.text === v && a.text === "" : v === "") return; // nothing changed: no empty undo step
+    if (cur) { if (v === "") ls.splice(idx, 1); else cur.text = v; }
+    else if (ls.length < MAX_LABELS) ls.push({ t, text: v });
+    run(cur && v === "" ? "remove label" : "edit label", () => { hist.touch(a); scene.patch(a, { labels: ls.length ? ls : undefined, text: "" }); });
+  }
+
+  /** open the label editor for label `idx` of arrow `a`, or (idx < 0) a new label at `t` */
+  function editLabel(a: El, idx: number, t: number, seed?: string): void {
+    if (scene.isLocked(a) || readOnly || a.kind !== "arrow") return;
+    const cur = idx >= 0 ? arrowLabels(a)[idx] : undefined;
+    const at = cur ? cur.t : Math.max(0, Math.min(1, t));
+    const out: [number, number] = [0, 0];
+    // a typed character opens the editor with it appended to the label (like a shape's label), caret at the end
+    openText(a, (v) => commitLabel(a.id, cur ? idx : -1, at, v), undefined, (cur?.text ?? "") + (seed ?? ""), () => {
+      pointAtT(a.pts, isCurve(a), at, out);
+      return { cx: out[0], cy: out[1], w: 60, fs: a.fs || 13, fit: true, single: true };
+    }, seed !== undefined);
+  }
+
+  // ---- group names -------------------------------------------------------------------------
+
+  function editGroupName(gid: string): void {
+    const g = scene.groups.get(gid), tag = groupIdx.tagBox(gid);
+    if (!g || !tag || readOnly || g.locked) return;
+    const stand: EditTarget = { x: tag.x, y: tag.y, w: tag.w, h: tag.h, kind: "text", text: g.name, fs: undefined, align: undefined };
+    openText(stand, (v) => api.renameGroup(gid, v.replace(/\s+/g, " ").trim().slice(0, 40)), undefined, g.name, () => {
+      const b = groupIdx.bounds(gid), cur = scene.groups.get(gid);
+      // the tag sits above the group's top-left corner (the label is drawn there); the overlay is centred on where the text would be
+      const w = Math.max(48, textWidth(cur?.name ?? "") + 8);
+      return b ? { cx: b.x + 12 + w / 2 - 4, cy: b.y - 8 - 8, w: 60, fs: 13, fit: true, single: true } : { cx: stand.x, cy: stand.y, w: 60, fs: 13, fit: true, single: true };
+    });
+  }
 
   /** align/distribute act on "blocks": each selected element, except that a group counts as one box */
   function arrange(plan: (boxes: Box[]) => Map<string, Delta>, label: string, min: number): void {
     const blocks = new Map<string, El[]>();
     for (const id of sel()) {
       const e = scene.els.get(id);
-      if (!e || e.kind === "arrow" || e.locked) continue;
+      if (!e || e.kind === "arrow" || scene.isLocked(e)) continue;
       const key = e.groupIds.length ? e.groupIds[e.groupIds.length - 1]! : e.id;
       const a = blocks.get(key);
       if (a) a.push(e); else blocks.set(key, [e]);
@@ -262,16 +357,36 @@ export function createEditor(d: EditorDeps): Editor {
     },
     get toolLocked() { return ctl.toolLocked; },
     setToolLock(on: boolean) { ctl.setToolLock(on); },
+    get editing() { return text.isOpen; },
+    editSelection(seed) {
+      if (readOnly) return false;
+      if (sel().size > 1) { // a whole group selected: Enter renames it
+        if (seed !== undefined) return false;
+        const first = scene.els.get([...sel()][0]!), gid = first?.groupIds[first.groupIds.length - 1];
+        const members = gid ? groupIdx.membersOf(gid) : [];
+        if (gid === undefined || members.length !== sel().size || !members.every((m) => sel().has(m))) return false;
+        editGroupName(gid);
+        return true;
+      }
+      if (sel().size !== 1) return false;
+      const e = scene.els.get([...sel()][0]!);
+      if (!e || scene.isLocked(e) || NO_EDIT.has(e.kind) || (seed !== undefined && NO_TYPE.has(e.kind))) return false;
+      core.editText(e, seed);
+      return true;
+    },
+    editGroupName, editLabel,
     selection: () => renderer.selected,
     select(ids) { setSel(ids); },
     clearSelection() { setSel([]); entered.clear(); },
     selectAll() { setSel(scene.els.keys()); },
 
     deleteSelection() {
-      const doomed = [...sel()].filter((id) => !scene.els.get(id)?.locked);
+      const doomed = [...sel()].filter((id) => { const e = scene.els.get(id); return !e || !scene.isLocked(e); });
       if (!doomed.length) return;
       run("delete", () => {
         const ids = new Set(doomed);
+        const lostGroups = new Set<string>();
+        if (scene.groups.size) for (const id of ids) for (const g of scene.els.get(id)?.groupIds ?? []) lostGroups.add(g);
         for (const id of ids) {
           const e = scene.els.get(id);
           if (!e) continue;
@@ -285,6 +400,10 @@ export function createEditor(d: EditorDeps): Editor {
         }
         for (const id of ids) renderer.selected.delete(id);
         pruneGroups();
+        // a connector bound to a group that lost members re-fits the smaller boundary
+        const shrunk = new Set<string>();
+        for (const g of lostGroups) if (scene.groups.has(g)) shrunk.add(g);
+        if (shrunk.size) rerouteIds(shrunk);
       });
       emit("selection");
     },
@@ -295,6 +414,7 @@ export function createEditor(d: EditorDeps): Editor {
     group(name) {
       const ids = [...sel()];
       if (ids.length < 2) return null;
+      for (const id of ids) { const m = scene.els.get(id); if (m && scene.groupLocked(m)) return null; } // a locked group's membership is frozen
       return run("group", () => {
         const gid = `g${(++gc).toString(36)}${Math.random().toString(36).slice(2, 5)}`;
         hist.touchGroup(gid);
@@ -313,6 +433,7 @@ export function createEditor(d: EditorDeps): Editor {
       const tops = new Set<string>();
       for (const id of sel()) { const e = scene.els.get(id); const g = e?.groupIds[e.groupIds.length - 1]; if (g) tops.add(g); }
       if (!tops.size) return;
+      for (const g of tops) if (scene.groups.get(g)?.locked) return; // unlock first
       run("ungroup", () => {
         for (const g of tops) {
           for (const id of [...groupIdx.membersOf(g)]) {
@@ -321,12 +442,13 @@ export function createEditor(d: EditorDeps): Editor {
           }
           hist.touchGroup(g); scene.groups.delete(g); entered.delete(g);
         }
+        detachFromGroups(tops);
         scene.nonce++;
       });
     },
     renameGroup(id, name) {
       const g = scene.groups.get(id);
-      if (!g || g.name === name) return;
+      if (!g || g.name === name || g.locked) return;
       run("rename group", () => { hist.touchGroup(id); g.name = name; scene.nonce++; });
     },
     bringToFront() { reorder("front"); }, bringForward() { reorder("forward"); },
@@ -336,21 +458,29 @@ export function createEditor(d: EditorDeps): Editor {
       run("style", () => {
         for (const id of sel()) {
           const e = scene.els.get(id);
-          if (!e) continue;
+          if (!e || scene.groupLocked(e)) continue;
           hist.touch(e);
           const patch: Partial<El> = {};
           if (p.cat !== undefined) patch.cat = p.cat;
           if (p.hex !== undefined) patch.hex = normHex(p.hex) || undefined;
           if (p.fill !== undefined) patch.fill = p.fill;
           if (p.dash !== undefined) patch.dash = p.dash;
-          if (p.route !== undefined) patch.route = p.route;
+          if (p.route !== undefined) { patch.route = p.route; if (p.route !== e.route) patch.segs = undefined; } // a manual elbow shape belongs to the elbow route
           if (p.edge !== undefined) { patch.edge = p.edge; if (e.kind !== "arrow") patch.radius = edgeRadius(p.edge); }
           if (p.radius !== undefined) patch.radius = p.radius;
+          if (p.align !== undefined) patch.align = p.align === "center" ? undefined : p.align;
+          if (p.fs !== undefined) patch.fs = p.fs > 0 ? Math.max(6, Math.min(96, Math.round(p.fs))) : undefined;
           if (p.o !== undefined && e.kind === "brace") {
             if (braceVertical(e.o) !== braceVertical(p.o)) scene.set(e, e.x + e.w / 2 - e.h / 2, e.y + e.h / 2 - e.w / 2, e.h, e.w);
             patch.o = p.o;
           } else if (p.o !== undefined && e.kind === "lane") patch.o = p.o === 1 ? 1 : 0;
+          const oldFs = e.fs;
           scene.patch(e, patch);
+          if (p.fs !== undefined && e.text) {
+            if (e.kind === "text") { const m = measureText(e.text, e.fs); const cx = e.x + e.w / 2, cy = e.y + e.h / 2; scene.set(e, cx - m.w / 2, cy - m.h / 2, m.w, m.h); }
+            else if (e.kind === "icon") { scene.set(e, e.x, e.y, e.w, iconBoxH(e, oldFs, e.fs, true)); rerouteIds(new Set([e.id])); }
+            else growToFit(e); // a bigger text size may need a taller shape
+          }
           if (e.kind === "arrow" && (p.edge !== undefined || p.route !== undefined)) applyArrow(e, computeArrowPts(e, sceneRectOf(scene)));
         }
       });
@@ -377,7 +507,10 @@ export function createEditor(d: EditorDeps): Editor {
     placeIcon(iconId, at) {
       const cx = at?.x ?? vp.x + vp.w / vp.zoom / 2, cy = at?.y ?? vp.y + vp.h / vp.zoom / 2;
       return run("place icon", () => {
-        const e = newEl({ kind: "icon", iconId, x: cx - ICON_SIZE / 2, y: cy - ICON_SIZE / 2, w: ICON_SIZE, h: ICON_SIZE });
+        // a brand logo is placed bare (no tile); a wordmark gets a box as wide as its aspect asks, so it is legible rather than a thin line in a square
+        const logo = isLogoId(iconId), vb = logo ? logoBox(iconId) : null;
+        const w = vb && vb[2]! / vb[3]! > 1.35 ? Math.round(ICON_SIZE * Math.min(2.4, (vb[2]! / vb[3]!) * 0.85)) : ICON_SIZE;
+        const e = newEl({ kind: "icon", iconId, x: cx - w / 2, y: cy - ICON_SIZE / 2, w, h: ICON_SIZE, ...(logo ? { fill: 3 as const } : {}) });
         setSel([e.id]);
         return e;
       });
@@ -387,7 +520,7 @@ export function createEditor(d: EditorDeps): Editor {
     distribute(axis) { arrange((b) => distributeBoxes(b, axis), "distribute", 3); },
     matchSize(dim) {
       const els: El[] = [];
-      for (const id of sel()) { const e = scene.els.get(id); if (e && e.kind !== "arrow" && !e.locked && e.groupIds.length === 0) els.push(e); }
+      for (const id of sel()) { const e = scene.els.get(id); if (e && e.kind !== "arrow" && !scene.isLocked(e) && e.groupIds.length === 0) els.push(e); }
       const plan = matchSizes(els.map((e) => ({ id: e.id, x: e.x, y: e.y, w: e.w, h: e.h })), dim);
       if (!plan.size) return;
       run("match size", () => {
@@ -395,12 +528,31 @@ export function createEditor(d: EditorDeps): Editor {
         rerouteIds(new Set(plan.keys()));
       });
     },
+    selectedGroup() {
+      if (sel().size < 2) return null; // a lone member is an element, not "a group selected"
+      const first = scene.els.get([...sel()][0]!);
+      if (!first) return null;
+      for (let i = first.groupIds.length - 1; i >= 0; i--) {
+        const gid = first.groupIds[i]!, m = groupIdx.membersOf(gid);
+        if (m.length === sel().size && m.every((id) => sel().has(id))) return gid;
+      }
+      return null;
+    },
+    setGroupLocked(id, locked) {
+      const g = scene.groups.get(id);
+      if (!g || g.locked === locked) return;
+      run(locked ? "lock group" : "unlock group", () => { hist.touchGroup(id); g.locked = locked; scene.nonce++; });
+    },
     setLocked(locked) {
+      const gid = api.selectedGroup();
+      if (gid !== null) { api.setGroupLocked(gid, locked); return; } // a whole group selected: the lock is the group's
       const els = [...sel()].map((id) => scene.els.get(id)).filter((e): e is El => !!e && e.locked !== locked);
       if (!els.length) return;
       run(locked ? "lock" : "unlock", () => { for (const e of els) { hist.touch(e); scene.patch(e, { locked }); } });
     },
     toggleLock() {
+      const gid = api.selectedGroup();
+      if (gid !== null) { api.setGroupLocked(gid, !scene.groups.get(gid)!.locked); return; }
       let anyUnlocked = false;
       for (const id of sel()) if (scene.els.get(id)?.locked === false) { anyUnlocked = true; break; }
       api.setLocked(anyUnlocked);
@@ -409,7 +561,7 @@ export function createEditor(d: EditorDeps): Editor {
       let e: El | undefined;
       for (const id of sel()) { const c = scene.els.get(id); if (c && (!e || (e.kind === "arrow" && c.kind !== "arrow"))) e = c; }
       if (!e) return false;
-      styleClip = { cat: e.cat, hex: e.hex ?? "", fill: e.fill, edge: e.edge, dash: e.dash };
+      styleClip = { cat: e.cat, hex: e.hex ?? "", fill: e.fill, edge: e.edge, dash: e.dash, fs: e.fs ?? 0, align: e.align ?? "center" };
       if (e.kind !== "arrow") styleClip.radius = e.radius;
       return true;
     },
@@ -425,11 +577,11 @@ export function createEditor(d: EditorDeps): Editor {
         return e;
       });
     },
-    insertCalc() {
+    insertCalc(text = CALC_SAMPLE) {
       void ensureCalc().catch(() => {}); // start loading the evaluator now so the first draw already has results
-      const s = calcSize(CALC_SAMPLE), z = vp.zoom, cx = vp.x + vp.w / z / 2, cy = vp.y + vp.h / z / 2;
+      const s = calcSize(text), z = vp.zoom, cx = vp.x + vp.w / z / 2, cy = vp.y + vp.h / z / 2;
       return run("capacity note", () => {
-        const e = newEl({ kind: "calc", x: Math.round(cx - s.w / 2), y: Math.round(cy - s.h / 2), w: s.w, h: s.h, text: CALC_SAMPLE, cat: 7, fill: 1 });
+        const e = newEl({ kind: "calc", x: Math.round(cx - s.w / 2), y: Math.round(cy - s.h / 2), w: s.w, h: s.h, text, cat: 7, fill: 1 });
         setSel([e.id]);
         return e;
       });
@@ -439,7 +591,7 @@ export function createEditor(d: EditorDeps): Editor {
       run(label, () => {
         for (const [id, p] of pos) {
           const e = scene.els.get(id);
-          if (!e || e.locked || e.kind === "arrow" || !Number.isFinite(p.x) || !Number.isFinite(p.y) || (e.x === p.x && e.y === p.y)) continue;
+          if (!e || scene.isLocked(e) || e.kind === "arrow" || !Number.isFinite(p.x) || !Number.isFinite(p.y) || (e.x === p.x && e.y === p.y)) continue;
           hist.touch(e); scene.set(e, p.x, p.y); moved.add(id);
         }
         rerouteIds(moved); // one batched pass: bound arrows follow, nothing cascades
@@ -482,7 +634,8 @@ export function createEditor(d: EditorDeps): Editor {
       const ids = hist.undo();
       if (!ids) return;
       renderer.livePts.clear(); renderer.dragging.clear();
-      setSel(ids); after(); emit("selection");
+      setSel(ids.length ? ids : [...sel()]); // a group-only step (rename, lock) touches no element: keep the selection (setSel drops ids that no longer exist)
+      after(); emit("selection");
     },
     redo() {
       if (readOnly) return;
@@ -490,7 +643,8 @@ export function createEditor(d: EditorDeps): Editor {
       const ids = hist.redo();
       if (!ids) return;
       renderer.livePts.clear(); renderer.dragging.clear();
-      setSel(ids); after(); emit("selection");
+      setSel(ids.length ? ids : [...sel()]); // a group-only step (rename, lock) touches no element: keep the selection (setSel drops ids that no longer exist)
+      after(); emit("selection");
     },
     canUndo: () => hist.canUndo(), canRedo: () => hist.canRedo(),
 
@@ -542,10 +696,12 @@ export function createEditor(d: EditorDeps): Editor {
       const { els, groups } = serialize(ids);
       return cloneInto(els, groups, dx, dy);
     },
-    editText(e: El) {
-      if (e.locked) return;
+    editText(e: El, seed?: string) {
+      if (scene.isLocked(e) || readOnly) return;
+      if (e.kind === "arrow") { const ls = arrowLabels(e); editLabel(e, ls.length ? 0 : -1, 0.5, seed); return; }
       renderer.hideText = e.id; renderer.invalidate(true, false);
-      text.open(e, (el, v) => commitText(el, v, false), () => { renderer.hideText = ""; renderer.invalidate(true, false); }, e.kind === "badge" ? String(e.n) : undefined);
+      const initial = e.kind === "badge" ? String(e.n) : seed !== undefined ? e.text + seed : undefined;
+      openText(e, (v) => commitText(e, v, false), () => { renderer.hideText = ""; renderer.invalidate(true, false); }, initial, e.kind === "icon" ? iconAnchor(e) : undefined, seed !== undefined);
     },
     toBack(e: El) {
       let min = Infinity;
@@ -556,9 +712,9 @@ export function createEditor(d: EditorDeps): Editor {
       const m = measureText(" ");
       const e = scene.add({ kind: "text", x: x - m.w / 2, y: y - m.h / 2, w: m.w, h: m.h, cat: 6, fill: 0, radius: 0, text: "" });
       renderer.hideText = e.id;
-      text.open(e, (el, v) => commitText(el, v, true), (committed) => {
+      openText(e, (v) => commitText(e, v, true), () => {
         renderer.hideText = "";
-        if (!committed && scene.els.has(e.id) && !e.text) { scene.remove(e); }
+        if (scene.els.has(e.id) && !e.text) { scene.remove(e); }
         renderer.invalidate(true, true);
       });
     },
@@ -568,10 +724,14 @@ export function createEditor(d: EditorDeps): Editor {
         const ids = new Set(sel());
         for (const id of ids) {
           const e = scene.els.get(id);
-          if (!e || e.locked) continue;
+          if (!e || scene.isLocked(e)) continue;
           hist.touch(e);
-          if (e.kind === "arrow") applyArrow(e, e.pts.map((v, i) => (i % 2 ? v + dy : v + dx)));
-          else scene.set(e, e.x + dx, e.y + dy);
+          if (e.kind === "arrow") {
+            // a bound arrow stays glued to what it is bound to: it only moves when its shapes move with it
+            const stays = (b: string) => b === "" || ids.has(b) || (scene.groups.has(b) && groupIdx.membersOf(b).length > 0 && groupIdx.membersOf(b).every((m) => ids.has(m)));
+            if (!stays(e.src) || !stays(e.dst)) continue;
+            applyArrow(e, e.pts.map((v, i) => (i % 2 ? v + dy : v + dx)));
+          } else scene.set(e, e.x + dx, e.y + dy);
         }
         rerouteIds(ids);
       }, "nudge");
@@ -609,9 +769,9 @@ export function createEditor(d: EditorDeps): Editor {
 function sanitize(j: ElJSON): ElJSON {
   const num = (v: unknown, d: number) => (typeof v === "number" && Number.isFinite(v) ? v : d);
   const str = (v: unknown) => (typeof v === "string" ? v.slice(0, 2000) : "");
-  return {
+  const el: ElJSON = {
     ...j, x: num(j.x, 0), y: num(j.y, 0), w: Math.max(1, num(j.w, 100)), h: Math.max(1, num(j.h, 60)),
-    cat: Math.max(0, Math.min(COLOUR_NAMES.length - 1, Math.floor(num(j.cat, 0)))), hex: normHex(j.hex) || undefined, fill: ([0, 1, 2].includes(j.fill) ? j.fill : 1) as 0 | 1 | 2,
+    cat: Math.max(0, Math.min(COLOUR_NAMES.length - 1, Math.floor(num(j.cat, 0)))), hex: normHex(j.hex) || undefined, fill: ([0, 1, 2, 3].includes(j.fill) ? j.fill : 1) as 0 | 1 | 2 | 3,
     edge: ([0, 1, 2].includes(j.edge) ? j.edge : 1) as 0 | 1 | 2, radius: Math.max(0, num(j.radius, 8)), text: str(j.text), iconId: str(j.iconId), img: str(j.img).slice(0, 64),
     groupIds: Array.isArray(j.groupIds) ? j.groupIds.filter((g) => typeof g === "string") : [],
     pts: Array.isArray(j.pts) ? j.pts.filter((v) => typeof v === "number" && Number.isFinite(v)).slice(0, 64) : [],
@@ -620,4 +780,15 @@ function sanitize(j: ElJSON): ElJSON {
     route: ([0, 1, 2].includes(j.route) ? j.route : 1) as 0 | 1 | 2, head: ([0, 1, 2].includes(j.head) ? j.head : 1) as 0 | 1 | 2,
     sp: ([-1, 0, 1, 2, 3, 4, 5, 6, 7].includes(j.sp) ? j.sp : -1) as Port, dp: ([-1, 0, 1, 2, 3, 4, 5, 6, 7].includes(j.dp) ? j.dp : -1) as Port,
   };
+  const fs = num(j.fs, 0);
+  if (fs >= 6 && fs <= 96) el.fs = Math.round(fs); else delete el.fs;
+  const sg = cleanSegs(j.segs);
+  if (sg) el.segs = sg; else delete el.segs;
+  const unit = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : undefined);
+  const st = unit(j.st), dt = unit(j.dt);
+  if (st !== undefined) el.st = st; else delete el.st;
+  if (dt !== undefined) el.dt = dt; else delete el.dt;
+  if (el.kind === "arrow") { el.labels = cleanLabels(j.labels); return migrateArrowText(el); }
+  delete el.labels; delete el.segs; delete el.st; delete el.dt;
+  return el;
 }

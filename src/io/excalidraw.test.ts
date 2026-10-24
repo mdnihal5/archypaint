@@ -156,7 +156,7 @@ describe("Excalidraw export and round trip", () => {
     const box = byKind("rect")[0]!;
     expect(box).toMatchObject({ text: "api", cat: 3, fill: 2, edge: 0, w: 120, h: 70 });
     const a = byKind("arrow")[0]!;
-    expect(a).toMatchObject({ src: box.id, dst: icon.id, sp: 1, dp: 3, route: 1, head: 2, dash: 1, text: "sql" });
+    expect(a).toMatchObject({ src: box.id, dst: icon.id, sp: 1, dp: 3, route: 1, head: 2, dash: 1, labels: [{ t: 0.5, text: "sql" }], text: "" }); // the legacy centred text is now one label at t = 0.5
     expect(a.pts).toEqual([120, 35, 180, 35, 180, 48, 240, 48]);
     expect(byKind("diamond")[0]).toMatchObject({ cat: 5, fill: 0 });
     expect(byKind("text")[0]).toMatchObject({ text: "note" });

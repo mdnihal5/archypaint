@@ -1,7 +1,8 @@
 import type { EditorAPI } from "./editor-api";
 import { iconMeta } from "./icon-pack";
 import { layoutGraph } from "./layout";
-import { Scene, type ElInit, type ElJSON, type GroupInfo, type Kind } from "./scene";
+import { isLogoId } from "./logos";
+import { Scene, type ElInit, type FillStyle, type ElJSON, type GroupInfo, type Kind } from "./scene";
 import type { GNode, Graph, IconResolver, ShapeName } from "./textdsl";
 import { CATEGORIES } from "./theme";
 
@@ -85,7 +86,7 @@ const EDGE_RADIUS = [0, 8, 18] as const;
 /** clear space between existing content and an import placed below it */
 const PLACE_GAP = 100;
 
-export interface BuildDefaults { cat: number; fill: 0 | 1 | 2; edge: 0 | 1 | 2; route: 0 | 1 | 2 }
+export interface BuildDefaults { cat: number; fill: FillStyle; edge: 0 | 1 | 2; route: 0 | 1 | 2 }
 export interface BuildOpts {
   defaults: BuildDefaults;
   /** world point the result is centred on */
@@ -177,7 +178,7 @@ export function buildElements(g: Graph, o: BuildOpts): Built {
       kind: n.iconId ? "icon" : KIND[n.shape], x: p.x + dx, y: p.y + dy, w: s.w, h: s.h, text: n.label,
       cat: o.defaults.cat, fill: o.defaults.fill, edge, radius: EDGE_RADIUS[edge], groupIds: groupIds(n.group),
     };
-    if (n.iconId) { init.iconId = n.iconId; icons++; const c = o.categoryOf?.(n.iconId); if (c !== null && c !== undefined && c >= 0) init.cat = c; }
+    if (n.iconId) { init.iconId = n.iconId; icons++; if (isLogoId(n.iconId)) init.fill = 3; /* a brand logo is bare by default */ const c = o.categoryOf?.(n.iconId); if (c !== null && c !== undefined && c >= 0) init.cat = c; }
     idOf.set(n.key, make(init).id);
   }
   for (const e of g.edges) {

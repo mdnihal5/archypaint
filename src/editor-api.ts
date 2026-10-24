@@ -2,10 +2,12 @@ import type { AlignMode } from "./align";
 import type { El, Scene, EdgeStyle, FillStyle } from "./scene";
 import type { Tool } from "./input";
 import type { Viewport } from "./viewport";
+import type { TextAlign } from "./wrap";
 
-export interface StyleProps { cat: number; /** custom #rrggbb, "" clears it */ hex?: string; fill: FillStyle; edge: EdgeStyle; radius: number; dash: 0 | 1; route: 0 | 1 | 2; /** orientation of braces (0-3) and swimlanes (0 rows, 1 columns) */ o?: 0 | 1 | 2 | 3 }
+export interface StyleProps { cat: number; /** text size in px for labels (0 = default) */ fs?: number; /** label alignment; "center" clears it */ align?: TextAlign; /** custom #rrggbb, "" clears it */ hex?: string; fill: FillStyle; edge: EdgeStyle; radius: number; dash: 0 | 1; route: 0 | 1 | 2; /** orientation of braces (0-3) and swimlanes (0 rows, 1 columns) */ o?: 0 | 1 | 2 | 3 }
 
-export type EditorEvent = "change" | "selection" | "tool" | "history" | "viewport";
+/** "edit": an inline text editor opened or closed */
+export type EditorEvent = "change" | "selection" | "tool" | "history" | "viewport" | "edit";
 
 /**
  * The single seam between the engine and everything around it (UI chrome, palette, file I/O).
@@ -23,6 +25,18 @@ export interface EditorAPI {
   /** view-only mode (shared links, presentations): pan and zoom still work, every command that would change the document is a no-op */
   readonly readOnly: boolean;
   setReadOnly(on: boolean): void;
+
+  /** true while an inline text editor (shape / icon / connector label / group name) is open */
+  readonly editing: boolean;
+  /**
+   * Start editing the single selected thing's text: a shape's or icon's label, free text, a connector's first label (or a new one
+   * at its middle). `seed` is a typed character that opens the editor and lands in it. Returns false when nothing editable is selected.
+   */
+  editSelection(seed?: string): boolean;
+  /** edit a group's name in place, over its name tag */
+  editGroupName(id: string): void;
+  /** open the editor for a new label at fraction `t` along a connector (idx < 0) or for its existing label `idx` */
+  editLabel(arrow: El, idx: number, t: number, seed?: string): void;
 
   selection(): ReadonlySet<string>;
   select(ids: readonly string[]): void;
@@ -57,6 +71,10 @@ export interface EditorAPI {
   /** lock or unlock the selection (locked shapes cannot be moved, resized, edited or deleted) */
   setLocked(locked: boolean): void;
   toggleLock(): void;
+  /** the group id when the selection is exactly one whole group (what the lock button then locks), else null */
+  selectedGroup(): string | null;
+  /** lock or unlock a whole group: its members cannot be moved, resized, edited or deleted until it is unlocked */
+  setGroupLocked(id: string, locked: boolean): void;
   /** remember the first selected element's style / apply it to the selection */
   copyStyle(): boolean;
   pasteStyle(): void;
@@ -70,8 +88,8 @@ export interface EditorAPI {
   importElements(data: { els: import("./scene").ElJSON[]; groups: import("./scene").GroupInfo[] }, fit?: boolean): string[];
   /** renumber all step badges 1..N keeping their order */
   renumberBadges(): void;
-  /** insert a capacity note (back-of-envelope calculator) at the view centre and select it */
-  insertCalc(): El | null;
+  /** insert a capacity note (back-of-envelope calculator) at the view centre and select it; `text` is its content (default: a short sample) */
+  insertCalc(text?: string): El | null;
   /** move elements to exact top-left positions as ONE undo step; arrows bound to them are re-routed once. Locked elements and arrows are skipped. */
   applyPositions(pos: ReadonlyMap<string, { x: number; y: number }>, label?: string): void;
   /**

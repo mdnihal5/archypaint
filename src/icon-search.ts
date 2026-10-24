@@ -1,20 +1,31 @@
-import type { IconMeta } from "./icon-pack";
-import type { Logo } from "./logos-catalog"; // type only: the catalog itself is a lazy chunk
+import { logoPacks, type IconMeta } from "./icon-pack";
 import { SHAPES, type ShapeDef } from "./shapes";
 import { CATEGORIES } from "./theme";
 
-/** bundled pack order in the UI (user packs follow, shapes last) and their display names */
+/**
+ * Display order: the brand-logo categories first (their own order, from the logos index), then the drawn packs below (user packs follow,
+ * shapes last). PACK_ORDER lists the drawn bundled packs; the logo packs are logoPacks().
+ */
 export const PACK_ORDER = ["core", "generic2", "oss", "aws", "gcp", "azure"] as const;
-const PACK_LABEL: Record<string, string> = { core: "Core", generic2: "Generic", oss: "Open source", aws: "AWS", gcp: "Google Cloud", azure: "Azure", logos: "Official logos", shapes: "Shapes" };
-/** vendor packs get the "original drawings, not affiliated" note */
+const PACK_LABEL: Record<string, string> = { core: "Generic", generic2: "Generic (more)", oss: "Drawn: open source", aws: "Drawn: AWS", gcp: "Drawn: Google Cloud", azure: "Drawn: Azure", shapes: "Shapes" };
+/** the drawn vendor packs get the "original drawings, not affiliated" note */
 export const VENDOR_PACKS: ReadonlySet<string> = new Set(["oss", "aws", "gcp", "azure"]);
-export const sectionLabel = (pack: string): string => PACK_LABEL[pack] ?? (pack.startsWith("user-") ? pack.slice(5) : pack);
-const packRank = (p: string): number => { const i = (PACK_ORDER as readonly string[]).indexOf(p); return i >= 0 ? i : p === "shapes" ? 99 : p === "logos" ? 60 : 50; };
+/** the palette's pseudo-pack that means "every brand logo" */
+export const LOGOS_SOURCE = "logos";
+/** the palette's pseudo-pack that means "every drawn icon and shape" (the generic set; a single drawn pack narrows it) */
+export const GENERIC_SOURCE = "generic";
+export const isLogoPack = (pack: string): boolean => pack.startsWith("logos-");
+export const sectionLabel = (pack: string): string => PACK_LABEL[pack] ?? (isLogoPack(pack) ? logoPacks().find(([k]) => k === pack)?.[1] : undefined) ?? (pack.startsWith("user-") ? pack.slice(5) : pack);
+const packRank = (p: string): number => {
+  if (isLogoPack(p)) { const g = logoPacks().findIndex(([k]) => k === p); return g >= 0 ? g : 99; }
+  const i = (PACK_ORDER as readonly string[]).indexOf(p);
+  return 100 + (i >= 0 ? i : p === "shapes" ? 99 : 50);
+};
 
 const catRank = (c: string): number => { const i = (CATEGORIES as readonly string[]).indexOf(c); return i < 0 ? 99 : i; };
 
 export interface Entry {
-  kind: "icon" | "shape" | "logo";
+  kind: "icon" | "shape";
   id: string;
   name: string;
   category: string;
@@ -46,18 +57,6 @@ type IconLike = Pick<IconMeta, "id" | "name" | "aliases" | "category"> & Partial
 export function buildIndex(icons: readonly IconLike[], shapes: readonly ShapeDef[] = SHAPES): Entry[] {
   const out = icons.map((i) => makeEntry("icon", i.id, i.name, i.category, i.aliases, undefined, i.pack ?? "core", i.vendor ?? ""));
   for (const d of shapes) out.push(makeEntry("shape", d.id, d.name, "shape", d.aliases, d.tool));
-  return out;
-}
-
-/** catalog rows -> palette entries (id `logo-<slug>` = the icon id they become). Restricted brands only when asked for. */
-export function buildLogoEntries(logos: readonly Logo[], withRestricted: boolean): Entry[] {
-  const out: Entry[] = [];
-  for (const l of logos) {
-    if (l.restricted && !withRestricted) continue;
-    const e = makeEntry("logo", `logo-${l.slug}`, l.name, l.category, l.aliases, undefined, "logos", "logo");
-    e.lid = l.slug; e.words = split(l.slug + " " + l.name.toLowerCase());
-    out.push(e);
-  }
   return out;
 }
 
@@ -100,7 +99,7 @@ const POOL: Hit[] = [];
 
 /**
  * Filter + rank into `out` (reused across keystrokes; caller owns it). Returns the count.
- * `category` restricts to one category and `source` to one pack ("all"/null = no restriction). Recents get a small boost on an empty query.
+ * `category` restricts to one category and `source` to one pack, or to every brand logo ("logos"); "all"/null = no restriction. Recents get a small boost on an empty query.
  */
 export function search(index: readonly Entry[], query: string, category: string | null, out: Hit[], limit: number, recent?: ReadonlySet<string>, source?: string | null): number {
   const q = query.trim().toLowerCase();
@@ -109,7 +108,7 @@ export function search(index: readonly Entry[], query: string, category: string 
   for (let i = 0; i < index.length; i++) {
     const e = index[i]!;
     if (category && category !== "all" && e.category !== category) continue;
-    if (source && source !== "all" && e.pack !== source) continue;
+    if (source && source !== "all" && (source === LOGOS_SOURCE ? e.vendor !== "logo" : source === GENERIC_SOURCE ? e.vendor === "logo" : e.pack !== source)) continue;
     let score: number;
     if (!q) score = recent?.has(e.id) ? 50 : 1;
     else if (multi) {

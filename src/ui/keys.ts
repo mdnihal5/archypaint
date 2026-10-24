@@ -29,7 +29,8 @@ export function mountKeys(ctx: Ctx): void {
     }
     if (e.altKey) return;
     switch (e.key) {
-      case "/": case "i": case "I": e.preventDefault(); palette.open(); break;
+      case "/": e.preventDefault(); palette.open(); break;
+      case "i": case "I": e.preventDefault(); ctx.toggleProps?.(); break;
       case "?": e.preventDefault(); ctx.showShortcuts(); break;
       case "b": case "B": settings.set({ bg: settings.get().bg === "grid" ? "plain" : "grid" }); ctx.refresh(); break;
       case "!": editor.zoomToFit(); ctx.refresh(); break; // shift+1 on a US layout

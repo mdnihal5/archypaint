@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-  compiledCount, ensureIcons, hasLogoIcon, iconHasDetail, installLogoIcon, removeLogoIcon, ensurePack, iconInner, iconMeta, iconOps, installIndex, installPack, listIcons, MAX_COMPILED,
+  compiledCount, ensureIcons, iconHasDetail, logoPacks, ensurePack, iconInner, iconMeta, iconOps, installIndex, installPack, listIcons, MAX_COMPILED,
   onIconsReady, packLoaded, packsVersion, parseIconMarkup, resetPacks, ROOT_STROKE, setPackLoader, type IndexJson, type PackJson,
 } from "./icon-pack";
 
@@ -12,7 +12,8 @@ const pk = (pack: string, ids: string[]): PackJson => ({ v: 2, pack, icons: ids.
 function fakeLoader(files: Record<string, unknown>) {
   const calls: string[] = [];
   const failing = new Set<string>();
-  setPackLoader(async (name) => { calls.push(name); if (failing.has(name)) throw new Error("offline"); return JSON.stringify(files[name]); });
+  const all: Record<string, unknown> = { "logos-index": { v: 2, icons: [] }, ...files };
+  setPackLoader(async (name) => { calls.push(name); if (failing.has(name)) throw new Error("offline"); return JSON.stringify(all[name]); });
   return { calls, failing };
 }
 const tick = () => new Promise((r) => setTimeout(r, 0));
@@ -45,7 +46,7 @@ describe("per-pack lazy loading", () => {
     const f = fakeLoader({ index: idx([["a", "core"], ["b", "core"], ["c", "aws"], ["d", "gcp"]]), core: pk("core", ["a", "b"]), aws: pk("aws", ["c"]), gcp: pk("gcp", ["d"]) });
     expect(packLoaded()).toBe(false);
     await ensureIcons(["c"]);
-    expect(f.calls.sort()).toEqual(["aws", "index"]);
+    expect(f.calls.sort()).toEqual(["aws", "index", "logos-index"]);
     expect(packLoaded()).toBe(true);
     expect(packLoaded("aws")).toBe(true);
     expect(packLoaded("core")).toBe(false);
@@ -113,7 +114,7 @@ describe("the shipped packs", () => {
     for (const m of icons) {
       expect(ids.has(m.id), `duplicate ${m.id}`).toBe(false); ids.add(m.id);
       expect(packLoaded(m.pack), `${m.id}: pack ${m.pack}`).toBe(true);
-      for (const tier of ["detail", "glyph"] as const) {
+      for (const tier of (m.vendor === "logo" ? ["glyph"] : ["detail", "glyph"]) as ("detail" | "glyph")[]) {
         const markup = iconInner(m.id, tier);
         expect(markup, `${m.id} ${tier}`).toBeTruthy();
         const ops = parseIconMarkup(markup!, ROOT_STROKE[tier]);
@@ -162,33 +163,55 @@ describe("compiled-op cache", () => {
 });
 
 
-describe("glyph-only icons (official logos)", () => {
-  const row = { id: "logo-redis", name: "Redis", aliases: ["cache"], category: "cache", glyph: '<path d="M1 1L5 5z" fill="currentColor" stroke="none"/>' };
-  it("draw from the glyph tier at every size; the detail tier is a scaled copy for export only", () => {
-    installLogoIcon(row);
-    expect(iconHasDetail("logo-redis")).toBe(false);
-    expect(iconInner("logo-redis", "glyph")).toBe(row.glyph);
-    expect(iconInner("logo-redis", "detail")).toBe(`<g transform="scale(2.666667)">${row.glyph}</g>`);
-    expect(iconOps("logo-redis", "detail")).toBeNull(); // the renderer must pick the glyph tier
-    const ops = iconOps("logo-redis", "glyph")!;
-    expect(ops.length).toBe(1); expect(ops[0]!.fill).toBe(true); expect(ops[0]!.stroke).toBe(false);
+describe("brand logos", () => {
+  const brand = '<path d="M1 1L5 5z" fill="#4169e1" data-d="#8fa8f5" data-l="#2a4fc4" stroke="none"/><path d="M0 0h2v2z" fill="#ff4438" fill-opacity="0.5" stroke="none"/>';
+  const logos: IndexJson = { v: 2, icons: [["logo-postgresql", "PostgreSQL", ["postgres", "pg"], "data", "logos-relational", "logo"]], hides: ["pg-drawn"], groups: [["logos-relational", "Relational databases"]] };
+  const drawn: IndexJson = { v: 2, icons: [["pg-drawn", "Postgres (drawn)", [], "data", "oss", "oss"], ["queue", "Queue", [], "queue", "core", ""]] };
+  const files = { index: drawn, "logos-index": logos, "logos-relational": { v: 2, pack: "logos-relational", icons: [["logo-postgresql", "", brand]] }, oss: pk("oss", ["pg-drawn"]), core: pk("core", ["queue"]) };
+
+  it("parse their own colours: brand, dark-theme and light-theme variants; opacity kept; drawn icons have none", () => {
+    const [a, b] = parseIconMarkup(brand, ROOT_STROKE.glyph);
+    expect(a).toMatchObject({ c: "#4169e1", cd: "#8fa8f5", cl: "#2a4fc4", fill: true, stroke: false });
+    expect(b).toMatchObject({ c: "#ff4438", cd: "", cl: "", fo: 0.5 });
+    const [d] = parseIconMarkup('<path d="M0 0L1 1" fill="currentColor"/>', 2);
+    expect(d).toMatchObject({ c: "", cd: "", cl: "" });
+    const [e] = parseIconMarkup('<path d="M0 0L1 1" fill="red"/>', 2); // only a literal #rrggbb counts as a brand colour
+    expect(e!.c).toBe("");
   });
-  it("are not part of the search index, but iconMeta knows them, and an index reload keeps them", () => {
-    installLogoIcon(row);
-    expect(listIcons().some((m) => m.id === "logo-redis")).toBe(false);
-    expect(iconMeta("logo-redis")).toMatchObject({ name: "Redis", pack: "logos", vendor: "logo" });
-    installIndex(idx([["a", "core"]]));
-    expect(iconMeta("logo-redis")).not.toBeNull(); expect(hasLogoIcon("logo-redis")).toBe(true);
+  it("load from their own lazy pack, glyph tier only; the detail tier is a scaled copy for export only", async () => {
+    fakeLoader(files);
+    await ensureIcons(["logo-postgresql"]);
+    expect(packLoaded("logos-relational")).toBe(true);
+    expect(iconHasDetail("logo-postgresql")).toBe(false);
+    expect(iconInner("logo-postgresql", "glyph")).toBe(brand);
+    expect(iconInner("logo-postgresql", "detail")).toBe(`<g transform="scale(2.666667)">${brand}</g>`);
+    expect(iconOps("logo-postgresql", "detail")).toBeNull(); // the renderer must pick the glyph tier
+    expect(iconOps("logo-postgresql", "glyph")!).toHaveLength(2);
   });
-  it("installing repaints without bumping the search version; removing frees the caches", () => {
-    installIndex(idx([["a", "core"]]));
-    const v = packsVersion(); let repaints = 0; const off = onIconsReady(() => repaints++);
-    installLogoIcon(row); expect(packsVersion()).toBe(v); expect(repaints).toBe(1);
-    iconOps("logo-redis", "glyph"); const before = compiledCount();
-    removeLogoIcon("logo-redis");
-    expect(hasLogoIcon("logo-redis")).toBe(false); expect(iconInner("logo-redis", "glyph")).toBeNull();
-    expect(compiledCount()).toBeLessThan(before); expect(repaints).toBe(2);
-    off();
+  it("are listed with their category order; the drawn icons they replace are hidden from listIcons but still known and renderable", async () => {
+    fakeLoader(files);
+    await ensureIcons();
+    expect(listIcons().map((m) => m.id)).toEqual(["logo-postgresql", "queue"]);
+    expect(logoPacks()).toEqual([["logos-relational", "Relational databases"]]);
+    expect(iconMeta("pg-drawn")).toMatchObject({ pack: "oss" }); // an old diagram that names it still resolves
+    expect(iconInner("pg-drawn", "glyph")).toBe(P);
+    expect(iconMeta("logo-postgresql")).toMatchObject({ name: "PostgreSQL", pack: "logos-relational", vendor: "logo" });
+  });
+  it("a renamed or dropped logo id still renders through its alias", async () => {
+    fakeLoader({ ...files, "logos-index": { ...logos, icons: [...logos.icons, ["logo-linux", "Linux", [], "client", "logos-relational", "logo"]] }, "logos-relational": { v: 2, pack: "logos-relational", icons: [["logo-postgresql", "", brand], ["logo-linux", "", brand]] } });
+    await ensureIcons();
+    expect(iconInner("logo-linuxfoundation", "glyph")).toBe(brand);
+    expect(iconMeta("logo-linuxfoundation")!.id).toBe("logo-linux");
+    expect(iconOps("logo-linuxfoundation", "glyph")).not.toBeNull();
+  });
+  it("if the logos index fails, nothing half-installs: the whole index step is retried", async () => {
+    const f = fakeLoader(files);
+    f.failing.add("logos-index");
+    await ensureIcons().catch(() => {});
+    expect(packLoaded()).toBe(false); expect(listIcons()).toHaveLength(0);
+    f.failing.clear();
+    await ensureIcons();
+    expect(packLoaded()).toBe(true); expect(listIcons()).toHaveLength(2);
   });
   it("a bundled icon is unaffected: unknown ids still report a detail tier (so the normal load path runs)", () => {
     expect(iconHasDetail("nope")).toBe(true);

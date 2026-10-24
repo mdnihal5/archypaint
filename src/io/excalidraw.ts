@@ -1,5 +1,7 @@
+import { arrowLabels, cleanLabels, cleanSegs, isCurve, pointAtT } from "../connectors";
 import type { ElJSON, GroupInfo, SceneJSON } from "../scene";
 import { LIGHT, colourOf, normHex, type Theme } from "../theme";
+import { exportGroups } from "../groups";
 import { NEW_KINDS, legendRows } from "../shape-geom";
 import { APP, FORMAT_VERSION, LIMITS, validateFile } from "./format";
 
@@ -102,14 +104,16 @@ export function fromExcalidraw(input: unknown, th: Theme = LIGHT): ExResult {
   for (const e of live) byEx.set(e.id as string, e);
 
   const labelOf = new Map<string, string>(); // container ex-id -> text
+  const alignOf = new Map<string, "left" | "right">(); // container ex-id -> its label's alignment
   const labelIds = new Set<string>();
   for (const e of live) {
     if (e.type !== "text") continue;
+    if (typeof cdOf(e)?.labelOf === "string") { labelIds.add(e.id as string); continue; } // an extra connector label we exported as free text: the arrow's own data restores it
     const cid = typeof e.containerId === "string" ? e.containerId : "";
     const c = cid ? byEx.get(cid) : undefined;
     if (c && (str(c.type) in SHAPES || c.type === "arrow")) {
       const t = str(e.text) || str(e.originalText);
-      if (labelOf.has(cid)) bump(skipped, "extra bound label"); else labelOf.set(cid, t);
+      if (labelOf.has(cid)) bump(skipped, "extra bound label"); else { labelOf.set(cid, t); if (e.textAlign === "left" || e.textAlign === "right") alignOf.set(cid, e.textAlign); }
       labelIds.add(e.id as string);
     }
   }
@@ -121,6 +125,7 @@ export function fromExcalidraw(input: unknown, th: Theme = LIGHT): ExResult {
   for (const e of live) {
     const t = e.type as string;
     if (labelIds.has(e.id as string)) continue;
+    if (typeof cdOf(e)?.groupOutline === "string") continue; // the dashed box we draw around a group on export: the group itself comes back from groupIds
     if (t in SHAPES || t === "text" || t === "arrow" || t === "line") keep.push(e);
     else if (t === "image") {
       const f = files[str(e.fileId)];
@@ -174,6 +179,7 @@ export function fromExcalidraw(input: unknown, th: Theme = LIGHT): ExResult {
       base.kind = "image"; base.img = imageKey.get(exId) ?? ""; base.fill = 0; base.edge = 1; base.radius = 8;
     } else if (t === "text") {
       base.kind = "text"; base.text = str(e.text) || str(e.originalText); base.fill = 0;
+      if (e.textAlign === "left" || e.textAlign === "right") base.align = e.textAlign;
       if (base.text.length > LIMITS.maxText) base.text = base.text.slice(0, LIMITS.maxText);
     } else {
       // arrow / line: Excalidraw points are relative to (x, y)
@@ -206,10 +212,14 @@ export function fromExcalidraw(input: unknown, th: Theme = LIGHT): ExResult {
       if (typeof cd.iconId === "string" && cd.iconId.length <= LIMITS.maxId) base.iconId = cd.iconId;
       const cn = num(cd.n); if (cn !== null && Number.isInteger(cn) && cn >= 0 && cn <= 99999) base.n = cn;
       const co = num(cd.o); if (co !== null && [0, 1, 2, 3].includes(co)) base.o = co as 0 | 1 | 2 | 3;
+      const cfs = num(cd.fs); if (cfs !== null && cfs >= 6 && cfs <= 96) base.fs = Math.round(cfs);
+      if (cd.align === "left" || cd.align === "right") base.align = cd.align; else if (cd.align === "center") delete base.align;
+      if (base.kind === "arrow") { const ls = cleanLabels(cd.labels); if (ls.length) { base.labels = ls; base.text = ""; } const sg = cleanSegs(cd.segs); if (sg) base.segs = sg; }
       if (base.kind === "legend" && typeof cd.rawText === "string") base.text = cd.rawText.slice(0, LIMITS.maxText);
       if (base.kind === "badge") base.text = "";
       if (base.kind === "icon" && base.text === base.iconId) base.text = ""; // the export labels an icon with its id; that label is not user text
     }
+    const al = alignOf.get(exId); if (al && base.kind !== "text" && base.kind !== "arrow") base.align = al;
     out.push(base);
     if (base.kind !== "arrow") shapeGeom.set(id, { x: base.x, y: base.y, w: base.w, h: base.h });
     if (base.kind === "arrow") (base as ElJSON & { _exArrow?: Obj })._exArrow = e; // resolved below, once all ids exist
@@ -274,21 +284,45 @@ export function toExcalidraw(scene: SceneJSON, th: Theme = LIGHT, images?: Recor
       boundElements: [], updated: 1, link: null, locked: e.locked,
     };
   };
-  const meta = (e: ElJSON): Obj => ({ [APP]: { kind: e.kind, cat: e.cat, ...(e.hex ? { hex: e.hex } : {}), fill: e.fill, edge: e.edge, radius: e.radius, iconId: e.iconId, route: e.route, dash: e.dash, head: e.head, sp: e.sp, dp: e.dp, n: e.n, o: e.o, ...(e.kind === "legend" ? { rawText: e.text } : {}), ...(e.kind === "image" ? { img: e.img } : {}) } });
+  const meta = (e: ElJSON): Obj => ({ [APP]: { kind: e.kind, cat: e.cat, ...(e.hex ? { hex: e.hex } : {}), fill: e.fill, edge: e.edge, radius: e.radius, iconId: e.iconId, route: e.route, dash: e.dash, head: e.head, sp: e.sp, dp: e.dp, n: e.n, o: e.o, ...(e.fs ? { fs: e.fs } : {}), ...(e.align ? { align: e.align } : {}), ...(e.kind === "arrow" && e.labels?.length ? { labels: e.labels } : {}), ...(e.kind === "arrow" && e.segs?.length ? { segs: e.segs } : {}), ...(e.kind === "legend" ? { rawText: e.text } : {}), ...(e.kind === "image" ? { img: e.img } : {}) } });
 
   const labels: Obj[] = [];
-  const label = (containerId: string, text: string, cx: number, cy: number, boxW: number): void => {
+  const label = (containerId: string, text: string, cx: number, cy: number, boxW: number, fs = 0, free = "", align: "left" | "center" | "right" = "center"): void => {
     const lines = text.split("\n");
-    const w = Math.max(10, Math.min(boxW, Math.max(...lines.map((l) => l.length)) * 9.6)), h = lines.length * 20;
-    const id = `${containerId}_t`;
+    const size = fs ? Math.round((fs * 16) / 13) : 16, k = size / 16;
+    const w = Math.max(10, Math.min(boxW, Math.max(...lines.map((l) => l.length)) * 9.6 * k)), h = lines.length * 20 * k;
+    const id = free || `${containerId}_t`;
+    // left / right: the text sits against that side of its box (Excalidraw re-lays a bound label out itself, but a file read as-is should look right)
+    const x = align === "left" ? cx - boxW / 2 : align === "right" ? cx + boxW / 2 - w : cx - w / 2;
     labels.push({
-      id, type: "text", x: cx - w / 2, y: cy - h / 2, width: w, height: h, angle: 0, strokeColor: th.ink, backgroundColor: "transparent", fillStyle: "solid",
+      id, type: "text", x, y: cy - h / 2, width: w, height: h, angle: 0, strokeColor: th.ink, backgroundColor: "transparent", fillStyle: "solid",
       strokeWidth: 1, strokeStyle: "solid", roughness: 0, opacity: 100, groupIds: [], frameId: null, index: null, roundness: null, seed: hash(id), version: 1,
       versionNonce: hash(id), isDeleted: false, boundElements: null, updated: 1, link: null, locked: false,
-      text, fontSize: 16, fontFamily: 3, textAlign: "center", verticalAlign: "middle", containerId, originalText: text, autoResize: true, lineHeight: 1.25,
+      text, fontSize: size, fontFamily: 3, textAlign: align, verticalAlign: "middle", containerId: free ? null : containerId, originalText: text, autoResize: true, lineHeight: 1.25,
+      ...(free ? { customData: { [APP]: { labelOf: containerId } } } : {}),
     });
-    addBound(containerId, { type: "text", id });
+    if (!free) addBound(containerId, { type: "text", id });
   };
+
+  /*
+   * Group outlines. Excalidraw's own `frame` element is the closest native thing, and I did not use it: a frame CLIPS what it holds, cannot
+   * nest, and an element can belong to only one frame, while archypaint groups nest and overlap (and are already carried as `groupIds`, which
+   * Excalidraw does honour as groups). So each group becomes a plain dashed, transparent, locked rectangle with its name as text above it,
+   * both tagged in customData so a re-import skips them (the group itself comes back from groupIds + the file's own group table).
+   */
+  if (scene.groups.length) {
+    const counts = new Map<string, number>();
+    for (const e of els) for (const g of e.groupIds) counts.set(g, (counts.get(g) ?? 0) + 1);
+    for (const g of exportGroups(els, scene.groups, (id) => counts.get(id) ?? 0)) {
+      const b = g.box, oid = `${g.id}_outline`;
+      const fake: ElJSON = { id: oid, kind: "rect", x: b.x, y: b.y, w: b.w, h: b.h, z: 0, version: 1, cat: g.cat, fill: 0, radius: 14, text: "", edge: 1, groupIds: [], iconId: "", img: "", locked: true, n: 0, o: 0, src: "", dst: "", sp: -1, dp: -1, route: 1, dash: 1, head: 1, pts: [] };
+      out.push(Object.assign(common(fake, "rectangle"), { roundness: { type: 3 }, strokeWidth: 1.6, opacity: 100, customData: { [APP]: { groupOutline: g.id } } }));
+      if (g.name) {
+        const w = Math.max(10, Math.min(200, g.name.length * 9.6));
+        label(oid, g.name, b.x + 12 + w / 2, b.y - 8 - 10, w, 0, `${g.id}_tag`, "left"); // box = the text itself, so its left edge is the tag's
+      }
+    }
+  }
 
   for (const e of els) {
     const c = colourOf(th, e);
@@ -314,12 +348,23 @@ export function toExcalidraw(scene: SceneJSON, th: Theme = LIGHT, images?: Recor
         elbowed: e.route === 1, roundness: e.route === 2 ? { type: 2 } : null, customData: meta(e),
       });
       out.push(el);
-      if (e.text) { const mx = e.x + e.w / 2, my = e.y + e.h / 2; label(e.id, e.text, mx, my, 200); }
+      // Excalidraw binds one text to an arrow: the label nearest the middle; the others are free text at their spots (marked, so re-import skips them)
+      const ls = arrowLabels(e);
+      if (ls.length) {
+        let mid = 0;
+        ls.forEach((l, i) => { if (Math.abs(l.t - 0.5) < Math.abs(ls[mid]!.t - 0.5)) mid = i; });
+        const at: [number, number] = [0, 0], curve = isCurve(e);
+        ls.forEach((l, i) => {
+          pointAtT(e.pts, curve, l.t, at);
+          if (i === mid) label(e.id, l.text, at[0], at[1], 200, e.fs);
+          else label(e.id, l.text, at[0], at[1], 200, e.fs, `${e.id}_l${i}`);
+        });
+      }
       continue;
     }
     if (e.kind === "text") {
       const el = common(e, "text");
-      Object.assign(el, { text: e.text, originalText: e.text, fontSize: 16, fontFamily: 3, textAlign: "center", verticalAlign: "middle", containerId: null, autoResize: true, lineHeight: 1.25, boundElements: null, customData: meta(e) });
+      Object.assign(el, { text: e.text, originalText: e.text, fontSize: e.fs ? Math.round((e.fs * 16) / 13) : 16, fontFamily: 3, textAlign: e.align ?? "center", verticalAlign: "middle", containerId: null, autoResize: true, lineHeight: 1.25, boundElements: null, customData: meta(e) });
       out.push(el);
       continue;
     }
@@ -344,13 +389,14 @@ export function toExcalidraw(scene: SceneJSON, th: Theme = LIGHT, images?: Recor
     const type = ELLIPSE_LIKE.has(e.kind) ? "ellipse" : DIAMOND_LIKE.has(e.kind) ? "diamond" : "rectangle";
     const el = common(e, type);
     Object.assign(el, {
-      backgroundColor: e.fill === 0 ? "transparent" : e.fill === 1 ? mix(c, 0.87) : c,
+      backgroundColor: e.fill === 0 || e.fill === 3 ? "transparent" : e.fill === 1 ? mix(c, 0.87) : c,
+      ...(e.fill === 3 && e.kind === "icon" ? { strokeColor: "transparent" } : {}), // a borderless logo has no outline
       roundness: e.edge === 0 || type === "diamond" ? null : { type: 3 },
       customData: meta(e),
     });
     out.push(el);
     const txt = e.kind === "icon" ? e.text || e.iconId : e.kind === "badge" ? String(e.n) : e.kind === "legend" ? legendRows(e.text).map((r) => r.label).join("\n") : e.kind === "image" ? e.text || "image" : e.text;
-    if (txt) label(e.id, txt, e.x + e.w / 2, e.y + e.h / 2, e.w - 8);
+    if (txt) label(e.id, txt, e.x + e.w / 2, e.y + e.h / 2, e.w - 8, e.fs, "", e.align ?? "center");
   }
   for (const el of out) { const b = bound.get(el.id as string); if (b && el.type !== "text") el.boundElements = b; }
 

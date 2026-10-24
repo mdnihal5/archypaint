@@ -4,7 +4,10 @@ import * as Renderer from "../renderer";
 import type { El } from "../scene";
 import { LIGHT, colourOf, onSolid, type Theme } from "../theme";
 import * as Icons from "../icons";
-import { arrowHead, arrowLabelPos, arrowPathD, buildSvg, planExport, unionBounds } from "./svg";
+import { arrowLabels, isCurve, pointAtT } from "../connectors";
+import { exportGroups, type GroupOutline } from "../groups";
+import { textWidth } from "../text-edit";
+import { arrowHead, arrowPathD, boundsWithGroups, buildSvg, planExport, unionBounds } from "./svg";
 import type { ExportOpts } from "./index";
 
 export class ExportError extends Error {}
@@ -25,6 +28,29 @@ export function collect(editor: EditorAPI, selectionOnly: boolean): { els: El[];
     if (els.length) return { els, usedSelection: true };
   }
   return { els: [...editor.scene.els.values()], usedSelection: false };
+}
+
+/** the group outlines an export of `els` should show: groups whose members are all in `els` (see exportGroups) */
+export function groupsFor(editor: EditorAPI, els: readonly El[]): GroupOutline[] {
+  const sc = editor.scene;
+  if (sc.groups.size === 0) return [];
+  const total = new Map<string, number>();
+  for (const e of sc.els.values()) for (const g of e.groupIds) total.set(g, (total.get(g) ?? 0) + 1);
+  return exportGroups(els, sc.groups.values(), (id) => total.get(id) ?? 0);
+}
+
+/** dashed, tinted outline and name tag per group, under the elements: the same drawing as Renderer.drawGroups (which works from the live GroupIndex) */
+function drawGroupOutlines(ctx: CanvasRenderingContext2D, th: Theme, groups: readonly GroupOutline[]): void {
+  for (const g of groups) {
+    const col = th.cats[g.cat % th.cats.length]!, b = g.box;
+    ctx.globalAlpha = 0.05; ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 14); ctx.fill();
+    ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.setLineDash([8, 4]); ctx.stroke(); ctx.setLineDash([]);
+    if (g.name) {
+      ctx.fillStyle = col; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+      ctx.fillText(g.name, b.x + 12, b.y - 8);
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    }
+  }
 }
 
 type DrawEl = (ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number, lod: boolean) => void;
@@ -54,11 +80,15 @@ function drawArrow(ctx: CanvasRenderingContext2D, e: El, th: Theme): void {
   const h = arrowHead(e);
   if (h.chevron) ctx.stroke(new Path2D(h.chevron));
   if (h.dot) { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(h.dot.x, h.dot.y, h.dot.r, 0, Math.PI * 2); ctx.fill(); }
-  if (e.text) {
-    const [lx, ly] = arrowLabelPos(e);
-    ctx.font = "12px 'JetBrains Mono','DejaVu Sans Mono',monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.lineWidth = 4; ctx.strokeStyle = th.paper; ctx.strokeText(e.text, lx, ly);
-    ctx.fillStyle = th.ink; ctx.fillText(e.text, lx, ly);
+  const ls = arrowLabels(e);
+  if (ls.length) {
+    const curve = isCurve(e), at: [number, number] = [0, 0];
+    ctx.font = `${e.fs || 12}px 'JetBrains Mono','DejaVu Sans Mono',monospace`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    for (const l of ls) {
+      pointAtT(e.pts, curve, l.t, at);
+      ctx.lineWidth = 4; ctx.strokeStyle = th.paper; ctx.strokeText(l.text, at[0], at[1]);
+      ctx.fillStyle = th.ink; ctx.fillText(l.text, at[0], at[1]);
+    }
   }
 }
 
@@ -73,7 +103,8 @@ export interface PngResult { blob: Blob; width: number; height: number; scaledDo
 /** Render to a PNG using the same shape code as the live canvas. Frees the bitmap before returning. */
 export async function renderPng(editor: EditorAPI, o: ExportOpts = {}): Promise<PngResult> {
   const { els, usedSelection } = collect(editor, !!o.selectionOnly);
-  const b = unionBounds(els);
+  const groups = groupsFor(editor, els);
+  const b = boundsWithGroups(unionBounds(els), groups); // the outlines and name tags sit outside the members: they must not be cropped
   if (!b) throw new ExportError("Nothing to export — the canvas is empty.");
   const plan = planExport(b, o.scale ?? 2, PAD);
   if (!plan.ok) throw new ExportError(plan.message);
@@ -89,6 +120,7 @@ export async function renderPng(editor: EditorAPI, o: ExportOpts = {}): Promise<
     const s = plan.scale;
     ctx.setTransform(s, 0, 0, s, -plan.wx * s, -plan.wy * s);
     ctx.font = "13px 'JetBrains Mono','DejaVu Sans Mono',monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    drawGroupOutlines(ctx, th, groups);
     for (const e of [...els].sort((a, c) => a.z - c.z)) {
       if (e.kind === "arrow") drawArrow(ctx, e, th);
       else if (e.kind === "icon") Icons.drawIconEl(ctx, e, th, s);
@@ -116,5 +148,5 @@ export async function renderSvg(editor: EditorAPI, o: ExportOpts = {}): Promise<
     if (r.tooBig) throw new ExportError("The images in this drawing are too large to embed in an SVG (20 MB limit). Export as PNG, or remove some images.");
     images = r.images;
   }
-  return { text: buildSvg(els, themeOf(editor), { background: o.background ?? true, padding: PAD, icons: Icons.iconSvg, ...(calc ? { calc: calc.evalCalc } : {}), ...(images ? { images } : {}) }), usedSelection };
+  return { text: buildSvg(els, themeOf(editor), { background: o.background ?? true, padding: PAD, icons: Icons.iconSvg, groups: groupsFor(editor, els), measure: textWidth, ...(calc ? { calc: calc.evalCalc } : {}), ...(images ? { images } : {}) }), usedSelection };
 }

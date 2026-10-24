@@ -36,6 +36,10 @@ export interface Ctx {
   menuSlot?: HTMLElement;
   /** set by the top module: closes the main menu (the properties panel calls it when it opens, so they never overlap) */
   closeMenu?: () => void;
+  /** set by the properties panel: shows / hides it (the `I` key) */
+  toggleProps?: () => void;
+  /** set by the properties panel: is it open (the toggle button shows this) */
+  propsOpen?: () => boolean;
 }
 
 export function makeUpdaterApi(d: Disposer, editor: EditorAPI) {

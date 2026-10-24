@@ -6,13 +6,21 @@ export interface Entry { label: string; key: string; t: number; ch: Change[]; gc
 
 interface Tx { els: Map<string, ElJSON | null>; groups: Map<string, GroupInfo | null> }
 
+/** connector labels are small objects (snapshots copy them): equal when t and text are */
+function sameLabel(a: unknown, b: unknown): boolean {
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+  const l = a as { t?: unknown; text?: unknown }, r = b as { t?: unknown; text?: unknown };
+  return l.t === r.t && l.text === r.text;
+}
+
 function sameEl(a: ElJSON | null, b: ElJSON | null): boolean {
   if (a === b) return true;
   if (!a || !b) return false;
-  for (const k of Object.keys(a) as (keyof ElJSON)[]) {
+  // keys of BOTH sides: an optional field (labels, fs) that appears or disappears is a change
+  for (const k of new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof ElJSON>) {
     const x = a[k], y = b[k];
     if (x === y) continue;
-    if (Array.isArray(x) && Array.isArray(y) && x.length === y.length && x.every((v, i) => v === y[i])) continue;
+    if (Array.isArray(x) && Array.isArray(y) && x.length === y.length && x.every((v, i) => v === y[i] || sameLabel(v, y[i]))) continue;
     return false;
   }
   return true;

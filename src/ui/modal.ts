@@ -48,12 +48,12 @@ export function confirmDialog(root: HTMLElement, msg: string, yes = "Discard"): 
 
 const KEYS: Array<[string, Array<[string, string]>]> = [
   ["Tools", [["Select", "V"], ["Hand (or hold Space)", "H"], ["Rectangle", "R"], ["Diamond", "D"], ["Ellipse", "O"], ["Arrow", "A"], ["Line", "L"], ["Text", "T"], ["Keep the tool after each shape: double-click it", "Q"]]],
-  ["Icons", [["Place an icon", "/  or  I"], ["Close search", "Esc"]]],
+  ["Icons", [["Place an icon", "/"], ["Close search", "Esc"]]],
   ["Edit", [["Undo", "⌘Z"], ["Redo", "⇧⌘Z"], ["Duplicate", "⌘D"], ["Select all", "⌘A"], ["Delete", "⌫"], ["Group", "⌘G"], ["Ungroup", "⇧⌘G"]]],
   ["Arrange", [["Bring to front", "⇧⌘]"], ["Bring forward", "⌘]"], ["Send backward", "⌘["], ["Send to back", "⇧⌘["]]],
   ["Align & distribute", [["Align left / right", "⌥⇧← / →"], ["Align top / bottom", "⌥⇧↑ / ↓"], ["Centre horizontally / vertically", "⌥⇧H / V"], ["Distribute horizontally / vertically", "⌥⇧X / Y"], ["Match size", "⌥⇧S"]]],
-  ["Style & lock", [["Copy style", "⌥⌘C"], ["Paste style", "⌥⌘V"], ["Lock / unlock", "⇧⌘L"]]],
-  ["Features", [["Tidy layout (selection, or everything)", "Y"], ["Capacity note", "C"], ["Present (step through)", "P"], ["Diagram from text", "menu › Insert"], ["Insert image / SVG", "drop or paste"], ["Official logos", "/ › logos"]]],
+  ["Style & lock", [["Show / hide properties panel", "I"], ["Copy style", "⌥⌘C"], ["Paste style", "⌥⌘V"], ["Lock / unlock", "⇧⌘L"]]],
+  ["Features", [["Tidy layout (selection, or everything)", "Y"], ["Capacity note", "C"], ["Present (step through)", "P"], ["Diagram from text", "menu › Insert"], ["Insert image / SVG", "drop or paste"], ["Brand logos", "/"]]],
   ["View", [["Zoom in / out", "+  /  −"], ["Reset zoom", "⌘0"], ["Fit to content", "⇧1"], ["Find in sheet", "⌘F"], ["Minimap", "M"], ["Background grid / plain", "B"], ["This list", "?"]]],
   ["File", [["Open", "⌘O"], ["Save", "⌘S"], ["Save as", "⇧⌘S"], ["Export PNG", "⇧⌘E"]]],
 ];

@@ -1,11 +1,12 @@
 import { arrowDist } from "./connectors";
 import { hitShape } from "./shape-geom";
+import type { TextAlign } from "./wrap";
 
 export type Kind =
   | "rect" | "ellipse" | "diamond" | "text" | "arrow" | "icon"
   | "cylinder" | "cloud" | "hexagon" | "parallelogram" | "triangle" | "star"
   | "note" | "brace" | "badge" | "frame" | "lane" | "legend" | "image" | "calc";
-export type FillStyle = 0 | 1 | 2; // outline, tint, solid
+export type FillStyle = 0 | 1 | 2 | 3; // outline, tint, solid, none (3: a brand logo with no tile; any other element draws it as an outline)
 export type EdgeStyle = 0 | 1 | 2; // sharp, round, soft
 export type Route = 0 | 1 | 2; // straight, elbow, curve
 export type Head = 0 | 1 | 2; // none, arrow, dot
@@ -13,6 +14,9 @@ export type Head = 0 | 1 | 2; // none, arrow, dot
 /** side ports: 0 top, 1 right, 2 bottom, 3 left, -1 automatic */
 /** -1 = automatic, 0-3 = top/right/bottom/left side midpoints, 4-7 = top-left/top-right/bottom-right/bottom-left corners */
 export type Port = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+/** a text label on a connector, at fraction `t` (0..1) of the way along its routed path (by length); survives re-routing */
+export interface ArrowLabel { t: number; text: string }
 
 export interface El {
   id: string;
@@ -41,6 +45,16 @@ export interface El {
   o: 0 | 1 | 2 | 3;
   /** arrows only: bound element ids ("" = free end), ports, routing, dash, head, and the routed polyline (flat x,y pairs, world space) */
   src: string; dst: string; sp: Port; dp: Port; route: Route; dash: 0 | 1; head: Head; pts: number[];
+  /** text size in px for this element's label(s); absent/0 = the default (13, icon labels 12) */
+  fs?: number | undefined;
+  /** label alignment inside the box: absent = centred (so older files and every existing element read as before) */
+  align?: TextAlign | undefined;
+  /** arrows only: labels along the path. Absent = none (a legacy `text` on an arrow reads as one label at t = 0.5, see arrowLabels) */
+  labels?: ArrowLabel[] | undefined;
+  /** elbow arrows only: manual offsets of interior segments, flat pairs [2 * index + vertical, offset] (see connectors.ts applySegs). Absent = auto-routed */
+  segs?: number[] | undefined;
+  /** arrows only: when `src` / `dst` names another arrow, the fraction (0..1, by length) of that arrow's path where this end sits */
+  st?: number | undefined; dt?: number | undefined;
   /** spatial-index bookkeeping (cell range + query dedupe stamp) — never serialised */
   gx0: number; gy0: number; gx1: number; gy1: number; seen: number;
 }
@@ -52,6 +66,14 @@ export interface GroupInfo { id: string; name: string; cat: number; collapsed: b
 /** persisted element: everything except spatial-index bookkeeping */
 export type ElJSON = Omit<El, "gx0" | "gy0" | "gx1" | "gy1" | "seen">;
 export interface SceneJSON { els: ElJSON[]; groups: GroupInfo[] }
+
+/** deep-enough copy of a persisted element: the arrays (and label objects) are not shared with the original */
+function copyEl(j: ElJSON): ElJSON {
+  const c: ElJSON = { ...j, groupIds: [...j.groupIds], pts: [...j.pts] };
+  if (j.labels) c.labels = j.labels.map((l) => ({ ...l }));
+  if (j.segs) c.segs = [...j.segs];
+  return c;
+}
 
 const CELL = 256;
 const key = (cx: number, cy: number) => (cx + 32768) * 65536 + (cy + 32768);
@@ -112,6 +134,8 @@ export class Scene {
   private zc = 0;
   private idc = 0;
   private scratch: El[] = [];
+  /** padded bounds of a group (set by the editor from its GroupIndex): lets connectors bind to a group's boundary like to a shape */
+  groupRect: ((id: string) => { x: number; y: number; w: number; h: number } | null) | null = null;
 
   add(init: ElInit): El {
     const e: El = {
@@ -166,7 +190,7 @@ export class Scene {
     for (const e of this.els.values()) {
       const { gx0: _a, gy0: _b, gx1: _c, gy1: _d, seen: _s, ...rest } = e;
       void _a; void _b; void _c; void _d; void _s;
-      els.push({ ...rest, groupIds: [...rest.groupIds], pts: [...rest.pts] });
+      els.push(copyEl(rest));
     }
     els.sort((a, b) => a.z - b.z);
     return { els, groups: [...this.groups.values()].map((g) => ({ ...g })) };
@@ -180,17 +204,28 @@ export class Scene {
     return x0 === Infinity ? null : { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
   }
 
+  /** is this element in a group that is locked? (the group's lock covers its members: move, resize, delete, text and style edits) */
+  groupLocked(e: El): boolean {
+    if (e.groupIds.length === 0 || this.groups.size === 0) return false;
+    for (const g of e.groupIds) if (this.groups.get(g)?.locked) return true;
+    return false;
+  }
+
+  /** locked on its own or through a locked group */
+  isLocked(e: El): boolean { return e.locked || this.groupLocked(e); }
+
   /** copy of an element without spatial-index fields (arrays copied) */
   snapshot(e: El): ElJSON {
     const { gx0: _a, gy0: _b, gx1: _c, gy1: _d, seen: _s, ...rest } = e;
     void _a; void _b; void _c; void _d; void _s;
-    return { ...rest, groupIds: [...rest.groupIds], pts: [...rest.pts] };
+    return copyEl(rest);
   }
 
   /** overwrite an existing element with a snapshot and reindex (history undo/redo) */
   restoreEl(e: El, j: ElJSON): void {
     this.grid.remove(e);
-    Object.assign(e, j, { groupIds: [...j.groupIds], pts: [...j.pts] });
+    // optional fields are assigned explicitly: Object.assign alone would leave a stale value when the snapshot omits the key
+    Object.assign(e, j, { groupIds: [...j.groupIds], pts: [...j.pts], fs: j.fs, align: j.align, labels: j.labels?.map((l) => ({ ...l })), segs: j.segs ? [...j.segs] : undefined, st: j.st, dt: j.dt });
     this.grid.insert(e);
     e.version++;
     this.nonce++;
@@ -198,7 +233,7 @@ export class Scene {
 
   /** add an element from a snapshot, keeping its id and z */
   insertJSON(j: ElJSON): El {
-    const e = { ...j, groupIds: [...j.groupIds], pts: [...j.pts], gx0: 0, gy0: 0, gx1: 0, gy1: 0, seen: 0 } as El;
+    const e = { ...copyEl(j), gx0: 0, gy0: 0, gx1: 0, gy1: 0, seen: 0 } as El;
     this.els.set(e.id, e); this.grid.insert(e);
     if (e.z > this.zc) this.zc = e.z;
     const n = parseInt(e.id.slice(1), 36); if (Number.isFinite(n) && n > this.idc) this.idc = n;

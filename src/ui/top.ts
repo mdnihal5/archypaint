@@ -9,7 +9,7 @@ type SegOpt<T extends string | number> = readonly [T, string];
 export interface Top { nameInput: HTMLInputElement; refresh(): void }
 
 /** Top-left: menu button + popover, sheet name (bound to IO), save state, and the narrow-screen panel toggles. */
-export function mountTop(ctx: Ctx, root: HTMLElement, right: { toggleNarrow(): void }): Top {
+export function mountTop(ctx: Ctx, root: HTMLElement, right: { toggleNarrow(): void; setNarrow(open: boolean): void }): Top {
   const { editor, io, settings } = ctx;
 
   /* ---------- menu ---------- */
@@ -111,7 +111,7 @@ export function mountTop(ctx: Ctx, root: HTMLElement, right: { toggleNarrow(): v
   const state = h("span", { class: "ap-state", attrs: { role: "status", "data-s": "saved" } });
 
   const narrow = (g: "sliders" | "layers", label: string) =>
-    h("button", { class: "ap-btn icon ap-narrow-btn", attrs: { type: "button", title: label, "aria-label": label }, on: { click: () => right.toggleNarrow() } }, glyph(g, 18));
+    h("button", { class: "ap-btn icon ap-narrow-btn", attrs: { type: "button", title: label, "aria-label": label }, on: { click: () => { if (g === "sliders") { ctx.toggleProps?.(); right.setNarrow(ctx.propsOpen?.() === true); } else right.toggleNarrow(); } } }, glyph(g, 18));
 
   const bar = h("div", { class: "ap-top" }, nameInput, state, narrow("sliders", "Properties"), narrow("layers", "Layers"));
   root.append(bar);
@@ -131,6 +131,12 @@ export function mountTop(ctx: Ctx, root: HTMLElement, right: { toggleNarrow(): v
   root.append(themeBtn);
   syncTheme();
 
+  /* ---------- properties toggle, top right beside the brand: the panel is opened and closed only here and with the I key ---------- */
+  const propsBtn = h("button", { class: "ap-btn icon ap-propsbtn ap-hit", attrs: { type: "button", title: "Properties (I)", "aria-label": "Properties", "aria-pressed": "false" }, on: { click: () => ctx.toggleProps?.() } }, glyph("sliders", 18));
+  root.append(propsBtn);
+  const syncProps = ctx.update("props-btn", () => setAttr(propsBtn, "aria-pressed", ctx.propsOpen?.() ? "true" : "false"));
+  syncProps.schedule();
+
   let status: SaveStatus = "saved";
   const render = () => {
     const n = io.docName();
@@ -148,7 +154,7 @@ export function mountTop(ctx: Ctx, root: HTMLElement, right: { toggleNarrow(): v
     u.schedule();
   }));
   ctx.onSlowTick(() => { if (state.textContent === "saved" && editor.dirty()) u.schedule(); });
-  ctx.d.add(() => { closeMenu(false); bar.remove(); themeBtn.remove(); btn.remove(); ctx.closeMenu = undefined; });
+  ctx.d.add(() => { closeMenu(false); bar.remove(); themeBtn.remove(); propsBtn.remove(); btn.remove(); ctx.closeMenu = undefined; });
   render();
   return { nameInput, refresh: () => u.schedule() };
 }

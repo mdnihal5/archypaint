@@ -175,6 +175,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--paper)
 .ap-input.hot { border-color: var(--red-ink); border-width: 1.5px; }
 .ap-note { font-size: 11px; color: var(--mid); margin: 0; }
 .ap-lh { display: flex; justify-content: space-between; align-items: center; }
+.ap-props[data-empty="true"] > :not(.ap-drag):not(.ap-empty) { display: none; }
+.ap-props[data-empty="false"] > .ap-empty { display: none; }
+.ap-drag { cursor: grab; user-select: none; touch-action: none; }
+.ap-drag:active { cursor: grabbing; }
+@media (min-width: 900px) { .ap-props[data-placed] { position: fixed; z-index: 15; width: 420px; max-width: calc(100vw - 8px); max-height: calc(100vh - 8px); } }
 .ap-lh-group { display: flex; align-items: baseline; gap: 6px; }
 .ap-btn.ap-danger:hover:not(:disabled) { border-color: var(--red-ink); color: var(--red-ink); background: var(--red-wash); }
 .ap-vscroll { position: relative; flex: 1 1 auto; overflow: auto; margin: 0 -12px; border-top: 1px solid var(--line-soft); min-height: 0; contain: strict; }
@@ -261,6 +266,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--paper)
 }
 @media (max-height: 640px) { .ap-toolwrap { top: 84px; } }
 @media (prefers-reduced-motion: reduce) { .ap-caret { animation: none; } * { transition: none !important; scroll-behavior: auto !important; } }
+
+/* ---------- top-right properties toggle: left of the brand ---------- */
+.ap-propsbtn { position: absolute; right: calc(var(--edge) + 44px + 150px); top: calc(var(--frame) + var(--gap) + 8px); }
+.ap-propsbtn[aria-pressed="true"] { border-color: var(--red-ink); color: var(--red-ink); }
+@media (max-width: 899px) { .ap-propsbtn { display: none; } }
 
 /* ---------- top-right theme toggle ---------- */
 .ap-theme { position: absolute; right: var(--edge); top: calc(var(--frame) + var(--gap) + 8px); }

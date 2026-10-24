@@ -1,14 +1,16 @@
 /**
  * Icon pack: lazy loading, one-time SVG -> draw-op conversion, and search metadata.
  *
- * icons/scripts/build.mjs emits src/packs/index.json (search metadata for every icon) and one
- * src/packs/<pack>.json per pack (the SVG markup). The index and each pack are separate chunks, fetched
+ * icons/scripts/build.mjs emits src/packs/index.json (search metadata for every drawn icon) and one
+ * src/packs/<pack>.json per pack (the SVG markup); icons/scripts/build-logos.mjs adds src/packs/logos-index.json and one
+ * src/packs/logos-<category>.json per brand-logo category. The indexes and each pack are separate chunks, fetched
  * on first need: drawing an icon requests only its own pack; the palette and exports request them all.
  * Each icon's SVG is converted ONCE into a small list of ops (path string + paint) and compiled to
  * Path2D lazily, so drawing is pure vector with no per-frame parsing and no bitmaps. The compiled cache
  * is bounded. A failed chunk load is retried at most every few seconds, never once per frame.
  */
 
+import { ICON_ALIASES } from "./logos";
 import { loadStoredUserPacks } from "./user-packs"; // circular with user-packs by design: both only call each other inside functions
 
 export type Tier = "detail" | "glyph";
@@ -16,6 +18,8 @@ export type Tier = "detail" | "glyph";
 export interface Op {
   /** SVG path data */
   d: string;
+  /** brand colour (logos only; "" = the caller's colour), and the replacements for the dark / light theme ("" = none) */
+  c: string; cd: string; cl: string;
   fill: boolean; fo: number;
   stroke: boolean; so: number;
   dash: number[] | null;
@@ -27,13 +31,21 @@ export interface Op {
 
 export interface IconMeta {
   id: string; name: string; aliases: readonly string[]; category: string;
-  /** pack (chunk) the SVG lives in: core, generic2, oss, aws, gcp, azure, or user-<name> */
+  /** pack (chunk) the SVG lives in: core, generic2, oss, aws, gcp, azure, logos-<category>, or user-<name> */
   pack: string;
-  /** "aws" | "gcp" | "azure" | "oss" | "user" | "" — grouping and disclaimer only */
+  /** "logo" | "aws" | "gcp" | "azure" | "oss" | "user" | "" — grouping and disclaimer only */
   vendor: string;
+  /** logos only, and only wordmarks / tall marks: the content box [x, y, w, h] inside the 24 grid, so a borderless logo can be scaled by its aspect */
+  vb?: readonly number[];
 }
 interface Svg { detail: string; glyph: string }
-export interface IndexJson { v: number; icons: [string, string, string[], string, string, string][] }
+export interface IndexJson {
+  v: number; icons: [string, string, string[], string, string, string, number[]?][];
+  /** logos index only: drawn vendor icons that a real logo replaces (not listed in the palette; saved diagrams still render them) */
+  hides?: string[];
+  /** logos index only: [pack, palette section label] in display order */
+  groups?: [string, string][];
+}
 export interface PackJson { v: number; pack: string; icons: [string, string, string][] }
 
 /** stroke width of the root <svg> per tier — icons inherit it unless an element overrides it */
@@ -43,6 +55,7 @@ export const TIER_GRID: Record<Tier, number> = { detail: 64, glyph: 24 };
 export const ROOT_ATTRS = 'fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"';
 
 const ALLOWED = new Set(["rect", "circle", "ellipse", "line", "polyline", "polygon", "path"]);
+const HEX6 = /^#[0-9a-f]{6}$/;
 const num = (v: string | undefined, d = 0): number => (v === undefined || v === "" ? d : Number(v));
 
 function attrs(s: string): Record<string, string> {
@@ -89,8 +102,10 @@ export function parseIconMarkup(markup: string, rootStroke: number): Op[] {
     const fill = (a.fill ?? "none") !== "none";
     const stroke = (a.stroke ?? "currentColor") !== "none";
     const dash = a["stroke-dasharray"] ? a["stroke-dasharray"].trim().split(/[\s,]+/).map(Number) : null;
+    const brand = (v: string | undefined): string => (v !== undefined && HEX6.test(v) ? v : ""); // only a literal #rrggbb is a brand colour
     ops.push({
-      d, fill, fo: num(a["fill-opacity"], 1), stroke, so: num(a["stroke-opacity"], 1),
+      d, c: fill ? brand(a.fill) : "", cd: brand(a["data-d"]), cl: brand(a["data-l"]),
+      fill, fo: num(a["fill-opacity"], 1), stroke, so: num(a["stroke-opacity"], 1),
       dash, sw: num(a["stroke-width"], rootStroke), p: null,
     });
   }
@@ -106,11 +121,11 @@ const packsLoaded = new Set<string>();
 let indexLoaded = false;
 let version = 0;
 const readyCbs = new Set<() => void>();
-/** official logos (logos.ts): glyph-only icons, NOT part of the search index (the palette lists them from the logo catalog) */
-const logoMeta = new Map<string, IconMeta>();
-const logoKick = new Map<string, number>();
-const LOGO_KICK_MS = 5000;
-export const LOGO_PREFIX = "logo-";
+/** drawn vendor icons a real logo replaces (from the logos index): not listed, but they stay in `byId` so saved diagrams render them */
+let hidden = new Set<string>();
+/** palette sections of the logo packs, in display order: [pack, label] */
+let logoGroups: [string, string][] = [];
+let listed: IconMeta[] | null = null; // listIcons() cache, dropped whenever the index changes
 const pending = new Map<string, Promise<void>>();
 const failedAt = new Map<string, number>();
 const RETRY_MS = 4000;
@@ -132,9 +147,12 @@ const fire = (): void => { version++; notify(); };
 /** Install the search index directly (loader + tests). Bundled icons only: user packs are re-attached. */
 export function installIndex(json: IndexJson): void {
   const user = index.filter((m) => m.vendor === "user");
-  index = json.icons.map(([id, name, aliases, category, pack, vendor]) => ({ id, name, aliases, category, pack, vendor }));
+  index = json.icons.map(([id, name, aliases, category, pack, vendor, vb]) => (vb && vb.length === 4 ? { id, name, aliases, category, pack, vendor, vb } : { id, name, aliases, category, pack, vendor }));
   for (const m of user) index.push(m);
   byId = new Map(index.map((m) => [m.id, m]));
+  hidden = new Set(json.hides ?? []);
+  logoGroups = json.groups ?? [];
+  listed = null;
   indexLoaded = true;
   fire();
 }
@@ -154,6 +172,7 @@ export function installUserIcons(pack: string, rows: readonly { id: string; name
     index.push(m); byId.set(m.id, m); svgs.set(m.id, { detail: r.detail, glyph: r.glyph });
   }
   packsLoaded.add(pack);
+  listed = null;
   fire();
 }
 
@@ -163,6 +182,7 @@ export function removeUserIcons(pack: string, notify = true): void {
   index = index.filter((m) => m.pack !== pack);
   for (const m of gone) { byId.delete(m.id); svgs.delete(m.id); compiled.detail.delete(m.id); compiled.glyph.delete(m.id); }
   packsLoaded.delete(pack);
+  listed = null;
   if (notify) fire();
 }
 
@@ -181,7 +201,7 @@ export function setPackLoader(fn: Loader | null): void { loader = fn ?? defaultL
 /** tests: forget everything loaded */
 export function resetPacks(): void {
   wanted.clear(); index = []; byId = new Map(); svgs.clear(); packsLoaded.clear(); pending.clear(); failedAt.clear(); compiled.detail.clear(); compiled.glyph.clear();
-  logoMeta.clear(); logoKick.clear();
+  hidden = new Set(); logoGroups = []; listed = null;
   indexLoaded = false; userLoaded = false; version = 0;
 }
 
@@ -203,7 +223,12 @@ const wanted = new Set<string>();
 function ensureIndex(force: boolean): Promise<void> {
   if (indexLoaded && userLoaded) return Promise.resolve();
   return load("index", async () => {
-    if (!indexLoaded) installIndex(JSON.parse(await loader("index")) as IndexJson);
+    if (!indexLoaded) {
+      // the drawn icons' index and the logos' index are one unit: if either fails, neither installs and the whole step is retried
+      const [a, b] = await Promise.all([loader("index"), loader("logos-index")]);
+      const drawn = JSON.parse(a) as IndexJson, logos = JSON.parse(b) as IndexJson;
+      installIndex({ v: drawn.v, icons: [...logos.icons, ...drawn.icons], hides: logos.hides ?? [], groups: logos.groups ?? [] });
+    }
     if (!userLoaded) {
       userLoaded = true; // set first: a failing store must not be retried on every frame
       try { await loadStoredUserPacks(); } catch { /* user packs are best effort */ }
@@ -233,12 +258,21 @@ export async function ensureIcons(ids?: readonly string[]): Promise<void> {
   await Promise.all([...want].map((p) => ensurePack(p, true)));
 }
 
-export function listIcons(): readonly IconMeta[] { return index; }
-export function iconMeta(id: string): IconMeta | null { return byId.get(id) ?? logoMeta.get(id) ?? null; }
+/** every icon the palette and the text importer may offer: the drawn vendor icons that a logo replaces are left out (iconMeta still knows them) */
+export function listIcons(): readonly IconMeta[] {
+  if (!hidden.size) return index;
+  return (listed ??= index.filter((m) => !hidden.has(m.id)));
+}
+export function iconMeta(id: string): IconMeta | null { return byId.get(resolveId(id)) ?? null; }
+/** the content box of a non-square logo mark in the 24 grid, or null (square: use the whole grid) */
+export function logoBox(id: string): readonly number[] | null { return byId.get(resolveId(id))?.vb ?? null; }
+/** the logo categories, in display order: [pack, section label] */
+export const logoPacks = (): readonly [string, string][] => logoGroups;
+/** an old / renamed id -> the id that is stored (see ICON_ALIASES); unknown ids pass through */
+const resolveId = (id: string): string => ICON_ALIASES[id] ?? id;
 
 /** background kick used by drawing paths: cheap, idempotent, retry-throttled */
 function want(id: string): void {
-  if (id.startsWith(LOGO_PREFIX)) { kickLogo(id); return; }
   if (!indexLoaded || !userLoaded) { if (wanted.size < 5000) wanted.add(id); void ensureIndex(false); return; }
   const m = byId.get(id);
   if (m && !packsLoaded.has(m.pack)) void ensurePack(m.pack, false);
@@ -246,6 +280,7 @@ function want(id: string): void {
 
 /** raw inner-SVG markup (uses currentColor; wrap with ROOT_ATTRS + the tier's viewBox), or null if unknown/not loaded yet */
 export function iconInner(id: string, tier: Tier): string | null {
+  id = resolveId(id);
   const r = svgs.get(id);
   if (!r) { want(id); return null; }
   if (tier === "detail") return r.detail === "" ? `<g transform="scale(2.666667)">${r.glyph}</g>` : r.detail; // glyph-only icon: scaled 24 -> 64 grid, for export
@@ -253,32 +288,7 @@ export function iconInner(id: string, tier: Tier): string | null {
 }
 
 /** false for glyph-only icons (logos): the renderer must use the glyph tier at every size. True when unknown (not loaded yet). */
-export function iconHasDetail(id: string): boolean { const r = svgs.get(id); return !r || r.detail !== ""; }
-
-/* ---- official logos: installed by logos.ts, restored lazily from its cache when a document draws one ---- */
-
-/** add (or replace) a logo icon. `glyph` is our own validated markup on the 24 grid. */
-export function installLogoIcon(row: { id: string; name: string; aliases: readonly string[]; category: string; glyph: string }): void {
-  logoMeta.set(row.id, { id: row.id, name: row.name, aliases: row.aliases, category: row.category, pack: "logos", vendor: "logo" });
-  svgs.set(row.id, { detail: "", glyph: row.glyph });
-  compiled.detail.delete(row.id); compiled.glyph.delete(row.id);
-  notify(); // repaint only: the search index is unchanged
-}
-export function removeLogoIcon(id: string): void {
-  if (!logoMeta.delete(id)) return;
-  svgs.delete(id); compiled.detail.delete(id); compiled.glyph.delete(id);
-  notify();
-}
-export const hasLogoIcon = (id: string): boolean => logoMeta.has(id);
-
-/** drawing a logo that is not installed: ask logos.ts (lazy chunk) to restore it from the browser cache. Throttled per id. */
-function kickLogo(id: string): void {
-  const now = performance.now(), t = logoKick.get(id);
-  if (t !== undefined && now - t < LOGO_KICK_MS) return;
-  logoKick.set(id, now);
-  if (logoKick.size > 512) logoKick.clear(); // bounded: a hostile document cannot grow it without limit
-  void import("./logos").then((m) => m.restoreLogo(id.slice(LOGO_PREFIX.length)), () => { /* chunk failed to load: the plain tile stays */ });
-}
+export function iconHasDetail(id: string): boolean { const r = svgs.get(resolveId(id)); return !r || r.detail !== ""; }
 
 /* ------------------------------------------------------------------ compiled-op cache (bounded) */
 
@@ -288,6 +298,7 @@ export const MAX_COMPILED = 2048;
 const compiled: Record<Tier, Map<string, Op[]>> = { detail: new Map(), glyph: new Map() };
 
 export function iconOps(id: string, tier: Tier): Op[] | null {
+  id = resolveId(id);
   const cache = compiled[tier];
   const hit = cache.get(id);
   if (hit) return hit;
