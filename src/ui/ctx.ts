@@ -32,13 +32,13 @@ export interface Ctx {
   modalOpen(): boolean;
   /** set by the find bar: opens it (menu item) */
   openFind?: () => void;
-  /** set by the bottom bar: where the menu button lives (bottom-left) */
-  menuSlot?: HTMLElement;
-  /** set by the top module: closes the main menu (the properties panel calls it when it opens, so they never overlap) */
-  closeMenu?: () => void;
-  /** set by the properties panel: shows / hides it (the `I` key) */
+  /** opens / closes the main menu sheet (its code is a lazy chunk, loaded on the first open) */
+  toggleMenu(): void;
+  /** closes the main menu if it is open */
+  closeMenu(): void;
+  /** set by the panels module: shows / hides the properties ribbon (the `I` key); the ribbon's code loads on the first open */
   toggleProps?: () => void;
-  /** set by the properties panel: is it open (the toggle button shows this) */
+  /** set by the panels module: is it open (the toggle button shows this) */
   propsOpen?: () => boolean;
 }
 

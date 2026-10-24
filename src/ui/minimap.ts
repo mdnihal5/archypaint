@@ -3,7 +3,7 @@ import type { Theme } from "../theme";
 import type { Ctx } from "./ctx";
 import { h, setHidden } from "./dom";
 
-const W = 200, H = 136;
+const W = 148, H = 96;
 const REBUILD_MS = 120;
 
 /**
@@ -16,6 +16,7 @@ export function mountMinimap(ctx: Ctx, root: HTMLElement): void {
   const canvas = h("canvas", { attrs: { width: Math.round(W * dpr), height: Math.round(H * dpr), "aria-hidden": "true" } });
   canvas.style.width = `${W}px`; canvas.style.height = `${H}px`;
   const card = h("div", { class: "ap-mini ap-hit", attrs: { role: "img", "aria-label": "Overview map: click or drag to move the view" } }, canvas);
+  card.hidden = true; // shown by render() only when the setting is on and the diagram is larger than the window
   root.append(card);
   const g = canvas.getContext("2d");
   const theme = (editor as unknown as { theme?: Theme }).theme;
@@ -62,13 +63,17 @@ export function mountMinimap(ctx: Ctx, root: HTMLElement): void {
 
   let map: MiniMap = fitMini(null, { x: 0, y: 0, w: 1, h: 1 }, W, H);
   const render = () => {
-    if (!g || card.hidden) return;
+    if (!g || !settings.get().minimap) return;
     if (built !== editor.scene.nonce) {
       const wait = REBUILD_MS - (performance.now() - lastBuild);
       if (wait <= 0) rebuild();
       else if (!timer) timer = setTimeout(() => { timer = 0; u.schedule(); }, wait); // trailing rebuild; a rebuild makes built === nonce, so this cannot repeat
     }
     const vp = editor.vp, view = { x: vp.x, y: vp.y, w: vp.w / vp.zoom, h: vp.h / vp.zoom };
+    // the map earns its place only when there is more diagram than window: while everything is in view it stays out of the way
+    const fits = bx0 === Infinity || (bx0 >= view.x && by0 >= view.y && bx1 <= view.x + view.w && by1 <= view.y + view.h);
+    setHidden(card, fits);
+    if (fits) return;
     map = fitMini(bx0 === Infinity ? null : { x: bx0, y: by0, w: bx1 - bx0, h: by1 - by0 }, view, W, H);
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, canvas.width, canvas.height);
@@ -85,7 +90,7 @@ export function mountMinimap(ctx: Ctx, root: HTMLElement): void {
   };
   const u = ctx.update("minimap", render);
   ctx.wire(u, "change", "viewport", "history");
-  const applySetting = () => { setHidden(card, !settings.get().minimap); u.schedule(); };
+  const applySetting = () => { if (!settings.get().minimap) setHidden(card, true); u.schedule(); };
   ctx.d.add(settings.subscribe(applySetting));
   applySetting();
 

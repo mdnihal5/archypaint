@@ -20,6 +20,12 @@ const editor = createEditor({
 });
 const { scene, renderer } = editor;
 
+// the "Hide icons" view is a viewer setting applied straight to the renderer: no scene change, no history entry
+editor.setHideIcons(settings.get().hideIcons);
+const offHide = settings.subscribe((s, changed) => { if (changed.includes("hideIcons")) editor.setHideIcons(s.hideIcons); });
+// the canvas draws labels in the bundled mono face: repaint once it has arrived (the two faces advance alike, so nothing re-wraps)
+void document.fonts?.load("13px 'JetBrains Mono'").then(() => renderer.invalidate(true, true), () => { /* blocked font: the fallback face stays */ });
+
 // live theme / background switch: the theme object is mutated in place, one repaint picks it up
 const offTheme = onThemeChange(() => renderer.invalidate(true, true));
 
@@ -67,4 +73,4 @@ const ap = { scene, vp: editor.vp, renderer, editor, io, palette, ui, settings, 
 (window as unknown as { __ap: unknown }).__ap = ap;
 
 // dev/HMR: release everything the previous module instance attached
-if (import.meta.hot) import.meta.hot.dispose(() => { ui.dispose(); palette.dispose(); io.dispose(); pwa?.dispose(); offTheme(); ro.disconnect(); settings.dispose(); paletteHost.remove(); editor.destroy(); });
+if (import.meta.hot) import.meta.hot.dispose(() => { ui.dispose(); palette.dispose(); io.dispose(); pwa?.dispose(); offTheme(); offHide(); ro.disconnect(); settings.dispose(); paletteHost.remove(); editor.destroy(); });

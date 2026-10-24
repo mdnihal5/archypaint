@@ -58,8 +58,11 @@ function drawOps(ctx: CanvasRenderingContext2D, ops: Op[], colour: string, brand
   }
 }
 
-/** the icon element draws its own label (in the strip reserved inside its box); `hideText` while that label is being edited */
-export function drawIconEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, zoom: number, hideText = false): void {
+/**
+ * The icon element draws its own label (in the strip reserved inside its box); `hideText` while that label is being edited.
+ * `hideGlyph` is the "Hide icons" view: the picture inside the tile (or the bare mark) is skipped, everything else (box, tile outline and fill, label) is unchanged.
+ */
+export function drawIconEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, zoom: number, hideText = false, hideGlyph = false): void {
   const col = colourOf(th, e);
   const reserve = e.text ? iconStrip(e.fs) : 0;
   const tile = Math.max(4, Math.min(e.w, e.h - reserve));
@@ -69,8 +72,9 @@ export function drawIconEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, zoom
 
   if (isBareLogo(e)) {
     // no tile: the mark alone, as big as its box allows (the name strip below is unchanged)
-    const bh = Math.max(4, e.h - reserve), ops = screen >= TILE_ONLY_BELOW ? iconOps(e.iconId, "glyph") : null;
-    if (ops) {
+    const bh = Math.max(4, e.h - reserve), ops = screen >= TILE_ONLY_BELOW && !hideGlyph ? iconOps(e.iconId, "glyph") : null;
+    if (hideGlyph) { /* nothing to draw: the box is still there for the selection, ports and connectors */ }
+    else if (ops) {
       const t = bareMarkTransform(logoBox(e.iconId) ?? FULL_GRID, e.x, e.y, e.w, bh);
       ctx.save(); ctx.translate(t.tx, t.ty); ctx.scale(t.s, t.s);
       ctx.lineCap = "round"; ctx.lineJoin = "round";
@@ -89,7 +93,7 @@ export function drawIconEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, zoom
   else if (e.fill === 2) { ctx.globalAlpha = 1; ctx.fillStyle = col; ctx.fill(); }
   ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = Math.max(2, 1 / zoom); ctx.stroke();
 
-  if (screen >= TILE_ONLY_BELOW && e.iconId) {
+  if (!hideGlyph && screen >= TILE_ONLY_BELOW && e.iconId) {
     const tier: Tier = screen >= DETAIL_FROM && iconHasDetail(e.iconId) ? "detail" : "glyph"; // logos have only the glyph tier
     const ops = iconOps(e.iconId, tier); // requests the icon's pack in the background; null until it lands (the plain tile shows meanwhile)
     if (ops) {

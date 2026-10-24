@@ -16,6 +16,9 @@ const PAD = 24;
 
 export function themeOf(editor: EditorAPI): Theme { return (editor as unknown as { theme?: Theme }).theme ?? LIGHT; }
 
+/** exports follow the "Hide icons" view the same way they follow the theme: what is on screen is what is exported */
+const iconsHidden = (editor: EditorAPI): boolean => (editor as unknown as { hideIcons?: boolean }).hideIcons === true;
+
 /** the icons module may load its pack lazily (ensureIcons); feature-detect so this file works with either version */
 async function ensureIcons(): Promise<void> {
   await (Icons as unknown as { ensureIcons?: () => Promise<void> }).ensureIcons?.();
@@ -111,7 +114,7 @@ export async function renderPng(editor: EditorAPI, o: ExportOpts = {}): Promise<
   await ensureIcons();
   if (els.some((e) => e.kind === "calc")) await ensureCalc().catch(() => {}); // results are cached per element once the evaluator is loaded
   await preloadImages(els); // image elements: decode their bitmaps before drawing (same cache and drawer as the canvas)
-  const th = themeOf(editor);
+  const th = themeOf(editor), hideIcons = iconsHidden(editor);
   const oc = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(plan.width, plan.height) : Object.assign(document.createElement("canvas"), { width: plan.width, height: plan.height });
   const ctx = oc.getContext("2d") as CanvasRenderingContext2D | null;
   if (!ctx) throw new ExportError("Could not create a drawing surface for the export.");
@@ -123,7 +126,7 @@ export async function renderPng(editor: EditorAPI, o: ExportOpts = {}): Promise<
     drawGroupOutlines(ctx, th, groups);
     for (const e of [...els].sort((a, c) => a.z - c.z)) {
       if (e.kind === "arrow") drawArrow(ctx, e, th);
-      else if (e.kind === "icon") Icons.drawIconEl(ctx, e, th, s);
+      else if (e.kind === "icon") Icons.drawIconEl(ctx, e, th, s, false, hideIcons);
       else drawShape(ctx, e, th, s, false);
       ctx.globalAlpha = 1;
     }
@@ -148,5 +151,5 @@ export async function renderSvg(editor: EditorAPI, o: ExportOpts = {}): Promise<
     if (r.tooBig) throw new ExportError("The images in this drawing are too large to embed in an SVG (20 MB limit). Export as PNG, or remove some images.");
     images = r.images;
   }
-  return { text: buildSvg(els, themeOf(editor), { background: o.background ?? true, padding: PAD, icons: Icons.iconSvg, groups: groupsFor(editor, els), measure: textWidth, ...(calc ? { calc: calc.evalCalc } : {}), ...(images ? { images } : {}) }), usedSelection };
+  return { text: buildSvg(els, themeOf(editor), { background: o.background ?? true, padding: PAD, icons: Icons.iconSvg, ...(iconsHidden(editor) ? { hideIcons: true } : {}), groups: groupsFor(editor, els), measure: textWidth, ...(calc ? { calc: calc.evalCalc } : {}), ...(images ? { images } : {}) }), usedSelection };
 }

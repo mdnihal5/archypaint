@@ -1,8 +1,5 @@
-import { fromHTML, h, setAttr, setText } from "./dom";
+import { fromHTML, h, setAttr } from "./dom";
 import type { Ctx } from "./ctx";
-
-const EDGE = ["sharp", "round", "soft"] as const;
-const FILL = ["outline", "tint", "solid", "none"] as const;
 
 const ZONE_T = ["1", "2", "3", "4", "5", "6", "7", "8"];
 const ZONE_L = ["A", "B", "C", "D"];
@@ -18,15 +15,15 @@ ${["116 140 164 140", "276 140 300 140 300 68 322 68", "276 140 300 140 300 208 
 ${[[16, 96, "1"], [140, 124, "2"], [290, 12, "3"]].map(([x, y, n]) => `<circle class="g-mark" cx="${x}" cy="${y}" r="11"/><text class="g-marktxt" x="${x}" y="${(y as number) + 4}">${n}</text>`).join("")}
 </svg>`;
 
-export interface Sheet { titleInput: HTMLInputElement; refresh(): void }
+export interface Sheet { refresh(): void }
 
 /**
- * The drafting sheet: zoned double border and title block always (until "sheet frame" is turned off); the welcome
+ * The drafting sheet: the zoned double border (only with the "sheet frame" setting on) and the welcome
  * (command line, General Notes, ghost diagram) only while the scene is empty. All static markup; the only writes
  * after mount are equality-guarded attribute/text updates inside one rAF-coalesced updater.
  */
 export function mountSheet(ctx: Ctx, root: HTMLElement): Sheet {
-  const { editor, palette, io, settings } = ctx;
+  const { editor, palette } = ctx;
 
   const zone = (cls: string, labels: string[]) => h("div", { class: `ap-zone ${cls}`, attrs: { "aria-hidden": "true" } }, ...labels.map((l) => h("span", { text: l })));
   const frame = h("div", { class: "ap-frame", attrs: { "aria-hidden": "true" } }, zone("t", ZONE_T), zone("b", ZONE_T), zone("l", ZONE_L), zone("r", ZONE_L));
@@ -42,33 +39,13 @@ export function mountSheet(ctx: Ctx, root: HTMLElement): Sheet {
   const welcome = h("div", { class: "ap-welcome" }, cmd,
     h("div", { class: "ap-hintline", text: "kafka · load balancer · cron job · read replica · service worker" }), notes, ghost);
 
-  const input = (label: string, aria: string, get: () => string, set: (v: string) => void) => {
-    const inp = h("input", { attrs: { type: "text", value: get(), "aria-label": aria, maxlength: 24, spellcheck: "false", autocomplete: "off" } });
-    inp.addEventListener("change", () => set(inp.value.trim()));
-    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") inp.blur(); if (e.key === "Escape") { inp.value = get(); inp.blur(); } });
-    return { cell: h("div", { class: "ap-tb-cell" }, h("label", { text: label }), inp), inp };
-  };
-  const title = input("TITLE", "Sheet title", () => io.docName(), (v) => { io.setDocName(v || "untitled"); ctx.refresh(); });
-  const scale = input("SCALE", "Sheet scale", () => settings.get().scale, (v) => settings.set({ scale: v || "1:1" }));
-  const styleV = h("span", { class: "v" });
-  const rev = input("REV", "Sheet revision", () => settings.get().rev, (v) => settings.set({ rev: v || "0" }));
-  const tb = h("div", { class: "ap-titleblock", attrs: { role: "group", "aria-label": "Title block" } },
-    h("div", { class: "ap-tb-head" }, h("span", { text: "ARCHYPAINT" }), h("em", { text: "SHEET 01 / 01" })),
-    title.cell, scale.cell,
-    h("div", { class: "ap-tb-cell" }, h("label", { text: "STYLE" }), styleV), rev.cell);
-
-  const sheet = h("div", { attrs: { id: "sheet", "data-empty": "true" } }, frame, welcome, tb);
+  const sheet = h("div", { attrs: { id: "sheet", "data-empty": "true" } }, frame, welcome);
   root.append(sheet);
 
-  const render = () => {
-    setAttr(sheet, "data-empty", editor.scene.els.size === 0 ? "true" : "false");
-    setText(styleV, `${EDGE[editor.defaults.edge]} · ${FILL[editor.defaults.fill]}`);
-    for (const [c, v] of [[scale.inp, settings.get().scale], [rev.inp, settings.get().rev]] as const) if (document.activeElement !== c && c.value !== v) c.value = v;
-  };
+  const render = () => { setAttr(sheet, "data-empty", editor.scene.els.size === 0 ? "true" : "false"); };
   const u = ctx.update("sheet", render);
   ctx.wire(u, "change");
-  ctx.d.add(settings.subscribe(() => u.schedule()));
   ctx.d.add(() => sheet.remove());
   render();
-  return { titleInput: title.inp, refresh: () => u.schedule() };
+  return { refresh: () => u.schedule() };
 }

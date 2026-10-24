@@ -370,6 +370,8 @@ export function createEditor(d: EditorDeps): Editor {
     get tool() { return ctl.tool; },
     setTool(t: Tool) { ctl.setTool(t); },
     get readOnly() { return readOnly; },
+    get hideIcons() { return renderer.hideIcons; },
+    setHideIcons(on: boolean) { if (renderer.hideIcons === on) return; renderer.hideIcons = on; renderer.invalidate(true, true); },
     setReadOnly(on: boolean) {
       if (on === readOnly) return;
       readOnly = on; ctl.readOnly = on;

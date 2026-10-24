@@ -9,7 +9,7 @@ import { isTyping } from "./dom";
 export function mountKeys(ctx: Ctx): void {
   const { editor, io, palette, settings } = ctx;
   ctx.d.on(window, "keydown", (e: KeyboardEvent) => {
-    if (e.defaultPrevented || isTyping(e.target) || ctx.modalOpen() || palette.isOpen()) return;
+    if (e.defaultPrevented || isTyping(e.target) || ctx.modalOpen()) return;
     const meta = e.metaKey || e.ctrlKey;
     // feature shortcuts (exact modifier match), before the built-ins
     const k0 = e.key.toLowerCase();
@@ -27,7 +27,11 @@ export function mountKeys(ctx: Ctx): void {
       else if (k === "e" && e.shiftKey) { e.preventDefault(); ctx.run(() => io.exportPng({ scale: 2, background: true })); }
       return;
     }
-    if (e.altKey) return;
+    if (e.altKey) {
+      // Alt+H: Hide icons (a view setting). Matched on the physical key: Option+H types another character on a Mac
+      if (e.code === "KeyH" && !e.shiftKey) { e.preventDefault(); settings.set({ hideIcons: !settings.get().hideIcons }); ctx.refresh(); }
+      return;
+    }
     switch (e.key) {
       case "/": e.preventDefault(); palette.open(); break;
       case "i": case "I": e.preventDefault(); ctx.toggleProps?.(); break;

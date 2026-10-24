@@ -11,9 +11,9 @@ import { mountFooter } from "./footer";
 import { mountFind } from "./find";
 import { mountKeys } from "./keys";
 import { mountMinimap } from "./minimap";
-import { mountRight } from "./right";
+import { mountPanels } from "./panels";
 import { mountSheet } from "./home";
-import { mountTools } from "./tools";
+import { mountDock } from "./dock";
 import { mountTop } from "./top";
 import { createToasts } from "./toast";
 import type { SettingsStore } from "./settings";
@@ -46,6 +46,10 @@ export function mountUI(deps: UiDeps): UiHandle {
   const api = makeUpdaterApi(d, editor);
   const slow: Array<() => void> = [];
   let closeShortcuts: (() => void) | null = null;
+  // the main menu sheet is a lazy chunk: built on the first open, then kept (closed) until the chrome is disposed
+  type MenuApi = { toggle(): void; close(): void };
+  let menuApi: MenuApi | null = null, menuLoad: Promise<MenuApi | null> | null = null;
+  const menu = (): Promise<MenuApi | null> => (menuLoad ??= import("./menu").then((m) => (d.isDisposed() ? null : (menuApi = m.mountMenu(ctx, root))), () => { menuLoad = null; return null; }));
   let pendingConfirm: { close(): void } | null = null;
 
   const ctx: Ctx = {
@@ -60,27 +64,30 @@ export function mountUI(deps: UiDeps): UiHandle {
       m.modal.querySelector<HTMLElement>("button")?.addEventListener("click", () => m.close());
       closeShortcuts = m.close;
     },
+    toggleMenu() { void menu().then((m) => m?.toggle()); },
+    closeMenu() { menuApi?.close(); },
     run(fn) { Promise.resolve().then(fn).catch((e: unknown) => toasts.toast(e instanceof Error ? e.message : String(e), "err")); },
     modalOpen,
   };
   d.add(() => { closeShortcuts?.(); pendingConfirm?.close(); });
 
   mountFlow(ctx, root);
-  const sheet = mountSheet(ctx, root);
-  mountTools(ctx, root);
-  const right = mountRight(ctx, root);
+  mountSheet(ctx, root);
+  mountPanels(ctx, root);
+  mountDock(ctx, root);
   mountBottom(ctx, root);
-  const top = mountTop(ctx, root, right);
+  const top = mountTop(ctx, root);
   mountBrand(ctx, root);
   mountFooter(ctx, root);
   mountKeys(ctx);
   mountFind(ctx, root);
   mountMinimap(ctx, root);
 
-  // keep both name fields (top bar and title block) in step without ever clobbering one being typed in
+  // keep the name field in step with the document without ever clobbering it while it is being typed in
   const sync = ctx.update("docname", () => {
     const n = io.docName();
-    for (const i of [top.nameInput, sheet.titleInput]) if (document.activeElement !== i && i.value !== n) i.value = n;
+    const i = top.nameInput;
+    if (document.activeElement !== i && i.value !== n) i.value = n;
   });
   ctx.wire(sync, "change");
   ctx.onSlowTick(() => { const n = io.docName(); if (top.nameInput.value !== n && document.activeElement !== top.nameInput) sync.schedule(); });

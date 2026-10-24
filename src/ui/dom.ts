@@ -62,7 +62,10 @@ export class Disposer {
     this.fns.push(() => t.removeEventListener(type, fn as EventListener, o));
   }
   interval(fn: () => void, ms: number): void { const id = setInterval(fn, ms); this.fns.push(() => clearInterval(id)); }
+  private done = false;
+  isDisposed(): boolean { return this.done; }
   dispose(): void {
+    this.done = true;
     for (let i = this.fns.length - 1; i >= 0; i--) { try { this.fns[i]!(); } catch { /* keep tearing down */ } }
     this.fns.length = 0;
   }

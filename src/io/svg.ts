@@ -118,6 +118,8 @@ export interface SvgOpts {
   /** evaluator for capacity notes (kind "calc"); absent -> the raw lines are exported without results */
   calc?: (text: string) => CalcRow[];
   background: boolean; padding: number; icons: (id: string, tier: "detail" | "glyph") => string | null;
+  /** the "Hide icons" view: icon elements keep their tile and label but skip the picture */
+  hideIcons?: boolean;
   /** image key -> data URL, for `image` elements (absent keys are drawn as a dashed placeholder) */
   images?: Record<string, string>;
   /** group outlines (dashed box + name tag) drawn beneath the elements; see exportGroups */
@@ -246,8 +248,8 @@ export function buildSvg(els: readonly ElLike[], th: Theme, o: SvgOpts): string 
       const strip = e.text ? iconStrip(e.fs) : 0, tile = Math.max(4, Math.min(e.w, e.h - strip)), tx = e.x + (e.w - tile) / 2;
       const r = e.edge === 0 ? 0 : e.edge === 1 ? tile * 0.25 : Math.min(tile * 0.45, tile / 2);
       if (isBareLogo(e)) { // borderless brand logo: the mark alone, fitted (by its content box) into the box above the name strip
-        const inner = o.icons(e.iconId, "glyph"), bh = Math.max(4, e.h - strip), m = 0.04;
-        if (inner && !SAFE_INNER.test(inner)) {
+        const inner = o.hideIcons ? null : o.icons(e.iconId, "glyph"), bh = Math.max(4, e.h - strip), m = 0.04;
+        if (o.hideIcons) { /* the mark is hidden: only the label below */ } else if (inner && !SAFE_INNER.test(inner)) {
           const vb = logoBox(e.iconId) ?? [0, 0, 24, 24], id = symId(e.iconId, "bare");
           if (!used.has(id)) used.set(id, `<symbol id="${id}" viewBox="${vb.join(" ")}" ${ROOT_ATTRS} stroke-width="1.75">${themedLogoMarkup(inner, isDarkPaper(th.paper))}</symbol>`);
           body.push(`<use href="#${id}" x="${n(e.x + e.w * m)}" y="${n(e.y + bh * m)}" width="${n(e.w * (1 - 2 * m))}" height="${n(bh * (1 - 2 * m))}" color="${c}"/>`);
@@ -255,10 +257,10 @@ export function buildSvg(els: readonly ElLike[], th: Theme, o: SvgOpts): string 
       } else {
         body.push(`<rect x="${n(tx)}" y="${n(e.y)}" width="${n(tile)}" height="${n(tile)}" rx="${n(r)}" ${shapeFill(e, c)} ${stroke(e, c, 1.8)}/>`);
         const tier = tile >= 40 ? "detail" : "glyph";
-        let inner = o.icons(e.iconId, tier);
+        let inner = o.hideIcons ? null : o.icons(e.iconId, tier);
         const glyphColor = e.fill === 2 ? onSolid(th, c) : c;
         if (inner?.includes('fill="#')) inner = themedLogoMarkup(inner, isDarkPaper(th.paper), e.fill === 2); // brand logos: this theme's colours (or one colour on a solid tile)
-        if (inner && !SAFE_INNER.test(inner)) {
+        if (o.hideIcons) { /* the picture is hidden: the tile and the label stay */ } else if (inner && !SAFE_INNER.test(inner)) {
           const id = symId(e.iconId, tier);
           if (!used.has(id)) used.set(id, `<symbol id="${id}" viewBox="0 0 ${tier === "detail" ? 64 : 24} ${tier === "detail" ? 64 : 24}" ${ROOT_ATTRS} stroke-width="${tier === "detail" ? 2 : 1.75}">${inner}</symbol>`); // the pack's markup relies on these root attributes: without them unfilled shapes render solid black
           const ins = tile * 0.16;

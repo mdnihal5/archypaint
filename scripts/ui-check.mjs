@@ -55,6 +55,8 @@ const has = async (p, name, pred = () => true) => (await calls(p)).some((c) => c
 const clear = (p) => p.evaluate(() => (window.__calls.length = 0));
 const click = async (p, sel) => { const h = await p.waitForSelector(sel, { visible: true, timeout: 3000 }); await h.click(); await sleep(120); };
 const q = (p, sel) => p.$(sel);
+const until = (p, sel, ms = 3000) => p.waitForSelector(sel, { visible: true, timeout: ms }).then(() => sleep(60));
+const menuOpen = async (p) => { if (!(await vis(p, ".ap-menu"))) { await p.click('button[aria-label="Menu"]'); await until(p, ".ap-menu"); } };
 const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s); if (!e) return false; const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.display !== "none" && cs.visibility !== "hidden"; }, sel);
 
 /* ================= 1. empty sheet + tools + bottom bar ================= */
@@ -63,7 +65,8 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   await p.evaluate(SPY);
   check("home: sheet is in the empty state", await p.evaluate(() => document.getElementById("sheet").dataset.empty === "true"));
   check("home: command line, General Notes and ghost diagram are shown", (await vis(p, ".ap-cmd")) && (await vis(p, ".ap-notes")) && (await vis(p, ".ap-ghost svg")));
-  check("home: title block shown", await vis(p, ".ap-titleblock"));
+  check("home: the dock, the doc chip and the sheet frame (setting on) are shown", (await vis(p, ".ap-dock")) && (await vis(p, ".ap-chip .ap-name")) && (await vis(p, ".ap-frame")));
+  check("home: the title block is gone (the doc chip is the title)", !(await p.evaluate(() => !!document.querySelector(".ap-titleblock"))));
   await click(p, ".ap-cmd");
   check("home: clicking the command line opens the palette", await has(p, "open"));
   await p.evaluate(() => window.__ap.palette.close());
@@ -85,7 +88,7 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   await drawRect(640, 300);
   check("tools: double-click again releases it (single use again)", await p.evaluate(() => !window.__ap.editor.toolLocked && window.__ap.editor.tool === "select" && document.querySelector('button[aria-label="Rectangle"]').dataset.locked === "false"));
   await p.evaluate(() => { window.__ap.editor.selectAll(); window.__ap.editor.deleteSelection(); window.__ap.editor.setTool("select"); }); await sleep(120);
-  await click(p, ".ap-tool-icons"); check("tools: icons button opens the palette", await has(p, "open")); await p.evaluate(() => window.__ap.palette.close());
+  await click(p, ".ap-dsearch"); check("dock: the search field opens the icon library", await has(p, "open")); await p.evaluate(() => window.__ap.palette.close());
 
   await clear(p);
   await click(p, 'button[aria-label="Zoom in (+)"]'); check("bottom: zoom in -> editor.zoomBy(>1)", await has(p, "zoomBy", (c) => c[1] > 1));
@@ -135,14 +138,14 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
 {
   const { p, cx } = await open(URL0 + "?theme=light");
   await p.evaluate(SPY);
-  const menu = async (label) => { if (!(await vis(p, ".ap-menu"))) await click(p, 'button[aria-label="Menu"]'); await click(p, `.ap-menu >> ::-p-text(${label})`).catch(async () => { await p.evaluate((l) => [...document.querySelectorAll(".ap-mi")].find((x) => x.textContent.startsWith(l))?.click(), label); await sleep(120); }); };
-  await click(p, 'button[aria-label="Menu"]');
+  await click(p, 'button[aria-label="Menu"]'); await until(p, ".ap-menu");
   check("menu: opens and aria-expanded is true", (await vis(p, ".ap-menu")) && (await p.evaluate(() => document.querySelector('button[aria-label="Menu"]').getAttribute("aria-expanded") === "true")));
   await p.evaluate(() => [...document.querySelectorAll(".ap-mi")].find((x) => x.textContent.startsWith("Save"))?.click()); await sleep(150);
   check("menu: Save -> io.save", await has(p, "save"));
   check("menu: closes after an action", !(await vis(p, ".ap-menu")));
 
-  const seg = async (group, label) => { if (!(await vis(p, ".ap-menu"))) await click(p, 'button[aria-label="Menu"]'); await p.evaluate((g, l) => [...document.querySelectorAll(`.ap-menu .ap-seg[aria-label="${g}"] button`)].find((x) => x.textContent === l).click(), group, label); await sleep(150); };
+  const seg = async (group, label) => { await menuOpen(p); await p.evaluate((g, l) => [...document.querySelectorAll(`.ap-menu .ap-seg[aria-label="${g}"] button`)].find((x) => x.getAttribute("aria-label") === l).click(), group, label); await sleep(150); };
+  const chipSet = async (label, on) => { await menuOpen(p); await p.evaluate((l, o) => { const b = [...document.querySelectorAll(".ap-menu .ap-tg")].find((x) => x.textContent === l); if ((b.getAttribute("aria-pressed") === "true") !== o) b.click(); }, label, on); await sleep(150); };
   await seg("Theme", "dark");
   check("menu: theme dark -> data-theme + persisted", await p.evaluate(() => document.documentElement.dataset.theme === "dark" && JSON.parse(localStorage.getItem("archypaint.settings.v1")).theme === "dark"));
   const ap0 = await p.evaluate(() => window.__ap.renderer.lastFrameAt); await sleep(200);
@@ -153,26 +156,39 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   await p.evaluate(() => { document.activeElement?.blur?.(); }); await p.keyboard.press("Escape"); await sleep(100);
   await p.keyboard.press("b"); await sleep(120);
   check("keys: B toggles background", await p.evaluate(() => document.documentElement.dataset.bg === "grid"));
-  await seg("Sheet frame", "off");
-  check("menu: sheet frame off hides border and title block", (await p.evaluate(() => document.documentElement.dataset.frame === "off")) && !(await vis(p, ".ap-frame")) && !(await vis(p, ".ap-titleblock")));
-  await seg("Sheet frame", "on");
-  await seg("Status footer", "off");
+  await chipSet("Sheet frame", false);
+  check("menu: sheet frame off hides the border and the Sheet row", (await p.evaluate(() => document.documentElement.dataset.frame === "off")) && !(await vis(p, ".ap-frame")) && !(await vis(p, ".ap-sheetrow")));
+  await chipSet("Sheet frame", true);
+  check("menu: sheet frame on shows the Sheet row (scale, rev, style)", (await vis(p, ".ap-sheetrow")) && (await vis(p, '.ap-sheetrow input[aria-label="Sheet scale"]')));
+  await chipSet("Status footer", false);
   check("menu: status footer off hides the footer", (await p.evaluate(() => document.documentElement.dataset.hud === "off")) && !(await vis(p, ".ap-hud")));
-  await seg("Status footer", "on");
+  await chipSet("Status footer", true);
+  await chipSet("Layers", false); check("menu: Layers chip -> setting + persisted", await p.evaluate(() => JSON.parse(localStorage.getItem("archypaint.settings.v1")).layers === false)); await chipSet("Layers", true);
+  await chipSet("Flow animation", false); check("menu: Flow animation chip -> setting", await p.evaluate(() => window.__ap.settings.get().flow === false)); await chipSet("Flow animation", true);
+  await chipSet("Minimap", false); check("menu: Minimap chip -> setting (the feature stays toggleable)", await p.evaluate(() => window.__ap.settings.get().minimap === false)); await chipSet("Minimap", true);
+  await chipSet("Hide icons", true);
+  check("menu: Hide icons chip -> editor.hideIcons + persisted viewer setting, no scene change", await p.evaluate(() => window.__ap.editor.hideIcons === true && window.__ap.renderer.hideIcons === true && JSON.parse(localStorage.getItem("archypaint.settings.v1")).hideIcons === true && !window.__ap.editor.canUndo()));
+  await chipSet("Hide icons", false); check("menu: Hide icons off again", await p.evaluate(() => window.__ap.editor.hideIcons === false));
   await seg("Edge", "sharp"); check("menu: default edge -> editor.setDefaults({edge:0})", await has(p, "setDefaults", (c) => c[1].edge === 0));
   await seg("Fill", "solid"); check("menu: default fill -> editor.setDefaults({fill:2})", await has(p, "setDefaults", (c) => c[1].fill === 2));
   await p.keyboard.press("Escape"); await sleep(100);
   check("menu: Escape closes it", !(await vis(p, ".ap-menu")));
+  await p.evaluate(() => document.activeElement?.blur?.());
+  await p.keyboard.down("Alt"); await p.keyboard.press("h"); await p.keyboard.up("Alt"); await sleep(150);
+  check("keys: Alt+H toggles Hide icons", await p.evaluate(() => window.__ap.editor.hideIcons === true));
+  await p.keyboard.down("Alt"); await p.keyboard.press("h"); await p.keyboard.up("Alt"); await sleep(150);
+  check("keys: Alt+H again shows icons", await p.evaluate(() => window.__ap.editor.hideIcons === false));
+  await p.keyboard.press("m"); await sleep(100); check("keys: M toggles the minimap setting", await p.evaluate(() => window.__ap.settings.get().minimap === false)); await p.keyboard.press("m"); await sleep(100);
 
   // dirty guard
   await clear(p);
   await p.evaluate(() => { window.__realDirty = window.__ap.editor.dirty; window.__ap.editor.dirty = () => true; });
-  await click(p, 'button[aria-label="Menu"]');
+  await menuOpen(p);
   await p.evaluate(() => [...document.querySelectorAll(".ap-mi")].find((x) => x.textContent.startsWith("New"))?.click()); await sleep(200);
   check("guard: New with unsaved changes asks first", (await vis(p, ".ap-modal")) && !(await has(p, "newDoc")));
   await p.evaluate(() => [...document.querySelectorAll(".ap-modal button")].find((x) => x.textContent === "Cancel").click()); await sleep(150);
   check("guard: Cancel keeps the sheet", !(await has(p, "newDoc")) && !(await vis(p, ".ap-modal")));
-  await click(p, 'button[aria-label="Menu"]');
+  await menuOpen(p);
   await p.evaluate(() => [...document.querySelectorAll(".ap-mi")].find((x) => x.textContent.startsWith("New"))?.click()); await sleep(200);
   await p.evaluate(() => [...document.querySelectorAll(".ap-modal button")].find((x) => x.textContent === "Discard").click()); await sleep(200);
   check("guard: Discard runs io.newDoc", await has(p, "newDoc"));
@@ -184,15 +200,41 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   await clear(p);
   await p.keyboard.press("?"); await sleep(150);
   check("shortcuts: ? opens the list", (await vis(p, ".ap-modal")) && (await p.evaluate(() => document.querySelector(".ap-modal h2").textContent === "Keyboard shortcuts")));
+  check("shortcuts: lists Hide icons (Alt+H) and the Tips group", await p.evaluate(() => { const t = document.querySelector(".ap-modal").textContent; return t.includes("⌥H") && t.includes("Tips"); }));
   await p.keyboard.press("Escape"); await sleep(150);
   check("shortcuts: Escape closes it and focus returns", !(await vis(p, ".ap-modal")));
-  await p.keyboard.press("/"); await sleep(120);
-  check("keys: / opens the palette (chrome or the palette's own handler, never twice)", await p.evaluate(() => window.__ap.palette.isOpen())); await p.evaluate(() => window.__ap.palette.close());
+  await p.keyboard.press("/"); await until(p, ".ap-pal");
+  check("keys: / opens the icon library (chrome or the palette's own handler, never twice)", await p.evaluate(() => window.__ap.palette.isOpen())); await p.evaluate(() => window.__ap.palette.close());
   await p.keyboard.down("Control"); await p.keyboard.press("s"); await p.keyboard.up("Control"); await sleep(120);
   check("keys: Ctrl+S -> io.save", await has(p, "save"));
   await p.keyboard.down("Control"); await p.keyboard.down("Shift"); await p.keyboard.press("e"); await p.keyboard.up("Shift"); await p.keyboard.up("Control"); await sleep(120);
   check("keys: Ctrl+Shift+E -> io.exportPng", await has(p, "exportPng"));
   await p.keyboard.press("+"); await sleep(100); check("keys: + -> zoomBy", await has(p, "zoomBy", (c) => c[1] > 1));
+  await cx.close();
+}
+
+/* ================= 2b. the icon drawer: arm, stamp, disarm (real mouse) ================= */
+{
+  const { p, cx, errs } = await open(URL0 + "?theme=light");
+  await p.keyboard.press("/"); await until(p, ".ap-pal .ap-pal-item");
+  check("drawer: / opens it at the left edge, over the canvas", await p.evaluate(() => { const r = document.querySelector(".ap-pal").getBoundingClientRect(); return r.left < 80 && r.width > 280 && r.width < 360 && getComputedStyle(document.getElementById("stage")).position === "fixed"; }));
+  check("drawer: Logos | Generic switch with counts, chips, section heads and Show all", await p.evaluate(() => /^Logos \d+/.test(document.querySelector(".ap-pal-lbtn").textContent) && /^Generic \d+/.test(document.querySelector(".ap-pal-gbtn").textContent) && document.querySelectorAll(".ap-pal-cats button").length > 10 && document.querySelectorAll(".ap-pal-head").length > 1 && !!document.querySelector(".ap-pal-all")));
+  const tileBox = await p.evaluate(() => { const t = document.querySelector(".ap-pal-item"); const r = t.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+  await p.mouse.click(tileBox.x, tileBox.y); await sleep(200);
+  check("drawer: clicking a tile ARMS it (nothing placed yet, ghost visible after a move)", await p.evaluate(() => window.__ap.palette.isArmed() && [...window.__ap.scene.els.values()].length === 0));
+  await p.mouse.move(700, 400); await p.mouse.move(720, 420); await sleep(150);
+  check("drawer: the ghost follows the pointer over the canvas", await p.evaluate(() => { const g = document.querySelector(".ap-stamp"); return !!g && !g.hidden && /translate\(/.test(g.style.transform); }));
+  await p.mouse.click(700, 420); await sleep(150); await p.mouse.click(900, 420); await sleep(200);
+  const placed = await p.evaluate(() => [...window.__ap.scene.els.values()].filter((e) => e.kind === "icon").map((e) => [Math.round(e.x + e.w / 2), Math.round(e.y + e.h / 2)]));
+  check("drawer: a click places, another click stamps another, both at the click spot", placed.length === 2 && Math.abs(placed[0][0] - 700) < 70 && Math.abs(placed[1][0] - 900) < 70, JSON.stringify(placed));
+  check("drawer: placing selects the icon and it is one undo step each", await p.evaluate(() => window.__ap.editor.selection().size === 1) );
+  await p.keyboard.press("Escape"); await sleep(120);
+  check("drawer: Esc disarms (ghost gone) and the drawer stays open", await p.evaluate(() => !window.__ap.palette.isArmed() && window.__ap.palette.isOpen() && !document.querySelector(".ap-stamp")));
+  await p.keyboard.press("Escape"); await sleep(150);
+  check("drawer: the next Esc closes it", await p.evaluate(() => !window.__ap.palette.isOpen()));
+  await p.keyboard.press("/"); await until(p, ".ap-pal .ap-pal-item"); await p.keyboard.type("nginx"); await sleep(150); await p.keyboard.press("Enter"); await sleep(250);
+  check("drawer: Enter places the highlighted logo at the view centre and closes", await p.evaluate(() => window.__ap.palette.isOpen() === false && [...window.__ap.scene.els.values()].filter((e) => e.iconId === "logo-nginx").length === 1));
+  check("drawer: no page errors", errs.length === 0, errs.join(" | "));
   await cx.close();
 }
 
@@ -211,28 +253,28 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   check("layers: panel visible with rows", (await vis(p, ".ap-layers")) && (await p.evaluate(() => document.querySelectorAll(".ap-lrow").length >= 5)));
   await p.evaluate(SPY);
   await p.evaluate(() => window.__ap.editor.select([window.__ids[0]])); await sleep(200);
-  check("props: a selection does not open the panel by itself", !(await vis(p, ".ap-props")));
-  await p.evaluate(() => document.querySelector(".ap-propsbtn").click()); await sleep(200);
-  check("props: the toggle button opens it, showing the selection", await vis(p, ".ap-props"));
+  check("props: a selection does not open the ribbon by itself (and its code is not even loaded: no DOM)", !(await vis(p, ".ap-ribbon")) && !(await p.evaluate(() => !!document.querySelector(".ap-ribbon"))));
+  await p.evaluate(() => document.querySelector('button[aria-label="Properties"]').click()); await until(p, ".ap-ribbon");
+  check("props: the toggle button opens it, showing the selection", (await vis(p, ".ap-ribbon")) && (await p.evaluate(() => document.querySelector(".ap-kind").textContent === "Rectangle")));
   await clear(p);
   await click(p, 'button[aria-label="Colour network"]'); check("props: category swatch -> setStyle({cat:2})", await has(p, "setStyle", (c) => c[1].cat === 2));
-  await p.evaluate(() => [...document.querySelectorAll('.ap-seg[aria-label="Fill"] button')].find((x) => x.textContent === "solid").click()); await sleep(120);
+  await p.evaluate(() => [...document.querySelectorAll('.ap-ribbon .ap-seg[aria-label="Fill"] button')].find((x) => x.textContent === "solid").click()); await sleep(120);
   check("props: fill solid -> setStyle({fill:2})", await has(p, "setStyle", (c) => c[1].fill === 2));
-  await p.evaluate(() => [...document.querySelectorAll('.ap-seg[aria-label="Edge"] button')].find((x) => x.textContent === "soft").click()); await sleep(120);
+  await p.evaluate(() => [...document.querySelectorAll('.ap-ribbon .ap-seg[aria-label="Edge"] button')].find((x) => x.textContent === "soft").click()); await sleep(120);
   check("props: edge soft -> setStyle({edge:2})", await has(p, "setStyle", (c) => c[1].edge === 2));
-  await p.evaluate(() => [...document.querySelectorAll(".ap-props .ap-btn")].find((x) => x.textContent === "dashed").click()); await sleep(120);
+  await p.evaluate(() => [...document.querySelectorAll(".ap-ribbon .ap-btn")].find((x) => x.textContent === "dashed").click()); await sleep(120);
   check("props: dashed -> setStyle({dash:1})", await has(p, "setStyle", (c) => c[1].dash === 1));
-  for (const [label, fn] of [["front", "bringToFront"], ["forward", "bringForward"], ["backward", "sendBackward"], ["back", "sendToBack"]]) {
-    await p.evaluate((l) => [...document.querySelectorAll(".ap-props .ap-row2 .ap-btn")].find((x) => x.firstChild.textContent === l).click(), label); await sleep(80);
+  for (const [label, fn] of [["Bring to front", "bringToFront"], ["Bring forward", "bringForward"], ["Send backward", "sendBackward"], ["Send to back", "sendToBack"]]) {
+    await p.evaluate((l) => document.querySelector(`.ap-ribbon button[aria-label^="${l}"]`).click(), label); await sleep(80);
     check(`props: arrange ${label} -> editor.${fn}`, await has(p, fn));
   }
-  await p.evaluate(() => [...document.querySelectorAll(".ap-props .ap-btn")].find((x) => x.firstChild?.textContent === "group").click()); await sleep(120);
+  await p.evaluate(() => [...document.querySelectorAll(".ap-ribbon .ap-btn")].find((x) => x.querySelector("span")?.textContent === "group").click()); await sleep(120);
   check("props: group -> editor.group", await has(p, "group"));
-  check("props: name field hidden for an ungrouped selection", !(await vis(p, '.ap-props input[aria-label="Group name"]')));
+  check("props: name field hidden for an ungrouped selection", !(await vis(p, '.ap-ribbon input[aria-label="Group name"]')));
   await p.evaluate(() => window.__ap.editor.select([window.__ids[2], window.__ids[3]])); await sleep(200);
-  check("props: name field shows the group's name", await p.evaluate(() => document.querySelector('.ap-props input[aria-label="Group name"]').value === "compute-tier"));
+  check("props: name field shows the group's name", await p.evaluate(() => document.querySelector('.ap-ribbon input[aria-label="Group name"]').value === "compute-tier"));
   await clear(p);
-  await p.focus('.ap-props input[aria-label="Group name"]'); await p.keyboard.press("End"); await p.keyboard.type("-x"); await p.keyboard.press("Enter"); await sleep(150);
+  await p.focus('.ap-ribbon input[aria-label="Group name"]'); await p.keyboard.press("End"); await p.keyboard.type("-x"); await p.keyboard.press("Enter"); await sleep(150);
   check("props: Enter commits -> renameGroup('g1','compute-tier-x')", await has(p, "renameGroup", (c) => c[1] === "g1" && c[2] === "compute-tier-x"));
 
   // layers interaction
@@ -270,12 +312,12 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   check("layers: a REAL mouse click on a row selects (pointer-events reach the row)", await has(p, "select"));
   const z0 = await p.evaluate(() => [window.__ap.vp.x, window.__ap.vp.y, window.__ap.vp.zoom]);
   await p.evaluate(() => { document.querySelector(".ap-vscroll").scrollTop = 0; });
-  const sb = await p.evaluate(() => { const s = document.querySelector(".ap-vscroll").getBoundingClientRect(); return { x: s.x + s.width / 2, y: s.y + s.height / 2 }; }); // selecting a row opens the props card above, moving the list
+  const sb = await p.evaluate(() => { const s = document.querySelector(".ap-vscroll").getBoundingClientRect(); return { x: s.x + s.width / 2, y: s.y + s.height / 2 }; }); // the layers card sits at the top right
   await p.mouse.move(sb.x, sb.y); await p.mouse.wheel({ deltaY: 300 }); await sleep(250);
   const z1 = await p.evaluate(() => [window.__ap.vp.x, window.__ap.vp.y, window.__ap.vp.zoom, document.querySelector(".ap-vscroll").scrollTop]);
   check("layers: wheel over the list scrolls the list and does not pan the canvas", z1[3] > 0 && z1[0] === z0[0] && z1[1] === z0[1] && z1[2] === z0[2], `scrollTop ${z1[3]}`);
   const sel0 = await p.evaluate(() => window.__ap.editor.selection().size);
-  const cardBox = await p.evaluate(() => { const c = document.querySelector(".ap-props")?.getBoundingClientRect(); return c && c.width ? { x: c.x + 6, y: c.y + 6 } : null; });
+  const cardBox = await p.evaluate(() => { const c = document.querySelector(".ap-ribbon")?.getBoundingClientRect(); return c && c.width ? { x: c.x + 6, y: c.y + 6 } : null; });
   if (cardBox) { await p.mouse.click(cardBox.x, cardBox.y); await sleep(100); check("props: clicking panel padding does not fall through and clear the selection", (await p.evaluate(() => window.__ap.editor.selection().size)) === sel0); }
   const build = await p.evaluate(() => { const t = performance.now(); window.__ap.ui.refresh(); return performance.now() - t; });
   check("chrome refresh is a schedule, not a synchronous rebuild", build < 5, `${build.toFixed(2)} ms`);
@@ -334,14 +376,15 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
 /* ================= 6. responsive ================= */
 for (const w of [390, 820, 1024]) {
   const { p, cx } = await open(URL0 + "?theme=light", w, w === 390 ? 800 : 900);
-  const m = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth, cmd: document.querySelector(".ap-cmd").getBoundingClientRect().left, tools: document.querySelector(".ap-tools").getBoundingClientRect().right }));
+  const m = await p.evaluate(() => { const d = document.querySelector(".ap-dock").getBoundingClientRect(), c = document.querySelector(".ap-chip").getBoundingClientRect(), cl = document.querySelector(".ap-cluster").getBoundingClientRect(); return { sw: document.documentElement.scrollWidth, iw: innerWidth, dl: d.left, dr: d.right, chipR: c.right, clL: cl.left, scroll: document.querySelector(".ap-dock").scrollWidth > document.querySelector(".ap-dock").clientWidth }; });
   check(`responsive ${w}px: no horizontal scroll`, m.sw <= m.iw, `${m.sw} <= ${m.iw}`);
-  check(`responsive ${w}px: command line clears the tool strip`, m.cmd >= m.tools, `${Math.round(m.cmd)} >= ${Math.round(m.tools)}`);
+  check(`responsive ${w}px: the dock stays inside the window${w < 720 ? " (and scrolls sideways, dropping no tool)" : ""}`, m.dl >= 0 && m.dr <= m.iw + 0.5, `${Math.round(m.dl)}..${Math.round(m.dr)} of ${m.iw}`);
+  check(`responsive ${w}px: the doc chip and the panel cluster do not overlap`, m.chipR <= m.clL, `${Math.round(m.chipR)} <= ${Math.round(m.clL)}`);
   if (w < 900) {
     await p.evaluate(() => { const { scene, editor } = window.__ap; const e = scene.add({ kind: "rect", x: 100, y: 200, w: 100, h: 60 }); editor.renderer.invalidate(true, true); editor.select([e.id]); }); await sleep(700);
-    check(`responsive ${w}px: panels collapsed behind toggle buttons`, !(await vis(p, ".ap-right")) && (await vis(p, 'button[aria-label="Properties"]')));
-    await click(p, 'button[aria-label="Properties"]');
-    check(`responsive ${w}px: toggle opens the panel`, await vis(p, ".ap-props"));
+    check(`responsive ${w}px: the ribbon is closed until asked`, !(await vis(p, ".ap-ribbon")) && (await vis(p, 'button[aria-label="Properties"]')));
+    await click(p, 'button[aria-label="Properties"]'); await until(p, ".ap-ribbon");
+    check(`responsive ${w}px: toggle opens the ribbon inside the window`, await p.evaluate(() => { const r = document.querySelector(".ap-ribbon").getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 0.5; }));
   }
   await cx.close();
 }

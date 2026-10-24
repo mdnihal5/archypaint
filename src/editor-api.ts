@@ -26,6 +26,10 @@ export interface EditorAPI {
   readonly readOnly: boolean;
   setReadOnly(on: boolean): void;
 
+  /** the "Hide icons" view: icon elements skip their picture (box, tile, label, ports and connectors stay). A view flag: not in the scene, not in history; PNG / SVG exports follow it like they follow the theme. */
+  readonly hideIcons: boolean;
+  setHideIcons(on: boolean): void;
+
   /** true while an inline text editor (shape / icon / connector label / group name) is open */
   readonly editing: boolean;
   /**

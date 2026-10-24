@@ -44,6 +44,8 @@ export class Renderer {
   hidden: ReadonlySet<string> | null = null;
   /** id of the element being text-edited: its label is not drawn under the textarea */
   hideText = "";
+  /** the "Hide icons" view: icon elements skip their picture (view flag only: the scene and history never see it) */
+  hideIcons = false;
   /** runs at the start of each frame; input is coalesced and applied here */
   onBeforeFrame: (() => void) | null = null;
 
@@ -174,7 +176,7 @@ export class Renderer {
     for (let i = 0; i < els.length; i++) {
       const e = els[i]!;
       if (this.dragging.has(e.id) || (hid !== null && hid.has(e.id))) continue;
-      drawEl(ctx, e, this.theme, z, lod, this.hideText === e.id);
+      drawEl(ctx, e, this.theme, z, lod, this.hideText === e.id, this.hideIcons);
     }
     ctx.globalAlpha = 1;
   }
@@ -242,7 +244,7 @@ export class Renderer {
         const lp = e.kind === "arrow" ? this.livePts.get(id) : undefined;
         if (lp) { drawArrow(ctx, e, th, z, lp, false); continue; }
         ctx.translate(this.dragDx, this.dragDy);
-        drawEl(ctx, e, th, z, false, false);
+        drawEl(ctx, e, th, z, false, false, this.hideIcons);
         ctx.translate(-this.dragDx, -this.dragDy);
       }
     }
@@ -554,14 +556,14 @@ function ensureImageChunk(): void {
   import("./images").then(() => imageRepaint?.()).catch(() => {}).finally(() => { imageChunkLoading = false; });
 }
 
-export function drawEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number, lod: boolean, hideText: boolean): void {
+export function drawEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number, lod: boolean, hideText: boolean, hideIcons = false): void {
   if (e.kind === "calc") { drawCalcEl(ctx, e, th, z, lod, hideText); ctx.globalAlpha = 1; return; }
   if (e.kind === "arrow") { drawArrow(ctx, e, th, z, e.pts, lod); return; }
   if (PATH_KINDS.has(e.kind)) { drawPathKind(ctx, e, th, z, lod, hideText); ctx.globalAlpha = 1; return; }
   if (e.kind === "legend") { if (lod) { ctx.globalAlpha = 0.4; ctx.fillStyle = th.mid; ctx.fillRect(e.x, e.y, e.w, e.h); ctx.globalAlpha = 1; } else drawLegend(ctx, e, th, z); return; }
   const col = colourOf(th, e);
   if (lod) { ctx.globalAlpha = 0.55; ctx.fillStyle = col; ctx.fillRect(e.x, e.y, e.w, e.h); return; }
-  if (e.kind === "icon") { drawIconEl(ctx, e, th, z, hideText); ctx.globalAlpha = 1; return; } // label included: it must not be drawn twice
+  if (e.kind === "icon") { drawIconEl(ctx, e, th, z, hideText, hideIcons); ctx.globalAlpha = 1; return; } // label included: it must not be drawn twice
   if (e.kind === "image") {
     if (imageDrawer) imageDrawer(ctx, e, th, z, hideText);
     else { ctx.globalAlpha = th.tint * 1.4; ctx.fillStyle = col; ctx.fillRect(e.x, e.y, e.w, e.h); ensureImageChunk(); }

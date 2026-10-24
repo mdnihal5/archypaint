@@ -1,7 +1,7 @@
 import type { Tool } from "../input";
 import type { Ctx } from "./ctx";
 import { glyph, type GlyphName } from "./glyphs";
-import { Disposer, h, setPressed } from "./dom";
+import { Disposer, h, setDisabled, setPressed } from "./dom";
 
 interface ToolDef { id: string; g: GlyphName; key: string; label: string }
 
@@ -17,7 +17,7 @@ const TOOLS: Array<ToolDef | "sep"> = [
   { id: "text", g: "text", key: "T", label: "Text" },
 ];
 
-/** shapes beyond the basics live in a flyout so the strip stays short */
+/** shapes beyond the basics live in a flyout so the dock stays short */
 const SHAPE_TOOLS: ToolDef[] = [
   { id: "cylinder", g: "cylinder", key: "", label: "Database" },
   { id: "cloud", g: "cloud", key: "", label: "Cloud" },
@@ -35,15 +35,21 @@ const SHAPE_IDS = new Set(SHAPE_TOOLS.map((t) => t.id));
 /** creation tools; select and hand are always "kept" */
 const LOCKABLE = new Set(["rect", "diamond", "ellipse", "arrow", "line", "text"]);
 
-/** Square hairline tool strip + the shapes flyout + the red "icons" button that opens the palette. */
-export function mountTools(ctx: Ctx, root: HTMLElement): void {
+/**
+ * The bottom-centre dock: tools, the shapes flyout, the icon-search field, undo / redo and the menu button.
+ * Keys live in the tooltips only. The search field is a button that opens the icon drawer: it is also the "/" hint.
+ */
+export function mountDock(ctx: Ctx, root: HTMLElement): void {
   const { editor } = ctx;
   const buttons = new Map<string, HTMLButtonElement>();
-  const strip = h("div", { class: "ap-tools", attrs: { role: "toolbar", "aria-label": "Tools", "aria-orientation": "vertical" } });
+  const dock = h("div", { class: "ap-dock ap-hit", attrs: { role: "toolbar", "aria-label": "Tools" } });
+  const ib = (g: GlyphName, label: string, fn: () => void) =>
+    h("button", { class: "ap-ib", attrs: { type: "button", title: label, "aria-label": label }, on: { click: () => { fn(); ctx.refresh(); } } }, glyph(g, 20));
+
   for (const t of TOOLS) {
-    if (t === "sep") { strip.append(h("div", { class: "ap-tool-sep" })); continue; }
+    if (t === "sep") { dock.append(h("div", { class: "ap-sep" })); continue; }
     const b = h("button", {
-      class: "ap-tool",
+      class: "ap-ib",
       attrs: { type: "button", title: `${t.label} (${t.key})`, "aria-label": t.label, "aria-pressed": "false" },
       on: {
         click: () => { editor.setTool(t.id as Tool); ctx.refresh(); },
@@ -55,16 +61,15 @@ export function mountTools(ctx: Ctx, root: HTMLElement): void {
           ctx.refresh();
         },
       },
-    }, glyph(t.g, 22), h("span", { class: "k", text: t.key, attrs: { "aria-hidden": "true" } }));
+    }, glyph(t.g, 20));
     buttons.set(t.id, b);
-    strip.append(b);
+    dock.append(b);
   }
 
   /* ---------- shapes flyout ---------- */
   let fly: HTMLElement | null = null;
   let flyD: Disposer | null = null;
-  const more = h("button", { class: "ap-tool", attrs: { type: "button", title: "More shapes", "aria-label": "More shapes", "aria-haspopup": "true", "aria-expanded": "false", "aria-pressed": "false" } },
-    glyph("shapes", 22), h("span", { class: "k", text: "…", attrs: { "aria-hidden": "true" } }));
+  const more = h("button", { class: "ap-ib", attrs: { type: "button", title: "More shapes", "aria-label": "More shapes", "aria-haspopup": "true", "aria-expanded": "false", "aria-pressed": "false" } }, glyph("shapes", 20));
   const closeFly = (refocus = false) => {
     if (!fly) return;
     flyD?.dispose(); flyD = null; fly.remove(); fly = null;
@@ -74,16 +79,17 @@ export function mountTools(ctx: Ctx, root: HTMLElement): void {
   const pick = (id: string) => { closeFly(); editor.setTool(id as Tool); ctx.refresh(); };
   const openFly = () => {
     if (fly) { closeFly(true); return; }
-    const item = (t: ToolDef) => h("button", { class: "ap-fi", attrs: { type: "button", title: t.label, "aria-label": t.label }, on: { click: () => pick(t.id) } }, glyph(t.g, 22), h("span", { text: t.label }));
-    const cmd = (g: GlyphName, label: string, id: string) => h("button", { class: "ap-fi", attrs: { type: "button", title: label, "aria-label": label }, on: { click: () => pick(id) } }, glyph(g, 22), h("span", { text: label }));
+    const item = (t: ToolDef) => h("button", { class: "ap-fi", attrs: { type: "button", title: t.label, "aria-label": t.label }, on: { click: () => pick(t.id) } }, glyph(t.g, 20), h("span", { text: t.label }));
+    const cmd = (g: GlyphName, label: string, id: string) => h("button", { class: "ap-fi", attrs: { type: "button", title: label, "aria-label": label }, on: { click: () => pick(id) } }, glyph(g, 20), h("span", { text: label }));
     fly = h("div", { class: "ap-flyout ap-hit", attrs: { role: "menu", "aria-label": "Shapes" } },
+      h("button", { class: "ap-fi wide", attrs: { type: "button", title: "Icon library (/)", "aria-label": "Icon library" }, on: { click: () => { closeFly(); ctx.palette.open(); } } }, glyph("icons", 20), h("span", { text: "Logos and icons" }), h("span", { class: "ap-kbd", text: "/" })),
       h("div", { class: "ap-label", text: "Shapes" }),
       h("div", { class: "ap-fgrid" }, ...SHAPE_TOOLS.map(item)),
       h("div", { class: "ap-label", text: "Insert" }),
       h("div", { class: "ap-fgrid" }, cmd("legend", "Legend", "legend"), cmd("renumber", "Renumber badges", "renumber")));
     const b = more.getBoundingClientRect();
-    fly.style.left = `${Math.round(b.right + 10)}px`;
-    fly.style.top = `${Math.max(8, Math.round(b.top - 8))}px`;
+    fly.style.left = `${Math.max(8, Math.min(Math.round(b.left - 8), window.innerWidth - 280))}px`;
+    fly.style.bottom = `${Math.round(window.innerHeight - b.top + 10)}px`;
     root.append(fly);
     more.setAttribute("aria-expanded", "true");
     const d = (flyD = new Disposer());
@@ -93,14 +99,18 @@ export function mountTools(ctx: Ctx, root: HTMLElement): void {
     f.querySelector<HTMLElement>(".ap-fi")?.focus();
   };
   more.addEventListener("click", openFly);
-  strip.append(h("div", { class: "ap-tool-sep" }), more);
+  dock.append(more, h("div", { class: "ap-sep" }));
 
-  const icons = h("button", {
-    class: "ap-tool-icons", attrs: { type: "button", title: "Icon library (/)", "aria-label": "Open the icon library" },
-    on: { click: () => ctx.palette.open() },
-  }, glyph("icons", 24), h("span", { text: "icons" }));
-  const wrap = h("div", { class: "ap-toolwrap" }, strip, icons);
-  root.append(wrap);
+  /* ---------- the icon-search field: a button that opens the drawer ---------- */
+  const search = h("button", { class: "ap-dsearch", attrs: { type: "button", title: "Icon library (/)", "aria-label": "Search icons", "aria-haspopup": "dialog" }, on: { click: () => ctx.palette.open() } },
+    glyph("search", 16), h("span", { text: typeof __LOGO_COUNT__ === "number" ? `Search ${__LOGO_COUNT__} logos` : "Search logos and icons" }), h("span", { class: "ap-kbd", text: "/" }));
+  dock.append(search, h("div", { class: "ap-sep" }));
+
+  const undo = ib("undo", "Undo (⌘Z)", () => editor.undo());
+  const redo = ib("redo", "Redo (⇧⌘Z)", () => editor.redo());
+  const menu = h("button", { class: "ap-ib", attrs: { type: "button", title: "Menu", "aria-label": "Menu", "aria-haspopup": "true", "aria-expanded": "false", "data-menubtn": "" }, on: { click: () => ctx.toggleMenu() } }, glyph("menu", 20));
+  dock.append(undo, redo, h("div", { class: "ap-sep" }), menu);
+  root.append(dock);
 
   const render = () => {
     const cur = editor.tool as string;
@@ -116,9 +126,11 @@ export function mountTools(ctx: Ctx, root: HTMLElement): void {
     }
     more.dataset.locked = String(locked && SHAPE_IDS.has(cur));
     setPressed(more, SHAPE_IDS.has(cur));
+    setDisabled(undo, !editor.canUndo());
+    setDisabled(redo, !editor.canRedo());
   };
-  const u = ctx.update("tools", render);
-  ctx.wire(u, "tool");
-  ctx.d.add(() => { closeFly(); wrap.remove(); });
+  const u = ctx.update("dock", render);
+  ctx.wire(u, "tool", "history", "change");
+  ctx.d.add(() => { closeFly(); dock.remove(); });
   render();
 }
