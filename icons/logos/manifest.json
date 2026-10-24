@@ -1,0 +1,3029 @@
+[
+ {
+  "id": "logo-postgresql",
+  "name": "PostgreSQL",
+  "group": "relational",
+  "source": "simple-icons@16.33.0",
+  "key": "postgresql",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#4169e1",
+  "replaces": [
+   "postgresql"
+  ]
+ },
+ {
+  "id": "logo-mysql",
+  "name": "MySQL",
+  "group": "relational",
+  "source": "simple-icons@16.33.0",
+  "key": "mysql",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#4479a1",
+  "replaces": [
+   "mysql"
+  ]
+ },
+ {
+  "id": "logo-mariadb",
+  "name": "MariaDB",
+  "group": "relational",
+  "source": "simple-icons@16.33.0",
+  "key": "mariadb",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#003545",
+  "replaces": [
+   "mariadb"
+  ]
+ },
+ {
+  "id": "logo-sqlite",
+  "name": "SQLite",
+  "group": "relational",
+  "source": "simple-icons@16.33.0",
+  "key": "sqlite",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#003b57",
+  "replaces": [
+   "sqlite"
+  ]
+ },
+ {
+  "id": "logo-oracle",
+  "name": "Oracle Database",
+  "group": "relational",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "oracle",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#ea1b22"
+ },
+ {
+  "id": "logo-cockroachlabs",
+  "name": "CockroachDB",
+  "group": "relational",
+  "source": "simple-icons@16.33.0",
+  "key": "cockroachlabs",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#6933ff",
+  "replaces": [
+   "cockroachdb"
+  ]
+ },
+ {
+  "id": "logo-yugabyte",
+  "name": "YugabyteDB",
+  "group": "relational",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "yugabyte-icon",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#ff5f3b"
+ },
+ {
+  "id": "logo-tidb",
+  "name": "TiDB",
+  "group": "relational",
+  "source": "simple-icons@16.33.0",
+  "key": "tidb",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#dc150b"
+ },
+ {
+  "id": "logo-planetscale",
+  "name": "PlanetScale",
+  "group": "relational",
+  "source": "simple-icons@16.33.0",
+  "key": "planetscale",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-neon",
+  "name": "Neon",
+  "group": "relational",
+  "source": "simple-icons@16.33.0",
+  "key": "neon",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#34d59a"
+ },
+ {
+  "id": "logo-supabase",
+  "name": "Supabase",
+  "group": "relational",
+  "source": "simple-icons@16.33.0",
+  "key": "supabase",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#3fcf8e"
+ },
+ {
+  "id": "logo-duckdb",
+  "name": "DuckDB",
+  "group": "relational",
+  "source": "simple-icons@16.33.0",
+  "key": "duckdb",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#fff000"
+ },
+ {
+  "id": "logo-aws-aurora",
+  "name": "Amazon Aurora",
+  "group": "relational",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-aurora",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#4053d6",
+  "replaces": [
+   "aws-aurora"
+  ]
+ },
+ {
+  "id": "logo-aws-rds",
+  "name": "Amazon RDS",
+  "group": "relational",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-rds",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#4053d6",
+  "replaces": [
+   "aws-rds"
+  ]
+ },
+ {
+  "id": "logo-gcp-cloud-sql",
+  "name": "Google Cloud SQL",
+  "group": "relational",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "cloud-sql",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#aecbfa",
+  "replaces": [
+   "gcp-cloud-sql"
+  ]
+ },
+ {
+  "id": "logo-gcp-cloud-spanner",
+  "name": "Google Cloud Spanner",
+  "group": "relational",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "cloud-spanner",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#669df6",
+  "replaces": [
+   "gcp-spanner"
+  ]
+ },
+ {
+  "id": "logo-mongodb",
+  "name": "MongoDB",
+  "group": "document",
+  "source": "simple-icons@16.33.0",
+  "key": "mongodb",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#47a248",
+  "replaces": [
+   "mongodb"
+  ]
+ },
+ {
+  "id": "logo-apachecouchdb",
+  "name": "CouchDB",
+  "group": "document",
+  "source": "simple-icons@16.33.0",
+  "key": "apachecouchdb",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#e42528"
+ },
+ {
+  "id": "logo-couchbase",
+  "name": "Couchbase",
+  "group": "document",
+  "source": "simple-icons@16.33.0",
+  "key": "couchbase",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ea2328"
+ },
+ {
+  "id": "logo-firebase",
+  "name": "Firebase",
+  "group": "document",
+  "source": "simple-icons@16.33.0",
+  "key": "firebase",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#dd2c00"
+ },
+ {
+  "id": "logo-gcp-firestore",
+  "name": "Google Firestore",
+  "group": "document",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "firestore",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#669df6",
+  "replaces": [
+   "gcp-firestore"
+  ]
+ },
+ {
+  "id": "logo-aws-dynamodb",
+  "name": "Amazon DynamoDB",
+  "group": "document",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-dynamodb",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#4053d6",
+  "replaces": [
+   "aws-dynamodb"
+  ]
+ },
+ {
+  "id": "logo-etcd",
+  "name": "etcd",
+  "group": "document",
+  "source": "simple-icons@16.33.0",
+  "key": "etcd",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#419eda",
+  "replaces": [
+   "etcd"
+  ]
+ },
+ {
+  "id": "logo-apachecassandra",
+  "name": "Cassandra",
+  "group": "widecolumn",
+  "source": "simple-icons@16.33.0",
+  "key": "apachecassandra",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#1287b1",
+  "replaces": [
+   "cassandra"
+  ]
+ },
+ {
+  "id": "logo-scylladb",
+  "name": "ScyllaDB",
+  "group": "widecolumn",
+  "source": "simple-icons@16.33.0",
+  "key": "scylladb",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#6cd5e7",
+  "replaces": [
+   "scylladb"
+  ]
+ },
+ {
+  "id": "logo-apachehbase",
+  "name": "HBase",
+  "group": "widecolumn",
+  "source": "simple-icons@16.33.0",
+  "key": "apachehbase",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#be160c"
+ },
+ {
+  "id": "logo-gcp-bigtable",
+  "name": "Google Bigtable",
+  "group": "widecolumn",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "bigtable",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#669df6",
+  "replaces": [
+   "gcp-bigtable"
+  ]
+ },
+ {
+  "id": "logo-neo4j",
+  "name": "Neo4j",
+  "group": "widecolumn",
+  "source": "simple-icons@16.33.0",
+  "key": "neo4j",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#4581c3",
+  "replaces": [
+   "neo4j"
+  ]
+ },
+ {
+  "id": "logo-arangodb",
+  "name": "ArangoDB",
+  "group": "widecolumn",
+  "source": "simple-icons@16.33.0",
+  "key": "arangodb",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#dddf72"
+ },
+ {
+  "id": "logo-aws-neptune",
+  "name": "Amazon Neptune",
+  "group": "widecolumn",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-neptune",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#4053d6",
+  "replaces": [
+   "aws-neptune"
+  ]
+ },
+ {
+  "id": "logo-influxdb",
+  "name": "InfluxDB",
+  "group": "timeseries",
+  "source": "simple-icons@16.33.0",
+  "key": "influxdb",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#22adf6",
+  "replaces": [
+   "influxdb"
+  ]
+ },
+ {
+  "id": "logo-timescale",
+  "name": "TimescaleDB",
+  "group": "timeseries",
+  "source": "simple-icons@16.33.0",
+  "key": "timescale",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#fdb515"
+ },
+ {
+  "id": "logo-aws-timestream",
+  "name": "Amazon Timestream",
+  "group": "timeseries",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-timestream",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#4053d6",
+  "replaces": [
+   "aws-timestream"
+  ]
+ },
+ {
+  "id": "logo-elasticsearch",
+  "name": "Elasticsearch",
+  "group": "timeseries",
+  "source": "simple-icons@16.33.0",
+  "key": "elasticsearch",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#005571",
+  "replaces": [
+   "elasticsearch"
+  ]
+ },
+ {
+  "id": "logo-opensearch",
+  "name": "OpenSearch",
+  "group": "timeseries",
+  "source": "simple-icons@16.33.0",
+  "key": "opensearch",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#005eb8",
+  "replaces": [
+   "opensearch"
+  ]
+ },
+ {
+  "id": "logo-aws-open-search",
+  "name": "Amazon OpenSearch Service",
+  "group": "timeseries",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-open-search",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#7747d4",
+  "replaces": [
+   "aws-opensearch-service"
+  ]
+ },
+ {
+  "id": "logo-apachesolr",
+  "name": "Solr",
+  "group": "timeseries",
+  "source": "simple-icons@16.33.0",
+  "key": "apachesolr",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#d9411e"
+ },
+ {
+  "id": "logo-meilisearch",
+  "name": "Meilisearch",
+  "group": "timeseries",
+  "source": "simple-icons@16.33.0",
+  "key": "meilisearch",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ff5caa"
+ },
+ {
+  "id": "logo-algolia",
+  "name": "Algolia",
+  "group": "timeseries",
+  "source": "simple-icons@16.33.0",
+  "key": "algolia",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#003dff"
+ },
+ {
+  "id": "logo-snowflake",
+  "name": "Snowflake",
+  "group": "warehouse",
+  "source": "simple-icons@16.33.0",
+  "key": "snowflake",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#29b5e8",
+  "replaces": [
+   "snowflake"
+  ]
+ },
+ {
+  "id": "logo-googlebigquery",
+  "name": "BigQuery",
+  "group": "warehouse",
+  "source": "simple-icons@16.33.0",
+  "key": "googlebigquery",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#669df6",
+  "replaces": [
+   "gcp-bigquery"
+  ]
+ },
+ {
+  "id": "logo-aws-redshift",
+  "name": "Amazon Redshift",
+  "group": "warehouse",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-redshift",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#7747d4",
+  "replaces": [
+   "aws-redshift"
+  ]
+ },
+ {
+  "id": "logo-databricks",
+  "name": "Databricks",
+  "group": "warehouse",
+  "source": "simple-icons@16.33.0",
+  "key": "databricks",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ff3621"
+ },
+ {
+  "id": "logo-clickhouse",
+  "name": "ClickHouse",
+  "group": "warehouse",
+  "source": "simple-icons@16.33.0",
+  "key": "clickhouse",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ffcc01",
+  "replaces": [
+   "clickhouse"
+  ]
+ },
+ {
+  "id": "logo-apachedruid",
+  "name": "Druid",
+  "group": "warehouse",
+  "source": "simple-icons@16.33.0",
+  "key": "apachedruid",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#29f1fb"
+ },
+ {
+  "id": "logo-trino",
+  "name": "Trino",
+  "group": "warehouse",
+  "source": "simple-icons@16.33.0",
+  "key": "trino",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#dd00a1",
+  "replaces": [
+   "trino"
+  ]
+ },
+ {
+  "id": "logo-apachehive",
+  "name": "Hive",
+  "group": "warehouse",
+  "source": "simple-icons@16.33.0",
+  "key": "apachehive",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#fdee21"
+ },
+ {
+  "id": "logo-apachehadoop",
+  "name": "Hadoop",
+  "group": "warehouse",
+  "source": "simple-icons@16.33.0",
+  "key": "apachehadoop",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#66ccff"
+ },
+ {
+  "id": "logo-apachespark",
+  "name": "Spark",
+  "group": "warehouse",
+  "source": "simple-icons@16.33.0",
+  "key": "apachespark",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#e25a1c",
+  "replaces": [
+   "spark"
+  ]
+ },
+ {
+  "id": "logo-apacheflink",
+  "name": "Flink",
+  "group": "warehouse",
+  "source": "simple-icons@16.33.0",
+  "key": "apacheflink",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#e6526f",
+  "replaces": [
+   "flink"
+  ]
+ },
+ {
+  "id": "logo-aws-athena",
+  "name": "Amazon Athena",
+  "group": "warehouse",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-athena",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#7747d4"
+ },
+ {
+  "id": "logo-aws-glue",
+  "name": "AWS Glue",
+  "group": "warehouse",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-glue",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#7747d4"
+ },
+ {
+  "id": "logo-gcp-dataflow",
+  "name": "Google Dataflow",
+  "group": "warehouse",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "dataflow",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#669df6",
+  "replaces": [
+   "gcp-dataflow"
+  ]
+ },
+ {
+  "id": "logo-gcp-dataproc",
+  "name": "Google Dataproc",
+  "group": "warehouse",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "dataproc",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#aecbfa",
+  "replaces": [
+   "gcp-dataproc"
+  ]
+ },
+ {
+  "id": "logo-apacheairflow",
+  "name": "Airflow",
+  "group": "warehouse",
+  "source": "simple-icons@16.33.0",
+  "key": "apacheairflow",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#017cee",
+  "replaces": [
+   "airflow"
+  ]
+ },
+ {
+  "id": "logo-dbt",
+  "name": "dbt",
+  "group": "warehouse",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "dbt",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#262a38"
+ },
+ {
+  "id": "logo-metabase",
+  "name": "Metabase",
+  "group": "warehouse",
+  "source": "simple-icons@16.33.0",
+  "key": "metabase",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#509ee3"
+ },
+ {
+  "id": "logo-apachesuperset",
+  "name": "Superset",
+  "group": "warehouse",
+  "source": "simple-icons@16.33.0",
+  "key": "apachesuperset",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#20a6c9"
+ },
+ {
+  "id": "logo-redis",
+  "name": "Redis",
+  "group": "cache",
+  "source": "simple-icons@16.33.0",
+  "key": "redis",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ff4438",
+  "replaces": [
+   "redis",
+   "memcached"
+  ]
+ },
+ {
+  "id": "logo-valkey",
+  "name": "Valkey",
+  "group": "cache",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "valkey",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#6983ff"
+ },
+ {
+  "id": "logo-memcached",
+  "name": "Memcached",
+  "group": "cache",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "memcached",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#6c5f5c",
+  "replaces": [
+   "memcached"
+  ]
+ },
+ {
+  "id": "logo-aws-elasticache",
+  "name": "Amazon ElastiCache",
+  "group": "cache",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-elasticache",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#4053d6",
+  "replaces": [
+   "aws-elasticache"
+  ]
+ },
+ {
+  "id": "logo-gcp-memorystore",
+  "name": "Google Memorystore",
+  "group": "cache",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "memorystore",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#669df6",
+  "replaces": [
+   "gcp-memorystore"
+  ]
+ },
+ {
+  "id": "logo-apachekafka",
+  "name": "Kafka",
+  "group": "messaging",
+  "source": "simple-icons@16.33.0",
+  "key": "apachekafka",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#231f20",
+  "replaces": [
+   "kafka"
+  ]
+ },
+ {
+  "id": "logo-rabbitmq",
+  "name": "RabbitMQ",
+  "group": "messaging",
+  "source": "simple-icons@16.33.0",
+  "key": "rabbitmq",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ff6600",
+  "replaces": [
+   "rabbitmq"
+  ]
+ },
+ {
+  "id": "logo-apachepulsar",
+  "name": "Pulsar",
+  "group": "messaging",
+  "source": "simple-icons@16.33.0",
+  "key": "apachepulsar",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#188fff",
+  "replaces": [
+   "pulsar"
+  ]
+ },
+ {
+  "id": "logo-natsdotio",
+  "name": "NATS",
+  "group": "messaging",
+  "source": "simple-icons@16.33.0",
+  "key": "natsdotio",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#27aae1",
+  "replaces": [
+   "nats"
+  ]
+ },
+ {
+  "id": "logo-mqtt",
+  "name": "MQTT",
+  "group": "messaging",
+  "source": "simple-icons@16.33.0",
+  "key": "mqtt",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#660066"
+ },
+ {
+  "id": "logo-celery",
+  "name": "Celery",
+  "group": "messaging",
+  "source": "simple-icons@16.33.0",
+  "key": "celery",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#37814a"
+ },
+ {
+  "id": "logo-temporal",
+  "name": "Temporal",
+  "group": "messaging",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "temporal",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-aws-sqs",
+  "name": "Amazon SQS",
+  "group": "messaging",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-sqs",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#d82c6c"
+ },
+ {
+  "id": "logo-aws-sns",
+  "name": "Amazon SNS",
+  "group": "messaging",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-sns",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#d82c6c"
+ },
+ {
+  "id": "logo-aws-eventbridge",
+  "name": "Amazon EventBridge",
+  "group": "messaging",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-eventbridge",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#d82c6c",
+  "replaces": [
+   "aws-eventbridge"
+  ]
+ },
+ {
+  "id": "logo-aws-kinesis",
+  "name": "Amazon Kinesis",
+  "group": "messaging",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-kinesis",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#7747d4",
+  "replaces": [
+   "aws-kinesis-streams",
+   "aws-kinesis-firehose"
+  ]
+ },
+ {
+  "id": "logo-aws-msk",
+  "name": "Amazon MSK",
+  "group": "messaging",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-msk",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#7747d4",
+  "replaces": [
+   "aws-msk"
+  ]
+ },
+ {
+  "id": "logo-aws-step-functions",
+  "name": "AWS Step Functions",
+  "group": "messaging",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-step-functions",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#d82c6c",
+  "replaces": [
+   "aws-step-functions"
+  ]
+ },
+ {
+  "id": "logo-gcp-pubsub",
+  "name": "Google Pub/Sub",
+  "group": "messaging",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "pubsub",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#669df6",
+  "replaces": [
+   "gcp-pubsub"
+  ]
+ },
+ {
+  "id": "logo-gcp-cloud-tasks",
+  "name": "Google Cloud Tasks",
+  "group": "messaging",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "cloud-tasks",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#669df6",
+  "replaces": [
+   "gcp-cloud-tasks"
+  ]
+ },
+ {
+  "id": "logo-cloudflare",
+  "name": "Cloudflare",
+  "group": "edge",
+  "source": "simple-icons@16.33.0",
+  "key": "cloudflare",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#f38020",
+  "replaces": [
+   "cloudflare"
+  ]
+ },
+ {
+  "id": "logo-akamai",
+  "name": "Akamai",
+  "group": "edge",
+  "source": "simple-icons@16.33.0",
+  "key": "akamai",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#0096d6"
+ },
+ {
+  "id": "logo-fastly",
+  "name": "Fastly",
+  "group": "edge",
+  "source": "simple-icons@16.33.0",
+  "key": "fastly",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ff282d"
+ },
+ {
+  "id": "logo-vercel",
+  "name": "Vercel",
+  "group": "edge",
+  "source": "simple-icons@16.33.0",
+  "key": "vercel",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#000000",
+  "replaces": [
+   "vercel"
+  ]
+ },
+ {
+  "id": "logo-netlify",
+  "name": "Netlify",
+  "group": "edge",
+  "source": "simple-icons@16.33.0",
+  "key": "netlify",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#00c7b7"
+ },
+ {
+  "id": "logo-bunnydotnet",
+  "name": "Bunny.net",
+  "group": "edge",
+  "source": "simple-icons@16.33.0",
+  "key": "bunnydotnet",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ffaa49"
+ },
+ {
+  "id": "logo-aws-cloudfront",
+  "name": "Amazon CloudFront",
+  "group": "edge",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-cloudfront",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#7747d4",
+  "replaces": [
+   "aws-cloudfront"
+  ]
+ },
+ {
+  "id": "logo-aws-route53",
+  "name": "Amazon Route 53",
+  "group": "edge",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-route53",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#7747d4",
+  "replaces": [
+   "aws-route53"
+  ]
+ },
+ {
+  "id": "logo-gcp-cloud-cdn",
+  "name": "Google Cloud CDN",
+  "group": "edge",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "cloud-cdn",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#669df6",
+  "replaces": [
+   "gcp-cloud-cdn"
+  ]
+ },
+ {
+  "id": "logo-gcp-cloud-dns",
+  "name": "Google Cloud DNS",
+  "group": "edge",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "cloud-dns",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#4285f4",
+  "replaces": [
+   "gcp-cloud-dns"
+  ]
+ },
+ {
+  "id": "logo-cloudflareworkers",
+  "name": "Cloudflare Workers",
+  "group": "edge",
+  "source": "simple-icons@16.33.0",
+  "key": "cloudflareworkers",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#f38020"
+ },
+ {
+  "id": "logo-tailscale",
+  "name": "Tailscale",
+  "group": "edge",
+  "source": "simple-icons@16.33.0",
+  "key": "tailscale",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#242424"
+ },
+ {
+  "id": "logo-wireguard",
+  "name": "WireGuard",
+  "group": "edge",
+  "source": "simple-icons@16.33.0",
+  "key": "wireguard",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#88171a"
+ },
+ {
+  "id": "logo-aws-vpc",
+  "name": "Amazon VPC",
+  "group": "edge",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-vpc",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#7747d4",
+  "replaces": [
+   "aws-vpc"
+  ]
+ },
+ {
+  "id": "logo-gcp-virtual-private-cloud",
+  "name": "Google VPC",
+  "group": "edge",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "virtual-private-cloud",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#aecbfa",
+  "replaces": [
+   "gcp-vpc"
+  ]
+ },
+ {
+  "id": "logo-nginx",
+  "name": "NGINX",
+  "group": "proxy",
+  "source": "simple-icons@16.33.0",
+  "key": "nginx",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#009639",
+  "replaces": [
+   "nginx"
+  ]
+ },
+ {
+  "id": "logo-envoyproxy",
+  "name": "Envoy",
+  "group": "proxy",
+  "source": "simple-icons@16.33.0",
+  "key": "envoyproxy",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ac6199",
+  "replaces": [
+   "envoy"
+  ]
+ },
+ {
+  "id": "logo-traefikproxy",
+  "name": "Traefik",
+  "group": "proxy",
+  "source": "simple-icons@16.33.0",
+  "key": "traefikproxy",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#24a1c1",
+  "replaces": [
+   "traefik"
+  ]
+ },
+ {
+  "id": "logo-kong",
+  "name": "Kong",
+  "group": "proxy",
+  "source": "simple-icons@16.33.0",
+  "key": "kong",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#003459",
+  "replaces": [
+   "kong-gateway"
+  ]
+ },
+ {
+  "id": "logo-caddy",
+  "name": "Caddy",
+  "group": "proxy",
+  "source": "simple-icons@16.33.0",
+  "key": "caddy",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#1f88c0"
+ },
+ {
+  "id": "logo-apache",
+  "name": "Apache HTTP Server",
+  "group": "proxy",
+  "source": "simple-icons@16.33.0",
+  "key": "apache",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#d22128"
+ },
+ {
+  "id": "logo-istio",
+  "name": "Istio",
+  "group": "proxy",
+  "source": "simple-icons@16.33.0",
+  "key": "istio",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#466bb0",
+  "replaces": [
+   "istio"
+  ]
+ },
+ {
+  "id": "logo-linkerd",
+  "name": "Linkerd",
+  "group": "proxy",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "linkerd",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#40a0b4"
+ },
+ {
+  "id": "logo-graphql",
+  "name": "GraphQL",
+  "group": "proxy",
+  "source": "simple-icons@16.33.0",
+  "key": "graphql",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#e10098"
+ },
+ {
+  "id": "logo-grpc",
+  "name": "gRPC",
+  "group": "proxy",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "grpc",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#244b5a"
+ },
+ {
+  "id": "logo-openapiinitiative",
+  "name": "OpenAPI",
+  "group": "proxy",
+  "source": "simple-icons@16.33.0",
+  "key": "openapiinitiative",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#6ba539"
+ },
+ {
+  "id": "logo-aws-elb",
+  "name": "Elastic Load Balancing",
+  "group": "proxy",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-elb",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#7747d4",
+  "replaces": [
+   "aws-alb",
+   "aws-nlb",
+   "aws-gateway-lb"
+  ]
+ },
+ {
+  "id": "logo-aws-api-gateway",
+  "name": "Amazon API Gateway",
+  "group": "proxy",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-api-gateway",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#d82c6c",
+  "replaces": [
+   "aws-api-gateway"
+  ]
+ },
+ {
+  "id": "logo-gcp-cloud-load-balancing",
+  "name": "Google Cloud Load Balancing",
+  "group": "proxy",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "cloud-load-balancing",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#669df6",
+  "replaces": [
+   "gcp-load-balancing"
+  ]
+ },
+ {
+  "id": "logo-gcp-cloud-api-gateway",
+  "name": "Google API Gateway",
+  "group": "proxy",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "cloud-api-gateway",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#4285f4",
+  "replaces": [
+   "gcp-api-gateway"
+  ]
+ },
+ {
+  "id": "logo-gcp-apigee-api-platform",
+  "name": "Apigee",
+  "group": "proxy",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "apigee-api-platform",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#669df6",
+  "replaces": [
+   "gcp-apigee"
+  ]
+ },
+ {
+  "id": "logo-docker",
+  "name": "Docker",
+  "group": "compute",
+  "source": "simple-icons@16.33.0",
+  "key": "docker",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#2496ed",
+  "replaces": [
+   "docker"
+  ]
+ },
+ {
+  "id": "logo-kubernetes",
+  "name": "Kubernetes",
+  "group": "compute",
+  "source": "simple-icons@16.33.0",
+  "key": "kubernetes",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#326ce5",
+  "replaces": [
+   "kubernetes"
+  ]
+ },
+ {
+  "id": "logo-helm",
+  "name": "Helm",
+  "group": "compute",
+  "source": "simple-icons@16.33.0",
+  "key": "helm",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#0f1689"
+ },
+ {
+  "id": "logo-podman",
+  "name": "Podman",
+  "group": "compute",
+  "source": "simple-icons@16.33.0",
+  "key": "podman",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#892ca0"
+ },
+ {
+  "id": "logo-openshift",
+  "name": "Red Hat OpenShift",
+  "group": "compute",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "openshift",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#da2430"
+ },
+ {
+  "id": "logo-nomad",
+  "name": "Nomad",
+  "group": "compute",
+  "source": "simple-icons@16.33.0",
+  "key": "nomad",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#00ca8e"
+ },
+ {
+  "id": "logo-serverless",
+  "name": "Serverless Framework",
+  "group": "compute",
+  "source": "simple-icons@16.33.0",
+  "key": "serverless",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#fd5750"
+ },
+ {
+  "id": "logo-aws-ec2",
+  "name": "Amazon EC2",
+  "group": "compute",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-ec2",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#e4750e",
+  "replaces": [
+   "aws-ec2"
+  ]
+ },
+ {
+  "id": "logo-aws-lambda",
+  "name": "AWS Lambda",
+  "group": "compute",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-lambda",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#e4750e",
+  "replaces": [
+   "aws-lambda"
+  ]
+ },
+ {
+  "id": "logo-aws-ecs",
+  "name": "Amazon ECS",
+  "group": "compute",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-ecs",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#e4750e",
+  "replaces": [
+   "aws-ecs"
+  ]
+ },
+ {
+  "id": "logo-aws-eks",
+  "name": "Amazon EKS",
+  "group": "compute",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-eks",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#e4750e",
+  "replaces": [
+   "aws-eks"
+  ]
+ },
+ {
+  "id": "logo-aws-fargate",
+  "name": "AWS Fargate",
+  "group": "compute",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-fargate",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#e4750e",
+  "replaces": [
+   "aws-fargate"
+  ]
+ },
+ {
+  "id": "logo-aws-elastic-beanstalk",
+  "name": "AWS Elastic Beanstalk",
+  "group": "compute",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-elastic-beanstalk",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#e4750e",
+  "replaces": [
+   "aws-elastic-beanstalk"
+  ]
+ },
+ {
+  "id": "logo-gcp-compute-engine",
+  "name": "Google Compute Engine",
+  "group": "compute",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "compute-engine",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#aecbfa",
+  "replaces": [
+   "gcp-compute-engine"
+  ]
+ },
+ {
+  "id": "logo-gcp-google-kubernetes-engine",
+  "name": "Google Kubernetes Engine",
+  "group": "compute",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "google-kubernetes-engine",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#4285f4",
+  "replaces": [
+   "gcp-gke"
+  ]
+ },
+ {
+  "id": "logo-gcp-cloud-run",
+  "name": "Google Cloud Run",
+  "group": "compute",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "cloud-run",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#aecbfa",
+  "replaces": [
+   "gcp-cloud-run"
+  ]
+ },
+ {
+  "id": "logo-gcp-cloud-functions",
+  "name": "Google Cloud Functions",
+  "group": "compute",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "cloud-functions",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#669df6",
+  "replaces": [
+   "gcp-cloud-functions"
+  ]
+ },
+ {
+  "id": "logo-gcp-app-engine",
+  "name": "Google App Engine",
+  "group": "compute",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "app-engine",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#4285f4",
+  "replaces": [
+   "gcp-app-engine"
+  ]
+ },
+ {
+  "id": "logo-aws",
+  "name": "AWS",
+  "group": "clouds",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#252f3e"
+ },
+ {
+  "id": "logo-googlecloud",
+  "name": "GCP",
+  "group": "clouds",
+  "source": "simple-icons@16.33.0",
+  "key": "googlecloud",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#4285f4"
+ },
+ {
+  "id": "logo-microsoft-azure",
+  "name": "Microsoft Azure",
+  "group": "clouds",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "microsoft-azure",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#0c5aa4"
+ },
+ {
+  "id": "logo-digitalocean",
+  "name": "DigitalOcean",
+  "group": "clouds",
+  "source": "simple-icons@16.33.0",
+  "key": "digitalocean",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#0080ff"
+ },
+ {
+  "id": "logo-heroku",
+  "name": "Heroku",
+  "group": "clouds",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "heroku-icon",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#430098"
+ },
+ {
+  "id": "logo-ibm",
+  "name": "IBM Cloud",
+  "group": "clouds",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "ibm",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-alibabacloud",
+  "name": "Alibaba Cloud",
+  "group": "clouds",
+  "source": "simple-icons@16.33.0",
+  "key": "alibabacloud",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ff6a00"
+ },
+ {
+  "id": "logo-linode",
+  "name": "Linode",
+  "group": "clouds",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "linode",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#004711"
+ },
+ {
+  "id": "logo-vultr",
+  "name": "Vultr",
+  "group": "clouds",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "vultr-icon",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#c9f4ff"
+ },
+ {
+  "id": "logo-hetzner",
+  "name": "Hetzner",
+  "group": "clouds",
+  "source": "simple-icons@16.33.0",
+  "key": "hetzner",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#d50c2d"
+ },
+ {
+  "id": "logo-flydotio",
+  "name": "Fly.io",
+  "group": "clouds",
+  "source": "simple-icons@16.33.0",
+  "key": "flydotio",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#24175b"
+ },
+ {
+  "id": "logo-render",
+  "name": "Render",
+  "group": "clouds",
+  "source": "simple-icons@16.33.0",
+  "key": "render",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-railway",
+  "name": "Railway",
+  "group": "clouds",
+  "source": "simple-icons@16.33.0",
+  "key": "railway",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#0b0d0e"
+ },
+ {
+  "id": "logo-aws-s3",
+  "name": "Amazon S3",
+  "group": "storage",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-s3",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#448a27",
+  "replaces": [
+   "aws-s3"
+  ]
+ },
+ {
+  "id": "logo-gcp-cloud-storage",
+  "name": "Google Cloud Storage",
+  "group": "storage",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "cloud-storage",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#aecbfa",
+  "replaces": [
+   "gcp-cloud-storage"
+  ]
+ },
+ {
+  "id": "logo-aws-glacier",
+  "name": "Amazon S3 Glacier",
+  "group": "storage",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-glacier",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#448a27",
+  "replaces": [
+   "aws-glacier"
+  ]
+ },
+ {
+  "id": "logo-minio",
+  "name": "MinIO",
+  "group": "storage",
+  "source": "simple-icons@16.33.0",
+  "key": "minio",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#c72e49",
+  "replaces": [
+   "minio"
+  ]
+ },
+ {
+  "id": "logo-ceph",
+  "name": "Ceph",
+  "group": "storage",
+  "source": "simple-icons@16.33.0",
+  "key": "ceph",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ef5c55"
+ },
+ {
+  "id": "logo-backblaze",
+  "name": "Backblaze",
+  "group": "storage",
+  "source": "simple-icons@16.33.0",
+  "key": "backblaze",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#e21e29"
+ },
+ {
+  "id": "logo-wasabi",
+  "name": "Wasabi",
+  "group": "storage",
+  "source": "simple-icons@16.33.0",
+  "key": "wasabi",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#01cd3e"
+ },
+ {
+  "id": "logo-cloudinary",
+  "name": "Cloudinary",
+  "group": "storage",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "cloudinary",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#3448c5"
+ },
+ {
+  "id": "logo-prometheus",
+  "name": "Prometheus",
+  "group": "observability",
+  "source": "simple-icons@16.33.0",
+  "key": "prometheus",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#e6522c",
+  "replaces": [
+   "prometheus"
+  ]
+ },
+ {
+  "id": "logo-grafana",
+  "name": "Grafana",
+  "group": "observability",
+  "source": "simple-icons@16.33.0",
+  "key": "grafana",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#f46800",
+  "replaces": [
+   "grafana"
+  ]
+ },
+ {
+  "id": "logo-datadog",
+  "name": "Datadog",
+  "group": "observability",
+  "source": "simple-icons@16.33.0",
+  "key": "datadog",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#632ca6"
+ },
+ {
+  "id": "logo-newrelic",
+  "name": "New Relic",
+  "group": "observability",
+  "source": "simple-icons@16.33.0",
+  "key": "newrelic",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#1ce783"
+ },
+ {
+  "id": "logo-kibana",
+  "name": "Kibana",
+  "group": "observability",
+  "source": "simple-icons@16.33.0",
+  "key": "kibana",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#005571"
+ },
+ {
+  "id": "logo-logstash",
+  "name": "Logstash",
+  "group": "observability",
+  "source": "simple-icons@16.33.0",
+  "key": "logstash",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#005571"
+ },
+ {
+  "id": "logo-splunk",
+  "name": "Splunk",
+  "group": "observability",
+  "source": "simple-icons@16.33.0",
+  "key": "splunk",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-sentry",
+  "name": "Sentry",
+  "group": "observability",
+  "source": "simple-icons@16.33.0",
+  "key": "sentry",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#362d59",
+  "replaces": [
+   "sentry"
+  ]
+ },
+ {
+  "id": "logo-jaeger",
+  "name": "Jaeger",
+  "group": "observability",
+  "source": "simple-icons@16.33.0",
+  "key": "jaeger",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#66cfe3",
+  "replaces": [
+   "jaeger"
+  ]
+ },
+ {
+  "id": "logo-opentelemetry",
+  "name": "OpenTelemetry",
+  "group": "observability",
+  "source": "simple-icons@16.33.0",
+  "key": "opentelemetry",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-fluentd",
+  "name": "Fluentd",
+  "group": "observability",
+  "source": "simple-icons@16.33.0",
+  "key": "fluentd",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#0e83c8"
+ },
+ {
+  "id": "logo-pagerduty",
+  "name": "PagerDuty",
+  "group": "observability",
+  "source": "simple-icons@16.33.0",
+  "key": "pagerduty",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#06ac38"
+ },
+ {
+  "id": "logo-aws-cloudwatch",
+  "name": "Amazon CloudWatch",
+  "group": "observability",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-cloudwatch",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#d82c6c",
+  "replaces": [
+   "aws-cloudwatch"
+  ]
+ },
+ {
+  "id": "logo-aws-xray",
+  "name": "AWS X-Ray",
+  "group": "observability",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-xray",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#4053d6",
+  "replaces": [
+   "aws-xray"
+  ]
+ },
+ {
+  "id": "logo-gcp-cloud-monitoring",
+  "name": "Google Cloud Monitoring",
+  "group": "observability",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "cloud-monitoring",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#669df6",
+  "replaces": [
+   "gcp-cloud-monitoring"
+  ]
+ },
+ {
+  "id": "logo-gcp-cloud-logging",
+  "name": "Google Cloud Logging",
+  "group": "observability",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "cloud-logging",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#4285f4",
+  "replaces": [
+   "gcp-cloud-logging"
+  ]
+ },
+ {
+  "id": "logo-auth0",
+  "name": "Auth0",
+  "group": "security",
+  "source": "simple-icons@16.33.0",
+  "key": "auth0",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#eb5424"
+ },
+ {
+  "id": "logo-okta",
+  "name": "Okta",
+  "group": "security",
+  "source": "simple-icons@16.33.0",
+  "key": "okta",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#007dc1"
+ },
+ {
+  "id": "logo-keycloak",
+  "name": "Keycloak",
+  "group": "security",
+  "source": "simple-icons@16.33.0",
+  "key": "keycloak",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#4d4d4d",
+  "replaces": [
+   "keycloak"
+  ]
+ },
+ {
+  "id": "logo-openid",
+  "name": "OpenID",
+  "group": "security",
+  "source": "simple-icons@16.33.0",
+  "key": "openid",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#f78c40"
+ },
+ {
+  "id": "logo-jsonwebtokens",
+  "name": "JWT",
+  "group": "security",
+  "source": "simple-icons@16.33.0",
+  "key": "jsonwebtokens",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-vault",
+  "name": "Vault",
+  "group": "security",
+  "source": "simple-icons@16.33.0",
+  "key": "vault",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ffec6e",
+  "replaces": [
+   "vault"
+  ]
+ },
+ {
+  "id": "logo-consul",
+  "name": "Consul",
+  "group": "security",
+  "source": "simple-icons@16.33.0",
+  "key": "consul",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#f24c53",
+  "replaces": [
+   "consul"
+  ]
+ },
+ {
+  "id": "logo-letsencrypt",
+  "name": "Let's Encrypt",
+  "group": "security",
+  "source": "simple-icons@16.33.0",
+  "key": "letsencrypt",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#003a70"
+ },
+ {
+  "id": "logo-snyk",
+  "name": "Snyk",
+  "group": "security",
+  "source": "simple-icons@16.33.0",
+  "key": "snyk",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#4c4a73"
+ },
+ {
+  "id": "logo-sonarqubeserver",
+  "name": "SonarQube",
+  "group": "security",
+  "source": "simple-icons@16.33.0",
+  "key": "sonarqubeserver",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#126ed3"
+ },
+ {
+  "id": "logo-aws-iam",
+  "name": "AWS IAM",
+  "group": "security",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-iam",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#de2d34",
+  "replaces": [
+   "aws-iam"
+  ]
+ },
+ {
+  "id": "logo-aws-cognito",
+  "name": "Amazon Cognito",
+  "group": "security",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-cognito",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#de2d34",
+  "replaces": [
+   "aws-cognito"
+  ]
+ },
+ {
+  "id": "logo-aws-kms",
+  "name": "AWS KMS",
+  "group": "security",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-kms",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#de2d34",
+  "replaces": [
+   "aws-kms"
+  ]
+ },
+ {
+  "id": "logo-aws-secrets-manager",
+  "name": "AWS Secrets Manager",
+  "group": "security",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-secrets-manager",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#de2d34",
+  "replaces": [
+   "aws-secrets-manager"
+  ]
+ },
+ {
+  "id": "logo-aws-waf",
+  "name": "AWS WAF",
+  "group": "security",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-waf",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#de2d34",
+  "replaces": [
+   "aws-waf"
+  ]
+ },
+ {
+  "id": "logo-aws-shield",
+  "name": "AWS Shield",
+  "group": "security",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-shield",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#de2d34",
+  "replaces": [
+   "aws-shield"
+  ]
+ },
+ {
+  "id": "logo-gcp-identity-and-access-management",
+  "name": "Google Cloud IAM",
+  "group": "security",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "identity-and-access-management",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#669df6",
+  "replaces": [
+   "gcp-iam"
+  ]
+ },
+ {
+  "id": "logo-gcp-key-management-service",
+  "name": "Google Cloud KMS",
+  "group": "security",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "key-management-service",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#669df6",
+  "replaces": [
+   "gcp-kms"
+  ]
+ },
+ {
+  "id": "logo-gcp-secret-manager",
+  "name": "Google Secret Manager",
+  "group": "security",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "secret-manager",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#4285f4",
+  "replaces": [
+   "gcp-secret-manager"
+  ]
+ },
+ {
+  "id": "logo-gcp-cloud-armor",
+  "name": "Google Cloud Armor",
+  "group": "security",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "cloud-armor",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#aecbfa",
+  "replaces": [
+   "gcp-cloud-armor"
+  ]
+ },
+ {
+  "id": "logo-github",
+  "name": "GitHub",
+  "group": "cicd",
+  "source": "simple-icons@16.33.0",
+  "key": "github",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#181717",
+  "replaces": [
+   "github"
+  ]
+ },
+ {
+  "id": "logo-githubactions",
+  "name": "GitHub Actions",
+  "group": "cicd",
+  "source": "simple-icons@16.33.0",
+  "key": "githubactions",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#2088ff"
+ },
+ {
+  "id": "logo-gitlab",
+  "name": "GitLab",
+  "group": "cicd",
+  "source": "simple-icons@16.33.0",
+  "key": "gitlab",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#fc6d26",
+  "replaces": [
+   "gitlab"
+  ]
+ },
+ {
+  "id": "logo-bitbucket",
+  "name": "Bitbucket",
+  "group": "cicd",
+  "source": "simple-icons@16.33.0",
+  "key": "bitbucket",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#0052cc"
+ },
+ {
+  "id": "logo-git",
+  "name": "Git",
+  "group": "cicd",
+  "source": "simple-icons@16.33.0",
+  "key": "git",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#f03c2e"
+ },
+ {
+  "id": "logo-jenkins",
+  "name": "Jenkins",
+  "group": "cicd",
+  "source": "simple-icons@16.33.0",
+  "key": "jenkins",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#d24939",
+  "replaces": [
+   "jenkins"
+  ]
+ },
+ {
+  "id": "logo-circleci",
+  "name": "CircleCI",
+  "group": "cicd",
+  "source": "simple-icons@16.33.0",
+  "key": "circleci",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#343434"
+ },
+ {
+  "id": "logo-argo",
+  "name": "Argo CD",
+  "group": "cicd",
+  "source": "simple-icons@16.33.0",
+  "key": "argo",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ef7b4d"
+ },
+ {
+  "id": "logo-jfrog",
+  "name": "JFrog Artifactory",
+  "group": "cicd",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "jfrog",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#41bf47"
+ },
+ {
+  "id": "logo-npm",
+  "name": "npm",
+  "group": "cicd",
+  "source": "simple-icons@16.33.0",
+  "key": "npm",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#cb3837"
+ },
+ {
+  "id": "logo-terraform",
+  "name": "Terraform",
+  "group": "cicd",
+  "source": "simple-icons@16.33.0",
+  "key": "terraform",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#844fba",
+  "replaces": [
+   "terraform"
+  ]
+ },
+ {
+  "id": "logo-ansible",
+  "name": "Ansible",
+  "group": "cicd",
+  "source": "simple-icons@16.33.0",
+  "key": "ansible",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ee0000",
+  "replaces": [
+   "ansible"
+  ]
+ },
+ {
+  "id": "logo-pulumi",
+  "name": "Pulumi",
+  "group": "cicd",
+  "source": "simple-icons@16.33.0",
+  "key": "pulumi",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#8a3391"
+ },
+ {
+  "id": "logo-aws-cloudformation",
+  "name": "AWS CloudFormation",
+  "group": "cicd",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "aws-cloudformation",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#d82c6c",
+  "replaces": [
+   "aws-cloudformation"
+  ]
+ },
+ {
+  "id": "logo-googlechrome",
+  "name": "Chrome",
+  "group": "clients",
+  "source": "simple-icons@16.33.0",
+  "key": "googlechrome",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#4285f4"
+ },
+ {
+  "id": "logo-firefox",
+  "name": "Firefox",
+  "group": "clients",
+  "source": "simple-icons@16.33.0",
+  "key": "firefox",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ff7139"
+ },
+ {
+  "id": "logo-safari",
+  "name": "Safari",
+  "group": "clients",
+  "source": "simple-icons@16.33.0",
+  "key": "safari",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#006cff"
+ },
+ {
+  "id": "logo-microsoft-edge",
+  "name": "Microsoft Edge",
+  "group": "clients",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "microsoft-edge",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#0f5298"
+ },
+ {
+  "id": "logo-android",
+  "name": "Android",
+  "group": "clients",
+  "source": "simple-icons@16.33.0",
+  "key": "android",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#3ddc84"
+ },
+ {
+  "id": "logo-ios",
+  "name": "iOS",
+  "group": "clients",
+  "source": "simple-icons@16.33.0",
+  "key": "ios",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-apple",
+  "name": "Apple",
+  "group": "clients",
+  "source": "simple-icons@16.33.0",
+  "key": "apple",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-macos",
+  "name": "macOS",
+  "group": "clients",
+  "source": "simple-icons@16.33.0",
+  "key": "macos",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-microsoft-windows",
+  "name": "Windows",
+  "group": "clients",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "microsoft-windows",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#0078d4"
+ },
+ {
+  "id": "logo-linux",
+  "name": "Linux",
+  "group": "clients",
+  "source": "simple-icons@16.33.0",
+  "key": "linux",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#fcc624"
+ },
+ {
+  "id": "logo-ubuntu",
+  "name": "Ubuntu",
+  "group": "clients",
+  "source": "simple-icons@16.33.0",
+  "key": "ubuntu",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#e95420"
+ },
+ {
+  "id": "logo-debian",
+  "name": "Debian",
+  "group": "clients",
+  "source": "simple-icons@16.33.0",
+  "key": "debian",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#a81d33"
+ },
+ {
+  "id": "logo-redhat",
+  "name": "Red Hat",
+  "group": "clients",
+  "source": "simple-icons@16.33.0",
+  "key": "redhat",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ee0000"
+ },
+ {
+  "id": "logo-electron",
+  "name": "Electron",
+  "group": "clients",
+  "source": "simple-icons@16.33.0",
+  "key": "electron",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#47848f"
+ },
+ {
+  "id": "logo-react",
+  "name": "React",
+  "group": "frontend",
+  "source": "simple-icons@16.33.0",
+  "key": "react",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#61dafb"
+ },
+ {
+  "id": "logo-nextdotjs",
+  "name": "Next.js",
+  "group": "frontend",
+  "source": "simple-icons@16.33.0",
+  "key": "nextdotjs",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-angular",
+  "name": "Angular",
+  "group": "frontend",
+  "source": "simple-icons@16.33.0",
+  "key": "angular",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#0f0f11"
+ },
+ {
+  "id": "logo-vuedotjs",
+  "name": "Vue.js",
+  "group": "frontend",
+  "source": "simple-icons@16.33.0",
+  "key": "vuedotjs",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#4fc08d"
+ },
+ {
+  "id": "logo-nuxt",
+  "name": "Nuxt",
+  "group": "frontend",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "nuxt",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#00dc82"
+ },
+ {
+  "id": "logo-svelte",
+  "name": "Svelte",
+  "group": "frontend",
+  "source": "simple-icons@16.33.0",
+  "key": "svelte",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ff3e00"
+ },
+ {
+  "id": "logo-tailwindcss",
+  "name": "Tailwind CSS",
+  "group": "frontend",
+  "source": "simple-icons@16.33.0",
+  "key": "tailwindcss",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#06b6d4"
+ },
+ {
+  "id": "logo-vite",
+  "name": "Vite",
+  "group": "frontend",
+  "source": "simple-icons@16.33.0",
+  "key": "vite",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#9135ff"
+ },
+ {
+  "id": "logo-flutter",
+  "name": "Flutter",
+  "group": "frontend",
+  "source": "simple-icons@16.33.0",
+  "key": "flutter",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#02569b"
+ },
+ {
+  "id": "logo-swift",
+  "name": "Swift",
+  "group": "frontend",
+  "source": "simple-icons@16.33.0",
+  "key": "swift",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#f05138"
+ },
+ {
+  "id": "logo-kotlin",
+  "name": "Kotlin",
+  "group": "frontend",
+  "source": "simple-icons@16.33.0",
+  "key": "kotlin",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#7f52ff"
+ },
+ {
+  "id": "logo-go",
+  "name": "Go",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "go",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#00add8"
+ },
+ {
+  "id": "logo-rust",
+  "name": "Rust",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "rust",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-python",
+  "name": "Python",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "python",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#3776ab"
+ },
+ {
+  "id": "logo-nodedotjs",
+  "name": "Node.js",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "nodedotjs",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#5fa04e"
+ },
+ {
+  "id": "logo-openjdk",
+  "name": "Java",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "openjdk",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-typescript",
+  "name": "TypeScript",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "typescript",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#3178c6"
+ },
+ {
+  "id": "logo-javascript",
+  "name": "JavaScript",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "javascript",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#f7df1e"
+ },
+ {
+  "id": "logo-scala",
+  "name": "Scala",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "scala",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#dc322f"
+ },
+ {
+  "id": "logo-ruby",
+  "name": "Ruby",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "ruby",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#cc342d"
+ },
+ {
+  "id": "logo-php",
+  "name": "PHP",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "php",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#777bb4"
+ },
+ {
+  "id": "logo-cplusplus",
+  "name": "C++",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "cplusplus",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#00599c"
+ },
+ {
+  "id": "logo-c-sharp",
+  "name": "C#",
+  "group": "languages",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "c-sharp",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#7253dd"
+ },
+ {
+  "id": "logo-dotnet",
+  "name": ".NET",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "dotnet",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#512bd4"
+ },
+ {
+  "id": "logo-elixir",
+  "name": "Elixir",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "elixir",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#4b275f"
+ },
+ {
+  "id": "logo-erlang",
+  "name": "Erlang",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "erlang",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#a90533"
+ },
+ {
+  "id": "logo-deno",
+  "name": "Deno",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "deno",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-bun",
+  "name": "Bun",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "bun",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-django",
+  "name": "Django",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "django",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#092e20"
+ },
+ {
+  "id": "logo-fastapi",
+  "name": "FastAPI",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "fastapi",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#009688"
+ },
+ {
+  "id": "logo-flask",
+  "name": "Flask",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "flask",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#3babc3"
+ },
+ {
+  "id": "logo-spring",
+  "name": "Spring",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "spring",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#6db33f"
+ },
+ {
+  "id": "logo-springboot",
+  "name": "Spring Boot",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "springboot",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#6db33f"
+ },
+ {
+  "id": "logo-express",
+  "name": "Express",
+  "group": "languages",
+  "source": "simple-icons@16.33.0",
+  "key": "express",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#0a0a0a"
+ },
+ {
+  "id": "logo-openai",
+  "name": "OpenAI",
+  "group": "ai",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "openai",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-anthropic",
+  "name": "Anthropic",
+  "group": "ai",
+  "source": "simple-icons@16.33.0",
+  "key": "anthropic",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#191919"
+ },
+ {
+  "id": "logo-huggingface",
+  "name": "Hugging Face",
+  "group": "ai",
+  "source": "simple-icons@16.33.0",
+  "key": "huggingface",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ffd21e"
+ },
+ {
+  "id": "logo-tensorflow",
+  "name": "TensorFlow",
+  "group": "ai",
+  "source": "simple-icons@16.33.0",
+  "key": "tensorflow",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ff6f00"
+ },
+ {
+  "id": "logo-pytorch",
+  "name": "PyTorch",
+  "group": "ai",
+  "source": "simple-icons@16.33.0",
+  "key": "pytorch",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ee4c2c"
+ },
+ {
+  "id": "logo-nvidia",
+  "name": "NVIDIA",
+  "group": "ai",
+  "source": "simple-icons@16.33.0",
+  "key": "nvidia",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#76b900"
+ },
+ {
+  "id": "logo-gcp-vertexai",
+  "name": "Google Vertex AI",
+  "group": "ai",
+  "source": "@iconify-json/gcp@1.2.3",
+  "key": "vertexai",
+  "licence": "Apache-2.0",
+  "upstream": "https://cloud.google.com/icons (via Iconify)",
+  "colour": "#669df6",
+  "replaces": [
+   "gcp-vertex-ai"
+  ]
+ },
+ {
+  "id": "logo-stripe",
+  "name": "Stripe",
+  "group": "thirdparty",
+  "source": "simple-icons@16.33.0",
+  "key": "stripe",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#635bff"
+ },
+ {
+  "id": "logo-paypal",
+  "name": "PayPal",
+  "group": "thirdparty",
+  "source": "simple-icons@16.33.0",
+  "key": "paypal",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#002991"
+ },
+ {
+  "id": "logo-adyen",
+  "name": "Adyen",
+  "group": "thirdparty",
+  "source": "simple-icons@16.33.0",
+  "key": "adyen",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#0abf53"
+ },
+ {
+  "id": "logo-razorpay",
+  "name": "Razorpay",
+  "group": "thirdparty",
+  "source": "simple-icons@16.33.0",
+  "key": "razorpay",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#0c2451"
+ },
+ {
+  "id": "logo-twilio",
+  "name": "Twilio",
+  "group": "thirdparty",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "twilio",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#f12e45",
+  "replaces": [
+   "twilio"
+  ]
+ },
+ {
+  "id": "logo-sendgrid",
+  "name": "SendGrid",
+  "group": "thirdparty",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "sendgrid",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#212f38"
+ },
+ {
+  "id": "logo-mailgun",
+  "name": "Mailgun",
+  "group": "thirdparty",
+  "source": "simple-icons@16.33.0",
+  "key": "mailgun",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#f06b66"
+ },
+ {
+  "id": "logo-mailchimp",
+  "name": "Mailchimp",
+  "group": "thirdparty",
+  "source": "simple-icons@16.33.0",
+  "key": "mailchimp",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#ffe01b"
+ },
+ {
+  "id": "logo-slack",
+  "name": "Slack",
+  "group": "thirdparty",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "slack",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-discord",
+  "name": "Discord",
+  "group": "thirdparty",
+  "source": "simple-icons@16.33.0",
+  "key": "discord",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#5865f2"
+ },
+ {
+  "id": "logo-telegram",
+  "name": "Telegram",
+  "group": "thirdparty",
+  "source": "simple-icons@16.33.0",
+  "key": "telegram",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#26a5e4"
+ },
+ {
+  "id": "logo-whatsapp",
+  "name": "WhatsApp",
+  "group": "thirdparty",
+  "source": "simple-icons@16.33.0",
+  "key": "whatsapp",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#25d366"
+ },
+ {
+  "id": "logo-onesignal",
+  "name": "OneSignal",
+  "group": "thirdparty",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "onesignal",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#e44a49"
+ },
+ {
+  "id": "logo-segment",
+  "name": "Segment",
+  "group": "thirdparty",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "segment",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#4fb58b"
+ },
+ {
+  "id": "logo-mapbox",
+  "name": "Mapbox",
+  "group": "thirdparty",
+  "source": "simple-icons@16.33.0",
+  "key": "mapbox",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#000000"
+ },
+ {
+  "id": "logo-googlemaps",
+  "name": "Google Maps",
+  "group": "thirdparty",
+  "source": "simple-icons@16.33.0",
+  "key": "googlemaps",
+  "licence": "CC0-1.0",
+  "upstream": "https://github.com/simple-icons/simple-icons",
+  "colour": "#4285f4"
+ }
+]

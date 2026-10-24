@@ -19,8 +19,8 @@ try {
   const errors = [];
   p.on("pageerror", (e) => errors.push(String(e)));
   await p.goto(`http://localhost:${PORT}/?theme=light`);
-  await p.waitForFunction(() => window.__ap && window.__ap.editor);
-  await sleep(300);
+  await p.waitForFunction(() => window.__ap && window.__ap.ui);
+  await sleep(800);
   const ed = (fn, ...a) => p.evaluate(`(${fn.toString()})(window.__ap.editor, ...${JSON.stringify(a)})`);
   const stageBox = await p.evaluate(() => { const r = document.getElementById("stage").getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
   const cx = stageBox.x + stageBox.w / 2, cy = stageBox.y + stageBox.h / 2;
@@ -31,9 +31,10 @@ try {
   const cnt = (kind) => ed((e, k) => [...e.scene.els.values()].filter((x) => x.kind === k).length, kind);
 
   // draw two shapes with the keyboard tool shortcuts and real drags
-  await p.keyboard.press("r"); await drag(cx - 300, cy - 100, cx - 180, cy - 20);
-  await p.keyboard.press("o"); await drag(cx + 150, cy + 60, cx + 290, cy + 140);
-  check("draw rect + ellipse", (await cnt("rect")) === 1 && (await cnt("ellipse")) === 1);
+  // a freshly drawn shape stays selected, and typing then starts editing its label: clear the selection so the next tool letter is a tool letter
+  await p.keyboard.press("r"); await drag(cx - 300, cy - 100, cx - 180, cy - 20); await sleep(60); await ed((e) => e.clearSelection());
+  await p.keyboard.press("o"); await drag(cx + 150, cy + 60, cx + 290, cy + 140); await sleep(60); await ed((e) => e.clearSelection());
+  check("draw rect + ellipse", (await cnt("rect")) === 1 && (await cnt("ellipse")) === 1, JSON.stringify(await ed((e) => [...e.scene.els.values()].map((x) => [x.kind, x.x, x.y]))));
 
   // connect with an arrow
   await p.keyboard.press("a"); await drag(cx - 240, cy - 60, cx + 220, cy + 100);
@@ -99,9 +100,10 @@ try {
   check("renumber closes the gap", JSON.stringify(nums2) === "[1,2]", JSON.stringify(nums2));
 
   // a frame carries what is inside it and leaves the rest alone
-  await ed((e) => e.setTool("frame")); await drag(cx - 250, cy - 200, cx + 150, cy + 100);
-  await p.keyboard.press("r"); await drag(cx - 200, cy - 120, cx - 100, cy - 60);
-  await p.keyboard.press("r"); await drag(cx + 250, cy - 100, cx + 330, cy - 40);
+  const settle = async () => { await sleep(60); await ed((e) => e.clearSelection()); }; // typing on a selected shape edits its label, so clear it before a tool letter
+  await ed((e) => e.setTool("frame")); await drag(cx - 250, cy - 200, cx + 150, cy + 100); await settle();
+  await p.keyboard.press("r"); await drag(cx - 200, cy - 120, cx - 100, cy - 60); await settle();
+  await p.keyboard.press("r"); await drag(cx + 250, cy - 100, cx + 330, cy - 40); await settle();
   const pos = () => ed((e) => { const r = [...e.scene.els.values()].filter((x) => x.kind === "rect"); return { inn: [r[0].x, r[0].y], out: [r[1].x, r[1].y], f: (([f]) => [f.x, f.y])([...e.scene.els.values()].filter((x) => x.kind === "frame")) }; });
   const before = await pos();
   const zOk = await ed((e) => { const f = [...e.scene.els.values()].find((x) => x.kind === "frame"); return [...e.scene.els.values()].filter((x) => x.kind === "rect").every((r) => r.z > f.z); });
@@ -112,9 +114,11 @@ try {
   check("dragging the frame header moves the shape inside by the same amount", after.inn[0] - before.inn[0] === 50 && after.inn[1] - before.inn[1] === 30 && after.f[0] - before.f[0] === 50, `${JSON.stringify(before.inn)} -> ${JSON.stringify(after.inn)}`);
   check("the shape outside the frame stayed", after.out[0] === before.out[0] && after.out[1] === before.out[1]);
 
-  // align through the property panel buttons
+  // align through the properties ribbon (opened with I: it never opens by itself; its code loads on that first open)
   await ed((e) => { const r = [...e.scene.els.values()].filter((x) => x.kind === "rect"); e.select(r.map((x) => x.id)); });
   await sleep(150);
+  check("the ribbon is not in the DOM before it is asked for", !(await q(".ap-ribbon")));
+  await p.keyboard.press("i"); await p.waitForSelector(".ap-ribbon", { visible: true, timeout: 3000 }); await sleep(150);
   await (await q("button[aria-label^='Align left']")).click(); await sleep(60);
   const xs = await ed((e) => [...e.scene.els.values()].filter((x) => x.kind === "rect").map((x) => x.x));
   check("panel: align left lines the shapes up", xs.length === 2 && xs[0] === xs[1], JSON.stringify(xs));
@@ -137,17 +141,22 @@ try {
   await p.keyboard.press("Escape"); await sleep(60);
   check("Escape closes the bar and clears highlights", (await ed((e) => e.renderer.hi.length)) === 0 && !(await p.evaluate(() => !!document.querySelector(".ap-find:not([hidden])"))));
 
-  // minimap: visible, navigates, toggles with M
+  await p.keyboard.press("i"); await sleep(100); // close the ribbon again
+  // minimap: out of the way while the whole diagram is in view, then visible, navigates, toggles with M
+  await ed((e) => { e.clearSelection(); e.zoomToFit(); }); await p.evaluate(() => window.__ap.ui.refresh()); await sleep(250);
+  check("minimap stays hidden while the whole diagram fits the window", await p.evaluate(() => document.querySelector(".ap-mini").hidden));
+  await ed((e) => { e.scene.add({ kind: "rect", x: 3600, y: 2600, w: 100, h: 60 }); e.vp.reset(); e.zoomBy(1); }); await p.evaluate(() => window.__ap.ui.refresh()); await sleep(300);
   const mini = await q(".ap-mini canvas");
-  check("minimap is visible", !!mini && await p.evaluate(() => !document.querySelector(".ap-mini").hidden));
+  check("minimap shows once the diagram is larger than the window", !!mini && await p.evaluate(() => !document.querySelector(".ap-mini").hidden));
   const box = await mini.boundingBox();
   const c0 = await ed((e) => [e.vp.x, e.vp.y]);
   await click(box.x + box.width * 0.85, box.y + box.height * 0.8); await sleep(100);
   const c2 = await ed((e) => [e.vp.x, e.vp.y]);
   check("clicking the minimap moves the view", c2[0] !== c0[0] || c2[1] !== c0[1], `${c0} -> ${c2}`);
-  await p.keyboard.press("m"); await sleep(60);
-  check("M hides the minimap", await p.evaluate(() => document.querySelector(".ap-mini").hidden));
-  await p.keyboard.press("m"); await sleep(60);
+  await p.keyboard.press("m"); await sleep(120);
+  check("M hides the minimap (the setting stays toggleable)", await p.evaluate(() => document.querySelector(".ap-mini").hidden));
+  await p.keyboard.press("m"); await sleep(150);
+  check("M shows it again", await p.evaluate(() => !document.querySelector(".ap-mini").hidden));
 
   // lock through the panel: cannot move
   await ed((e) => { e.resetView(); const r = [...e.scene.els.values()].find((x) => x.kind === "rect"); e.select([r.id]); });
@@ -168,6 +177,39 @@ try {
     return { growthKB: Math.round((h1 - h0) / 1024), hist: e.hist.size() };
   });
   check("100 create/undo cycles of the new shapes keep the heap flat (< 400 KB)", cyc2.growthKB < 400, `${cyc2.growthKB} KB, history ${cyc2.hist}`);
+
+  // opening and closing the library, the menu and the ribbon 50 times: heap flat, and nothing schedules frames afterwards
+  await ed((e) => { e.load({ els: [], groups: [] }); e.resetView(); });
+  await sleep(150);
+  // waitForSelector hands back an ElementHandle that keeps its element (and subtree) alive until disposed: dispose it, or the harness itself looks like a leak
+  const waitFor = async (sel, o = {}) => { const h = await p.waitForSelector(sel, { timeout: 3000, ...o }); await h.dispose(); };
+  const cycle = async () => {
+    await p.keyboard.press("/"); await waitFor(".ap-pal:not([hidden])"); await p.keyboard.press("Escape");
+    await p.click('button[aria-label="Menu"]'); await waitFor(".ap-menu"); await p.keyboard.press("Escape");
+    await p.evaluate(() => document.activeElement?.blur?.());
+    await p.keyboard.press("i"); await waitFor(".ap-ribbon", { visible: true }); await p.keyboard.press("i");
+  };
+  for (let i = 0; i < 8; i++) await cycle(); // warm-up: the lazy chunks load and the JIT settles
+  const gcHeap = () => p.evaluate(async () => { window.gc?.(); await new Promise((r) => setTimeout(r, 50)); window.gc?.(); return performance.memory.usedJSHeapSize; });
+  const nodes0 = await p.evaluate(() => document.querySelectorAll("*").length);
+  const hh0 = await gcHeap();
+  for (let i = 0; i < 50; i++) await cycle();
+  const hh1 = await gcHeap();
+  for (let i = 0; i < 50; i++) await cycle();
+  const hh2 = await gcHeap();
+  const nodes1 = await p.evaluate(() => document.querySelectorAll("*").length);
+  check("50 open/close cycles of the library, the menu and the ribbon keep the heap flat (< 400 KB), and a second 50 add nothing more (< 150 KB)", hh1 - hh0 < 400 * 1024 && hh2 - hh1 < 150 * 1024, `${Math.round((hh1 - hh0) / 1024)} KB, then ${Math.round((hh2 - hh1) / 1024)} KB`);
+  check("...and leave the DOM where it was (no node left behind)", nodes1 <= nodes0, `${nodes0} -> ${nodes1}`);
+  await sleep(500);
+  const quiet = await p.evaluate(async () => {
+    let raf = 0; const orig = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = (f) => { raf++; return orig(f); };
+    const r = window.__ap.renderer, t = r.lastFrameAt, runs = JSON.stringify(window.__ap.ui.stats());
+    await new Promise((x) => setTimeout(x, 2000));
+    window.requestAnimationFrame = orig;
+    return { raf, frames: r.lastFrameAt === t, runs: JSON.stringify(window.__ap.ui.stats()) === runs, open: [window.__ap.palette.isOpen(), !!document.querySelector(".ap-menu"), !!document.querySelector(".ap-ribbon:not([hidden])")] };
+  });
+  check("after those cycles nothing schedules a frame (no rAF, no canvas frame, no UI updater run in 2 s)", quiet.raf === 0 && quiet.frames && quiet.runs, JSON.stringify(quiet));
+  check("...and everything is closed", quiet.open.every((x) => !x), JSON.stringify(quiet.open));
 
   // idle: nothing schedules frames
   await sleep(300);

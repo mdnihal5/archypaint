@@ -175,6 +175,11 @@ describe("tidy", () => {
 });
 
 describe("capacity notes: editor", () => {
+  it("insertCalc(text) puts that text in the note and sizes the note for it", () => {
+    const text = Array.from({ length: 30 }, (_, n) => `v${n} = ${n + 1}`).join("\n");
+    const e = ed.insertCalc(text)!;
+    expect(e.text).toBe(text); expect(e.h).toBeGreaterThan(30 * 20);
+  });
   it("insertCalc puts a selected calc note at the view centre, sized for its text; undo/redo", () => {
     const e = ed.insertCalc()!;
     expect(e.kind).toBe("calc");

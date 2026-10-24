@@ -1,0 +1,22 @@
+/* Main menu sheet (loaded with menu.ts on the first open). */
+.ap-menu { position: absolute; left: var(--edge); top: calc(var(--edge) + 44px); width: min(300px, calc(100vw - 2 * var(--edge))); max-height: calc(100vh - var(--edge) - 44px - var(--edge)); overflow-y: auto; z-index: 30; padding: 6px; gap: 0; border-radius: 14px; scrollbar-width: thin; }
+:root[data-menu="open"] .ap-ribbon { display: none; }
+.ap-gh { padding: 10px 10px 3px; font: 600 11px/1 var(--sans); letter-spacing: 0.04em; color: var(--mid); }
+.ap-gh:first-child { padding-top: 6px; }
+.ap-gh.sub { padding-top: 8px; }
+.ap-mi { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; height: 28px; padding: 0 10px; border: 0; border-radius: 7px; background: none; color: var(--ink); font: 500 13px var(--sans); text-align: left; cursor: pointer; }
+.ap-mi:hover, .ap-mi:focus-visible { background: var(--hover); }
+.ap-mi:disabled { color: var(--mid); opacity: 0.6; cursor: default; }
+.ap-mi .l { display: flex; align-items: center; gap: 9px; min-width: 0; white-space: nowrap; }
+.ap-mi .l svg { color: var(--mid); flex: none; }
+.ap-mrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 3px 10px; font: 500 13px var(--sans); }
+.ap-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 5px 10px 4px; }
+.ap-tg { height: 26px; padding: 0 10px; border: 0; border-radius: 13px; background: none; color: var(--mid); box-shadow: inset 0 0 0 1px var(--line); font: 500 12px/1 var(--sans); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.ap-tg i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); display: block; }
+.ap-tg:hover { color: var(--ink); }
+.ap-tg[aria-pressed="true"] { color: var(--red-ink); background: var(--red-wash); box-shadow: inset 0 0 0 1px var(--red-ink); }
+.ap-tg[aria-pressed="true"] i { background: var(--red-ink); }
+.ap-sheetrow { gap: 6px; }
+.ap-sf { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; font: 600 11px/1 var(--sans); color: var(--mid); }
+.ap-sf .ap-input { height: 26px; font-size: 12px; padding: 0 8px; }
+.ap-sf .ap-kbd { height: 26px; display: flex; align-items: center; }

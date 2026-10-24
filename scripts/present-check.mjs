@@ -84,7 +84,7 @@ try {
   await sleep(1200);
   check("setup: the user's own sheet (2 shapes) is autosaved", (await idb(q)) === 2);
   await q.goto(link); await sleep(1500);
-  const sh = await q.evaluate(() => ({ els: window.__ap.scene.els.size, ro: window.__ap.editor.readOnly, bar: !!document.querySelector(".ap-ro-bar"), view: document.documentElement.dataset.view, tools: getComputedStyle(document.querySelector(".ap-toolwrap")).display, brand: getComputedStyle(document.querySelector(".ap-brand")).display }));
+  const sh = await q.evaluate(() => ({ els: window.__ap.scene.els.size, ro: window.__ap.editor.readOnly, bar: !!document.querySelector(".ap-ro-bar"), view: document.documentElement.dataset.view, tools: getComputedStyle(document.querySelector(".ap-dock")).display, brand: getComputedStyle(document.querySelector(".ap-brand")).display }));
   check("the link opens read-only with only the shared bar and the brand showing", sh.els === 9 && sh.ro && sh.bar && sh.view === "readonly" && sh.tools === "none" && sh.brand !== "none", JSON.stringify(sh));
   await q.screenshot({ path: OUT + "shared-light.png" });
   const pos0 = await q.evaluate(() => { const e = [...window.__ap.scene.els.values()].find((x) => x.text === "api-1"); return [e.x, e.y, window.__ap.vp.zoom, window.__ap.vp.x, window.__ap.vp.y]; });
@@ -99,7 +99,7 @@ try {
   check("Make an editable copy asks first (inline), and nothing changed yet", (await q.evaluate(() => window.__ap.editor.readOnly)) && (await q.evaluate(() => document.querySelector(".ap-ro-msg").textContent)).includes("Replaces"));
   await q.screenshot({ path: OUT + "shared-confirm.png" });
   await q.evaluate(() => [...document.querySelectorAll(".ap-ro-bar button")].find((b) => b.textContent === "Make the copy").click()); await sleep(1300);
-  const cp = await q.evaluate(() => ({ ro: window.__ap.editor.readOnly, hash: location.hash, view: document.documentElement.dataset.view, bar: !!document.querySelector(".ap-ro-bar"), tools: getComputedStyle(document.querySelector(".ap-toolwrap")).display }));
+  const cp = await q.evaluate(() => ({ ro: window.__ap.editor.readOnly, hash: location.hash, view: document.documentElement.dataset.view, bar: !!document.querySelector(".ap-ro-bar"), tools: getComputedStyle(document.querySelector(".ap-dock")).display }));
   check("the copy is editable, the hash is cleared and the normal chrome is back", !cp.ro && cp.hash === "" && !cp.view && !cp.bar && cp.tools !== "none", JSON.stringify(cp));
   check("now the copy (9 elements) is what is autosaved", (await idb(q)) === 9, `autosaved: ${await idb(q)}`);
   await q.reload(); await sleep(1200);

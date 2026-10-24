@@ -8,8 +8,11 @@ export const actions: Action[] = [
     hint: "C",
     section: "insert",
     key: { key: "c" },
-    run(c) {
-      c.editor.insertCalc();
+    async run(c) {
+      const { pickCalcTemplate } = await import("../calc-picker"); // the starters live in the lazy chunk with the picker
+      const text = await pickCalcTemplate();
+      if (text === null) return;
+      c.editor.insertCalc(text);
       c.toast("Double-click the note to edit: names, + - * / ^, 10M, 2KB, day");
     },
   },

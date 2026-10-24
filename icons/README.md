@@ -17,7 +17,7 @@ Categories map to the app's colour tokens: `data cache network compute queue sec
 - **No** gradients, filters, shadows, `<style>`, `<text>`, images, `<use>`, `<defs>`, clip paths, `url()`.
 - Detail only where it aids recognition (LEDs, drive slots, pins, ports, tick marks). Never texture.
 - Keep ~4px margin inside the 64 grid. Every icon needs both tiers and a manifest row.
-- No vendor logos in this package, ever (see the project README §4.7). Vendor packs may name the service in `name`/`aliases` — that is nominative use, and the palette shows a "not affiliated" note next to them.
+- No vendor logos in the *drawn* set. Real brand logos are a separate, generated set (below). Drawn vendor packs may name the service in `name`/`aliases` — nominative use, and the palette shows a "not affiliated" note next to them.
 
 ## Add an icon
 
@@ -62,25 +62,41 @@ Official vendor icon sets can't be redistributed, so the palette can load them f
 - Limits: 2000 icons, 5 MB, 8000 characters of markup per tier, `id` kebab-case (max 60), `category` one of `data cache network compute queue security client external`.
 - Icons appear as `user-<pack>-<id>`, grouped under the pack's name; `remove` in the palette deletes the pack.
 
-## Official logos (on demand, never bundled)
+## Brand logos (bundled, default)
 
-Real technology logos (Kafka, Redis, PostgreSQL, Kubernetes, Go, ...) are available as an **opt-in** source in the `/` palette
-("official logos"). They are not part of this library and are not in the repository or the app bundle.
+The palette lists **real brand logos first**, grouped by category (relational databases, document / key-value, wide-column and graph,
+time-series and search, warehouses and OLAP, caches, queues and streaming, CDN / DNS / edge, load balancers / proxies / gateways,
+containers / orchestration / serverless, cloud providers, object storage, observability, auth / identity / secrets, CI/CD and IaC,
+clients / browsers / OS, frontend frameworks, languages / backend frameworks, AI / ML, payments / messaging / other services).
+The drawn icons stay as the secondary "Generic" / "Drawn: ..." sources. Drawn vendor icons that a real logo now replaces are not
+listed any more (saved diagrams that use them still render).
 
-- **Where they come from:** [Simple Icons](https://github.com/simple-icons/simple-icons) (files are CC0; the *marks* remain their
-  owners' trademarks), fetched one file at a time from a **pinned** release on jsDelivr
-  (`https://cdn.jsdelivr.net/npm/simple-icons@<version>/icons/<slug>.svg`, version in `src/logos-catalog.ts`).
-- **When:** only after the user opts in, and only when they *place* a logo. Listing and previews never touch the network.
-  Fetched logos are cached in the browser (IndexedDB, 200 KB cap, least-recently-used eviction; logos on the canvas are never
-  evicted), so placed logos work offline and across reloads.
-- **Restricted brands** (MongoDB, Docker, Linux, Apple, macOS, Linux Foundation) are hidden until a second, explicit choice.
-- **Not covered** (not in Simple Icons): AWS, Azure, Windows, Memcached, DynamoDB, HAProxy, gRPC, Twilio. Our own drawn icons
-  (`aws-*`, `azure-*`, `memcached`, ...) cover these; official AWS/Azure sets can be loaded as a user pack.
-- **Safety:** each download is capped at 12 KB while reading, must match one exact shape (a single `<path>` in a 24x24 `<svg>`),
-  is re-validated with the user-pack grammar, and only *our* markup (`<path d=... fill="currentColor">`) is installed. Only slugs
-  in the catalog are ever requested. 6 s timeout, one retry, 3 concurrent, 60 s cool-down after a failure.
-- **Drawing:** logos are glyph-only icons (one tier at every size), drawn in the element's category colour. Brand colours are
-  not applied (the catalog records them for later).
-- **Regenerating the catalog:** `src/logos-catalog.ts` was built by resolving each title in `data/simple-icons.json` of the pinned
-  release and requesting its file once from the pinned URL (HTTP 200, exact shape). Re-verify every row when bumping the version.
+- **Catalog:** `icons/logos/catalog.mjs` (what, names, search aliases, grouping, which drawn icons each logo replaces).
+- **Build:** `npm run logos` (`icons/scripts/build-logos.mjs`) reads the pinned npm packages and writes `src/packs/logos-<category>.json`
+  (one lazy chunk each, all inside the 30 KB gzip budget), `src/packs/logos-index.json` and `icons/logos/manifest.json` (id, source
+  package + version, licence, upstream colour). The output is committed; the app builds without running it.
+- **Artwork rules:** flat colour (gradients become their mean colour, faint shadow overlays are dropped), `<path>` only, 24 grid.
+  Logos draw in their **brand colours**. A mark that would vanish on a theme's paper (near-black on dark, near-white on light) carries
+  a replacement colour for that theme (`data-d` dark / `data-l` light; decided at build time from contrast): greys switch to the theme ink,
+  coloured marks are lightened / darkened until readable. On a solid-filled tile every mark is drawn in one contrast colour instead.
+- **Offline:** bundled, so they work offline; nothing is fetched at runtime and there is no opt-in.
+- **Old ids:** logo ids are `logo-<slug>`; the Simple Icons slugs of the previous opt-in logos are unchanged. `logo-linuxfoundation`
+  (dropped) resolves to `logo-linux` (`ICON_ALIASES` in `src/logos.ts`). Drawn ids are untouched.
 
+### Sources and licences
+
+| source (pinned, devDependency) | licence | used for |
+|---|---|---|
+| [`simple-icons@16.33.0`](https://github.com/simple-icons/simple-icons) | CC0-1.0 | most single-colour brand marks; official brand colour |
+| [`@iconify-json/logos@1.2.17`](https://github.com/gilbarbara/logos) (gilbarbara/logos) | CC0-1.0 | brands Simple Icons lacks (AWS and its services, Azure, Oracle, Memcached, DynamoDB, gRPC, Slack, Twilio, Heroku, ...) |
+| [`@iconify-json/gcp@1.2.3`](https://cloud.google.com/icons) (Google Cloud icons) | Apache-2.0 | Google Cloud services |
+
+The licence covers the *artwork files*. The marks themselves remain their owners' trademarks; logos are included to identify the
+technology (nominative use) and imply no endorsement. AWS's published terms for its architecture icons only mention use in diagrams
+and materials; they do not address redistribution inside software, so check with AWS before shipping a product built on the
+`aws-*` service logos. Google Cloud's icon terms could not be read from the page, the Apache-2.0 statement comes from the Iconify
+packaging. Each logo's exact source is in `icons/logos/manifest.json`.
+
+**Not covered by a clean source** (kept as archypaint's own drawn icons): HAProxy, Redpanda, ActiveMQ, ZeroMQ, Varnish, Hazelcast, Zipkin, Loki,
+Pinot, Ignite, Dragonfly, Db2, SQL Server, JanusGraph, QuestDB, and the Azure *service* icons (Microsoft's pack is licensed for diagrams only).
+Azure itself has its logo.

@@ -19,11 +19,11 @@ export function renumberBadges(els: Iterable<{ id: string; kind: string; n: numb
   return out;
 }
 
-/** elements a container carries when it is dragged: everything fully inside it (arrows included), excluding locked ones */
+/** elements a container carries when it is dragged: everything fully inside it (arrows included), excluding locked ones (their own lock or their group's) */
 export function frameChildren(scene: Scene, f: El, out: El[], scratch: El[]): void {
   scene.query(f.x, f.y, f.x + f.w, f.y + f.h, scratch);
   for (const c of scratch) {
-    if (c === f || c.locked) continue;
+    if (c === f || scene.isLocked(c)) continue;
     if (insideBox(f, c)) out.push(c);
   }
 }

@@ -112,7 +112,7 @@ describe("packs, sources and sections", () => {
     for (let i = 1; i < packs.length; i++) if (packs[i] !== packs[i - 1]) expect(packs.slice(0, i)).not.toContain(packs[i]);
   });
   it("labels", () => {
-    expect(["core", "generic2", "oss", "aws", "gcp", "azure", "user-my-cloud"].map(sectionLabel)).toEqual(["Core", "Generic", "Open source", "AWS", "Google Cloud", "Azure", "my-cloud"]);
+    expect(["core", "generic2", "oss", "aws", "gcp", "azure", "user-my-cloud"].map(sectionLabel)).toEqual(["Generic", "Generic (more)", "Drawn: open source", "Drawn: AWS", "Drawn: Google Cloud", "Drawn: Azure", "my-cloud"]);
   });
   it("searching a section name finds its icons", () => {
     expect(go("azure").some((h) => h.e.pack === "azure")).toBe(true);

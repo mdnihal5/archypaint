@@ -82,3 +82,62 @@ describe("view-only mode", () => {
     expect(ed.dirty()).toBe(false);
   });
 });
+
+describe("view-only mode: the inline-edit and group / label gestures are blocked too", () => {
+  const ta = () => document.querySelector("textarea");
+  const click = (x: number, y: number) => { ptr("pointerdown", x, y); ptr("pointerup", x, y); };
+  const dbl = (x: number, y: number) => { click(x, y); click(x, y); stage.dispatchEvent(new MouseEvent("dblclick", { clientX: x, clientY: y, bubbles: true, detail: 2 })); };
+  const kd = (k: string, extra: KeyboardEventInit = {}) => window.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true, cancelable: true, ...extra }));
+  /** a labelled connector, and a two-box group with a name, on a document that is then switched to view-only */
+  function scene() {
+    const a = ed.scene.add({ kind: "rect", x: 100, y: 100, w: 100, h: 60, text: "a" }), b = ed.scene.add({ kind: "rect", x: 300, y: 100, w: 100, h: 60, text: "b" });
+    ed.select([a.id, b.id]);
+    const gid = ed.group("backend")!;
+    const arrow = ed.scene.add({ kind: "arrow", x: 100, y: 400, w: 200, h: 0, pts: [100, 400, 200, 400, 200, 400, 300, 400], route: 0, fill: 0, labels: [{ t: 0.5, text: "http" }] });
+    ed.clearSelection();
+    ed.setReadOnly(true);
+    return { a, b, gid, arrow };
+  }
+  it("double-click on a shape, on a connector's label, on a group name tag or on empty space opens no editor and adds nothing", () => {
+    const { a, gid, arrow } = scene();
+    const n = ed.scene.els.size;
+    dbl(150, 130); dbl(200, 400); dbl(150, 400);
+    const g = (ed as unknown as { groupIdx: { tagBox(id: string): { x: number; y: number } } }).groupIdx.tagBox(gid);
+    dbl(g.x + 10, g.y + 8); dbl(700, 700);
+    expect(ta()).toBeNull(); expect(ed.scene.els.size).toBe(n);
+    expect([a.text, arrow.labels![0]!.text, ed.scene.groups.get(gid)!.name]).toEqual(["a", "http", "backend"]);
+  });
+  it("typing a character (type-to-edit) and Enter open nothing, for a shape, a connector and a whole group", () => {
+    const { a, b, arrow } = scene();
+    for (const ids of [[a.id], [arrow.id], [a.id, b.id]]) { ed.select(ids); kd("x"); kd("Enter"); expect(ta()).toBeNull(); }
+    expect(a.text).toBe("a"); expect(ed.tool).toBe("select");
+  });
+  it("the editing API itself refuses: editSelection, editLabel, editGroupName", () => {
+    const { a, gid, arrow } = scene();
+    ed.select([a.id]);
+    expect(ed.editSelection()).toBe(false); expect(ed.editSelection("x")).toBe(false);
+    ed.editLabel(arrow, 0, 0.5); ed.editLabel(arrow, -1, 0.2, "z"); ed.editGroupName(gid);
+    expect(ta()).toBeNull();
+  });
+  it("dragging a connector label does not slide it (the drag pans instead)", () => {
+    const { arrow } = scene();
+    const vx = ed.vp.x;
+    drag(200, 400, 280, 400);
+    expect(arrow.labels![0]!.t).toBe(0.5);
+    expect(ed.vp.x).not.toBe(vx);
+  });
+  it("dragging a group by its interior or its tag moves nothing (pans)", () => {
+    const { a, b, gid } = scene();
+    const tag = (ed as unknown as { groupIdx: { tagBox(id: string): { x: number; y: number } } }).groupIdx.tagBox(gid);
+    const vx = ed.vp.x;
+    drag(250, 130, 330, 230); drag(tag.x + 10, tag.y + 8, tag.x + 10, tag.y + 80);
+    expect([a.x, a.y, b.x, b.y]).toEqual([100, 100, 300, 100]);
+    expect(ed.vp.x).not.toBe(vx);
+  });
+  it("group lock cannot be toggled and styles / alignment cannot be set", () => {
+    const { a, b, gid } = scene();
+    ed.select([a.id, b.id]);
+    ed.toggleLock(); ed.setGroupLocked(gid, true); ed.setStyle({ align: "left", fs: 26 });
+    expect(ed.scene.groups.get(gid)!.locked).toBe(false); expect([a.align, a.fs]).toEqual([undefined, undefined]);
+  });
+});

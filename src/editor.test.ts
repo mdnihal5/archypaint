@@ -64,15 +64,33 @@ describe("drawing, connecting, moving", () => {
     expect(a.y).toBeGreaterThan(300);
   });
 
-  it("deleting a shape detaches its arrows instead of deleting them; undo re-attaches", () => {
+  it("deleting a shape deletes its incoming and outgoing arrows; undo brings them back exactly, redo deletes again", () => {
+    const [a, b] = twoBoxes();
+    const c = ed.scene.add({ kind: "rect", x: 100, y: 500, w: 100, h: 60 }); ed.renderer.invalidate(true, true);
+    ed.setTool("arrow"); drag(160, 140, 560, 340); // a -> b
+    ed.setTool("arrow"); drag(150, 530, b.x + 20, b.y + 20); // c -> b: unrelated to a
+    const [out, other] = sh("arrow");
+    ed.scene.patch(out!, { labels: [{ t: 0.3, text: "http" }, { t: 0.8, text: "200 rps" }], fs: 18 });
+    const snap = JSON.stringify(ed.scene.snapshot(ed.scene.els.get(out!.id)!));
+    ed.select([a.id]); ed.deleteSelection();
+    expect(sh("arrow").map((e) => e.id)).toEqual([other!.id]);
+    ed.undo();
+    expect(sh("rect")).toHaveLength(3);
+    const back = ed.scene.els.get(out!.id)!;
+    expect(JSON.stringify(ed.scene.snapshot(back))).toBe(snap);
+    expect(back.src).toBe(a.id); expect(back.dst).toBe(b.id);
+    ed.redo();
+    expect(ed.scene.els.has(out!.id)).toBe(false); expect(ed.scene.els.has(a.id)).toBe(false);
+    void c;
+  });
+
+  it("a locked arrow survives its shape's deletion, detached", () => {
     const [a] = twoBoxes();
     ed.setTool("arrow"); drag(160, 140, 560, 340);
-    ed.select([a.id]); ed.deleteSelection();
     const ar = sh("arrow")[0]!;
-    expect(ar.src).toBe(""); expect(ar.dst).not.toBe("");
-    ed.undo();
-    expect(sh("arrow")[0]!.src).toBe(a.id);
-    expect(sh("rect")).toHaveLength(2);
+    ed.scene.patch(ar, { locked: true });
+    ed.select([a.id]); ed.deleteSelection();
+    expect(ed.scene.els.get(ar.id)?.src).toBe("");
   });
 
   it("resizes by a handle and reroutes bound arrows", () => {

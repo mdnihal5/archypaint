@@ -1,17 +1,18 @@
-import { PORT_COUNT, bezierAt, effectiveRoute, portPoint, type Rect } from "./connectors";
+import { PORT_COUNT, SEG_MIN_PX, arrowLabels, eachInteriorSeg, effectiveRoute, pointAtT, portPoint, type Rect } from "./connectors";
 import type { GroupIndex } from "./groups";
 import { drawCalcEl } from "./calc-view";
 import { drawIconEl } from "./icons";
-import { handlePoints, type El, type Kind, type Scene } from "./scene";
+import { handlePoints, type ArrowLabel, type El, type Kind, type Scene } from "./scene";
 import { CONTAINER_KINDS, FRAME_HEADER, LANE_COL_HEADER, LANE_HEADER, LEGEND_PAD, LEGEND_ROW_H, LEGEND_TITLE_H, PATH_KINDS, labelPoint, laneCells, legendRows, shapeParts } from "./shape-geom";
 import { colourOf, onSolid, type Theme } from "./theme";
 import type { Viewport } from "./viewport";
+import { alignX, labelLineHeight, wrapCached, wrapWidth } from "./wrap";
 
-const FONT = "13px 'JetBrains Mono','DejaVu Sans Mono',monospace";
-const LINE_H = 18;
+const FACE = "'JetBrains Mono','DejaVu Sans Mono',monospace";
+const FONT = `13px ${FACE}`;
 
 export interface GhostShape { kind: Kind; x: number; y: number; w: number; h: number; radius?: number; o?: 0 | 1 | 2 | 3 }
-export interface ArrowStyle { cat: number; hex?: string | undefined; route: 0 | 1 | 2; edge: 0 | 1 | 2; dash: 0 | 1; head: 0 | 1 | 2; text: string }
+export interface ArrowStyle { cat: number; hex?: string | undefined; route: 0 | 1 | 2; edge: 0 | 1 | 2; dash: 0 | 1; head: 0 | 1 | 2; text: string; labels?: readonly ArrowLabel[] | undefined; fs?: number | undefined }
 export interface GhostArrow extends ArrowStyle { pts: number[] }
 
 /**
@@ -33,6 +34,8 @@ export class Renderer {
   guideY: number[] = [];
   /** shape whose ports are shown (arrow tool hover) and the highlighted port (-1 none) */
   hoverRect: Rect | null = null; hoverPort = -1;
+  /** the point on an arrow where a new arrow would branch (arrow tool hovering a line), drawn as a ring */
+  hoverPt: [number, number] | null = null;
   groups: GroupIndex | null = null;
   /** find-bar matches: outlined on the live layer, `hiCur` drawn strongest */
   hi: readonly string[] = [];
@@ -41,6 +44,8 @@ export class Renderer {
   hidden: ReadonlySet<string> | null = null;
   /** id of the element being text-edited: its label is not drawn under the textarea */
   hideText = "";
+  /** the "Hide icons" view: icon elements skip their picture (view flag only: the scene and history never see it) */
+  hideIcons = false;
   /** runs at the start of each frame; input is coalesced and applied here */
   onBeforeFrame: (() => void) | null = null;
 
@@ -171,7 +176,7 @@ export class Renderer {
     for (let i = 0; i < els.length; i++) {
       const e = els[i]!;
       if (this.dragging.has(e.id) || (hid !== null && hid.has(e.id))) continue;
-      drawEl(ctx, e, this.theme, z, lod, this.hideText === e.id);
+      drawEl(ctx, e, this.theme, z, lod, this.hideText === e.id, this.hideIcons);
     }
     ctx.globalAlpha = 1;
   }
@@ -201,6 +206,12 @@ export class Renderer {
         ctx.fillStyle = col; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
         ctx.fillText(g.name, x + 12, y - 8);
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      }
+      if (g.locked && z >= 0.3) { // a padlock after the name: why this group will not move
+        const lx = x + 12 + (g.name ? g.name.length * 7.9 + 8 : 0), ly = y - 8;
+        ctx.strokeStyle = col; ctx.lineWidth = 1.4; ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(lx + 4.5, ly - 7, 3, Math.PI, 0); ctx.stroke();
+        ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(lx, ly - 7, 9, 7, 1.5); ctx.fill();
       }
     }
   }
@@ -233,7 +244,7 @@ export class Renderer {
         const lp = e.kind === "arrow" ? this.livePts.get(id) : undefined;
         if (lp) { drawArrow(ctx, e, th, z, lp, false); continue; }
         ctx.translate(this.dragDx, this.dragDy);
-        drawEl(ctx, e, th, z, false, false);
+        drawEl(ctx, e, th, z, false, false, this.hideIcons);
         ctx.translate(-this.dragDx, -this.dragDy);
       }
     }
@@ -269,6 +280,8 @@ export class Renderer {
       for (const y of this.guideY) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }
       ctx.stroke(); ctx.globalAlpha = 1;
     }
+    const hp = this.hoverPt;
+    if (hp) { ctx.lineWidth = 1.5 / z; ctx.beginPath(); ctx.arc(hp[0], hp[1], 6 / z, 0, Math.PI * 2); ctx.fillStyle = th.red; ctx.strokeStyle = th.paper; ctx.fill(); ctx.stroke(); }
     const hr = this.hoverRect;
     if (hr) {
       ctx.lineWidth = 1.5 / z;
@@ -279,6 +292,14 @@ export class Renderer {
       }
     }
   }
+
+  private hz = 1; private hctx: CanvasRenderingContext2D | null = null;
+  private segHandle = (_k: number, mx: number, my: number, vertical: boolean, len: number): void => {
+    const ctx = this.hctx, z = this.hz;
+    if (!ctx || len * z < SEG_MIN_PX) return;
+    const w = (vertical ? 5 : 11) / z, h = (vertical ? 11 : 5) / z;
+    ctx.fillStyle = this.theme.paper; ctx.beginPath(); ctx.roundRect(mx - w / 2, my - h / 2, w, h, 2.5 / z); ctx.fill(); ctx.stroke();
+  };
 
   private drawSelection(ctx: CanvasRenderingContext2D, z: number): void {
     if (!this.selected.size) return;
@@ -305,6 +326,11 @@ export class Renderer {
       ctx.strokeStyle = th.red; ctx.lineWidth = 1.4 / z;
       for (const [px, py] of [[p[0]!, p[1]!], [p[n - 2]!, p[n - 1]!]] as const) {
         ctx.beginPath(); ctx.arc(px + dx, py + dy, 5 / z, 0, Math.PI * 2); ctx.fillStyle = th.paper; ctx.fill(); ctx.stroke();
+      }
+      // an elbow's interior segments get a small handle at their midpoint: drag it to slide the segment sideways
+      if (effectiveRoute(single.route, single.edge) === 1 && !this.scene.isLocked(single) && !this.dragging.has(single.id)) {
+        this.hz = z; this.hctx = ctx;
+        eachInteriorSeg(p, this.segHandle);
       }
       return;
     }
@@ -387,30 +413,44 @@ export function drawArrow(ctx: CanvasRenderingContext2D, e: ArrowStyle, th: Them
     ctx.moveTo(ex - 11 * Math.cos(ang - 0.45), ey - 11 * Math.sin(ang - 0.45)); ctx.lineTo(ex, ey);
     ctx.lineTo(ex - 11 * Math.cos(ang + 0.45), ey - 11 * Math.sin(ang + 0.45)); ctx.stroke();
   } else if (e.head === 2) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(ex, ey, 4.5, 0, Math.PI * 2); ctx.fill(); }
-  if (e.text && z >= 0.3) {
-    let mx: number, my: number;
-    if (curve) { bezierAt(pts, 0.5, tmp); mx = tmp[0]; my = tmp[1]; }
-    else {
-      let total = 0;
-      for (let i = 0; i + 3 < n; i += 2) total += Math.hypot(pts[i + 2]! - pts[i]!, pts[i + 3]! - pts[i + 1]!);
-      let acc = 0; mx = pts[0]!; my = pts[1]!;
-      for (let i = 0; i + 3 < n; i += 2) {
-        const l = Math.hypot(pts[i + 2]! - pts[i]!, pts[i + 3]! - pts[i + 1]!);
-        if (acc + l >= total / 2) { const t = l ? (total / 2 - acc) / l : 0; mx = pts[i]! + (pts[i + 2]! - pts[i]!) * t; my = pts[i + 1]! + (pts[i + 3]! - pts[i + 1]!) * t; break; }
-        acc += l;
-      }
+  const ls = arrowLabels(e);
+  if (ls.length && z >= 0.3) {
+    const fs = e.fs || 13, lh = Math.round(fs * 1.5);
+    if (e.fs) ctx.font = `${fs}px ${FACE}`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    for (let i = 0; i < ls.length; i++) {
+      const l = ls[i]!;
+      if (!l.text) continue;
+      pointAtT(pts, curve, l.t, tmp);
+      const w = ctx.measureText(l.text).width + 10;
+      ctx.fillStyle = th.paper; ctx.fillRect(tmp[0] - w / 2, tmp[1] - lh / 2, w, lh);
+      ctx.fillStyle = th.ink; ctx.fillText(l.text, tmp[0], tmp[1]);
     }
-    const w = ctx.measureText(e.text).width + 10;
-    ctx.fillStyle = th.paper; ctx.fillRect(mx - w / 2, my - 10, w, 20);
-    ctx.fillStyle = th.ink; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(e.text, mx, my);
+    if (e.fs) ctx.font = FONT;
   }
 }
 
-function drawLabel(ctx: CanvasRenderingContext2D, text: string, cx: number, cy: number): void {
-  if (text.indexOf("\n") < 0) { ctx.fillText(text, cx, cy); return; }
-  const lines = text.split("\n");
-  let y = cy - ((lines.length - 1) * LINE_H) / 2;
-  for (const l of lines) { ctx.fillText(l, cx, y); y += LINE_H; }
+/**
+ * A label centred on (cx, cy): wrapped to the shape's inner width (see wrap.ts), aligned left / centre / right inside it, and, when the
+ * wrapped block is vertically centred. It is never clipped: a shape too short for its text is grown when the text is committed (editor.ts), and a
+ * shape the user squeezed afterwards lets the text run past its outline rather than cutting a glyph in half.
+ * `fs` is the element's own text size (0 = the default the context already has). Wrapping is cached on the element: no measuring per frame.
+ */
+function drawLabel(ctx: CanvasRenderingContext2D, e: El, cx: number, cy: number): void {
+  const fs = e.fs || 0, al = e.align;
+  if (fs) ctx.font = `${fs}px ${FACE}`;
+  const lh = labelLineHeight(fs);
+  const ww = wrapWidth(e.kind, e.w);
+  const x = alignX(al, cx, ww ? ww / 2 : Math.max(0, e.w / 2 - 8));
+  if (al) ctx.textAlign = al;
+  if (!ww && e.text.indexOf("\n") < 0) ctx.fillText(e.text, x, cy);
+  else {
+    const lines = ww ? wrapCached(e, ww, () => (t) => ctx.measureText(t).width) : e.text.split("\n");
+    let y = cy - ((lines.length - 1) * lh) / 2;
+    for (let i = 0; i < lines.length; i++) { ctx.fillText(lines[i]!, x, y); y += lh; }
+  }
+  if (al) ctx.textAlign = "center";
+  if (fs) ctx.font = FONT;
 }
 
 function drawLegend(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number): void {
@@ -472,7 +512,11 @@ function drawPathKind(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number
   if (z < 0.3 || hideText) return;
   ctx.globalAlpha = 1;
   if (e.kind === "frame") {
-    if (e.text) { ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillStyle = col; ctx.fillText(e.text, e.x + 12, e.y + FRAME_HEADER / 2); ctx.textAlign = "center"; }
+    if (e.text) {
+      if (e.fs) ctx.font = `${e.fs}px ${FACE}`;
+      ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillStyle = col; ctx.fillText(e.text, e.x + 12, e.y + FRAME_HEADER / 2); ctx.textAlign = "center";
+      if (e.fs) ctx.font = FONT;
+    }
     return;
   }
   if (e.kind === "lane") {
@@ -492,7 +536,7 @@ function drawPathKind(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number
   if (e.text) {
     const [lx, ly] = labelPoint(e);
     ctx.fillStyle = e.fill === 2 ? onSolid(th, colourOf(th, e)) : th.ink;
-    drawLabel(ctx, e.text, lx, ly);
+    drawLabel(ctx, e, lx, ly);
   }
 }
 
@@ -512,14 +556,14 @@ function ensureImageChunk(): void {
   import("./images").then(() => imageRepaint?.()).catch(() => {}).finally(() => { imageChunkLoading = false; });
 }
 
-export function drawEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number, lod: boolean, hideText: boolean): void {
+export function drawEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number, lod: boolean, hideText: boolean, hideIcons = false): void {
   if (e.kind === "calc") { drawCalcEl(ctx, e, th, z, lod, hideText); ctx.globalAlpha = 1; return; }
   if (e.kind === "arrow") { drawArrow(ctx, e, th, z, e.pts, lod); return; }
   if (PATH_KINDS.has(e.kind)) { drawPathKind(ctx, e, th, z, lod, hideText); ctx.globalAlpha = 1; return; }
   if (e.kind === "legend") { if (lod) { ctx.globalAlpha = 0.4; ctx.fillStyle = th.mid; ctx.fillRect(e.x, e.y, e.w, e.h); ctx.globalAlpha = 1; } else drawLegend(ctx, e, th, z); return; }
   const col = colourOf(th, e);
   if (lod) { ctx.globalAlpha = 0.55; ctx.fillStyle = col; ctx.fillRect(e.x, e.y, e.w, e.h); return; }
-  if (e.kind === "icon") { drawIconEl(ctx, e, th, z, hideText); ctx.globalAlpha = 1; return; } // label included: it must not be drawn twice
+  if (e.kind === "icon") { drawIconEl(ctx, e, th, z, hideText, hideIcons); ctx.globalAlpha = 1; return; } // label included: it must not be drawn twice
   if (e.kind === "image") {
     if (imageDrawer) imageDrawer(ctx, e, th, z, hideText);
     else { ctx.globalAlpha = th.tint * 1.4; ctx.fillStyle = col; ctx.fillRect(e.x, e.y, e.w, e.h); ensureImageChunk(); }
@@ -534,7 +578,7 @@ export function drawEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: numbe
   if (e.text && z >= 0.3 && !hideText) {
     ctx.globalAlpha = 1; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillStyle = e.fill === 2 && e.kind !== "text" ? onSolid(th, colourOf(th, e)) : th.ink;
-    drawLabel(ctx, e.text, e.x + e.w / 2, e.y + e.h / 2);
+    drawLabel(ctx, e, e.x + e.w / 2, e.y + e.h / 2);
   }
   ctx.globalAlpha = 1;
 }

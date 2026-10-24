@@ -18,13 +18,13 @@ const dark = tokens(/:root\[data-theme="dark"\]\s*\{([^}]*)\}/);
 
 describe.each([["light", light], ["dark", dark]] as const)("%s theme tokens", (_n, t) => {
   it("has every token the chrome relies on", () => {
-    for (const k of ["paper", "card", "panel", "ink", "mid", "red-ink", "cat0", "cat7"]) expect(t[k], k).toBeTruthy();
+    for (const k of ["paper", "chrome", "well", "ink", "mid", "red-ink", "cat0", "cat7"]) expect(t[k], k).toBeTruthy();
   });
   it("text pairs meet WCAG AA (4.5:1)", () => {
-    for (const [fg, bg] of [["ink", "paper"], ["ink", "card"], ["ink", "panel"], ["mid", "paper"], ["mid", "card"], ["mid", "panel"], ["red-ink", "paper"], ["red-ink", "card"], ["red-ink", "panel"]] as const)
+    for (const [fg, bg] of [["ink", "paper"], ["ink", "chrome"], ["ink", "well"], ["mid", "paper"], ["mid", "chrome"], ["mid", "well"], ["red-ink", "paper"], ["red-ink", "chrome"], ["red-ink", "well"]] as const)
       expect(contrast(t[fg]!, t[bg]!), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5);
   });
-  it("category colours are distinguishable from the panel (>= 3:1, non-text UI)", () => {
-    for (let i = 0; i < 24; i++) expect(contrast(t[`cat${i}`]!, t.panel!), `cat${i}`).toBeGreaterThanOrEqual(t.paper === "#ffffff" ? 1.8 : 3);
+  it("category colours are distinguishable from the chrome surface (>= 3:1, non-text UI)", () => {
+    for (let i = 0; i < 24; i++) expect(contrast(t[`cat${i}`]!, t.chrome!), `cat${i}`).toBeGreaterThanOrEqual(t.paper === "#ffffff" ? 1.8 : 3);
   });
 });

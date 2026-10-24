@@ -1,9 +1,11 @@
 import { normHex } from "../theme";
+import { MAX_BRANCH_DEPTH, cleanLabels, cleanSegs, migrateArrowText } from "../connectors";
 import type { ElJSON, GroupInfo, SceneJSON } from "../scene";
 
 /** The `.archypaint` file format: versioned, validated, deterministic (one element per line, fixed key order). */
 export const APP = "archypaint" as const;
-export const FORMAT_VERSION = 1;
+/** 2: connectors carry `labels` (several, each at a position t along the line) instead of one centred `text`; elements may carry `fs` (text size) */
+export const FORMAT_VERSION = 2;
 
 export const LIMITS = {
   maxElements: 200_000,
@@ -97,7 +99,7 @@ function plain(v: unknown, path: string): Record<string, unknown> {
 
 /* ---------------------------------------------------------------- element field tables */
 
-const EL_KNOWN = new Set(["id", "kind", "x", "y", "w", "h", "z", "version", "cat", "hex", "fill", "edge", "radius", "text", "groupIds", "iconId", "img", "locked", "n", "o", "src", "dst", "sp", "dp", "route", "dash", "head", "pts"]);
+const EL_KNOWN = new Set(["id", "kind", "x", "y", "w", "h", "z", "version", "cat", "hex", "fill", "edge", "radius", "text", "groupIds", "iconId", "img", "locked", "n", "o", "src", "dst", "sp", "dp", "route", "dash", "head", "pts", "fs", "align", "labels", "segs", "st", "dt"]);
 const ROOT_KNOWN = new Set(["app", "version", "meta", "view", "settings", "scene"]);
 
 function readEl(raw: unknown, i: number, extras: Record<string, Record<string, unknown>>): ElJSON {
@@ -124,7 +126,7 @@ function readEl(raw: unknown, i: number, extras: Record<string, Record<string, u
     z: opt(raw.z, i + 1, (v) => fint(v, `${p}.z`, 0, 2 ** 31)),
     version: opt(raw.version, 1, (v) => fint(v, `${p}.version`, 0, 2 ** 31)),
     cat: opt(raw.cat, 0, (v) => fint(v, `${p}.cat`, 0, 255)),
-    fill: opt(raw.fill, 1, (v) => oneOf(v, `${p}.fill`, [0, 1, 2] as const)),
+    fill: opt(raw.fill, 1, (v) => oneOf(v, `${p}.fill`, [0, 1, 2, 3] as const)),
     edge: opt(raw.edge, 1, (v) => oneOf(v, `${p}.edge`, [0, 1, 2] as const)),
     radius: opt(raw.radius, 8, (v) => fnum(v, `${p}.radius`, 0, 1e4)),
     text: opt(raw.text, "", (v) => fstr(v, `${p}.text`, LIMITS.maxText)),
@@ -144,6 +146,14 @@ function readEl(raw: unknown, i: number, extras: Record<string, Record<string, u
     pts,
   };
   const hx = normHex(raw.hex); if (hx) el.hex = hx;
+  if (raw.fs !== undefined) { const f = fnum(raw.fs, `${p}.fs`, 0, 200); if (f >= 1) el.fs = Math.round(f); }
+  if (raw.align === "left" || raw.align === "right") el.align = raw.align; // absent (or "center", or anything else) = centred
+  if (kind === "arrow") {
+    const ls = cleanLabels(raw.labels); if (ls.length) el.labels = ls; migrateArrowText(el);
+    const sg = cleanSegs(raw.segs); if (sg) el.segs = sg;
+    if (raw.st !== undefined) el.st = fnum(raw.st, `${p}.st`, 0, 1);
+    if (raw.dt !== undefined) el.dt = fnum(raw.dt, `${p}.dt`, 0, 1);
+  }
   let ex: Record<string, unknown> | null = null;
   for (const k of Object.keys(raw)) if (!EL_KNOWN.has(k)) (ex ??= {})[k] = plain({ v: raw[k] }, `${p}.${k}`).v;
   if (ex) extras[id] = ex;
@@ -178,6 +188,8 @@ export const MIGRATIONS: Record<number, Migration> = {
       scene: isObj(raw.scene) ? raw.scene : { els: raw.els ?? [], groups: raw.groups ?? [] },
     };
   },
+  // 1 -> 2: nothing to rewrite in the raw document: readEl turns a version-1 arrow's single `text` into one label at t = 0.5, and the new fields are optional
+  1: (raw) => ({ ...raw, version: 2 }),
 };
 
 function migrate(raw: Record<string, unknown>): Record<string, unknown> {
@@ -236,20 +248,35 @@ export function validateFile(input: unknown): Parsed<ArchFile> {
       seen.add(e.id); els.push(e);
     }
     if (dupes) warnings.push(`${dupes} element(s) with duplicate ids dropped`);
-    let repaired = 0;
-    for (const e of els) {
-      if (e.kind !== "arrow") continue;
-      if (e.src && !seen.has(e.src)) { e.src = ""; repaired++; }
-      if (e.dst && !seen.has(e.dst)) { e.dst = ""; repaired++; }
-    }
-    if (repaired) warnings.push(`${repaired} dangling arrow binding(s) cleared`);
-
     const groups: GroupInfo[] = [];
     const gseen = new Set<string>();
     for (let i = 0; i < rawGroups.length; i++) {
       const g = readGroup(rawGroups[i], i);
       if (!gseen.has(g.id)) { gseen.add(g.id); groups.push(g); }
     }
+    // a connector end may be bound to an element or to a group (its boundary has ports like a shape's); anything else is dangling
+    let repaired = 0;
+    for (const e of els) {
+      if (e.kind !== "arrow") continue;
+      if (e.src && !seen.has(e.src) && !gseen.has(e.src)) { e.src = ""; repaired++; }
+      if (e.dst && !seen.has(e.dst) && !gseen.has(e.dst)) { e.dst = ""; repaired++; }
+    }
+    if (repaired) warnings.push(`${repaired} dangling arrow binding(s) cleared`);
+    // an end bound to another arrow must not make a cycle or hang deeper than MAX_BRANCH_DEPTH: such ends are freed (geometry stays)
+    const byId = new Map<string, ElJSON>();
+    for (const e of els) if (e.kind === "arrow") byId.set(e.id, e);
+    const hostsOf = (e: ElJSON): ElJSON[] => [byId.get(e.src), byId.get(e.dst)].filter((h): h is ElJSON => h !== undefined);
+    const reach = (from: ElJSON, target: string, n: number): boolean => n <= 0 || hostsOf(from).some((h) => h.id === target || reach(h, target, n - 1));
+    const depthOf = (e: ElJSON, n: number): number => (n > MAX_BRANCH_DEPTH ? Infinity : hostsOf(e).reduce((m, h) => Math.max(m, 1 + depthOf(h, n + 1)), 0));
+    let freed = 0;
+    for (const e of byId.values()) {
+      for (const end of ["src", "dst"] as const) {
+        const h = byId.get(e[end]);
+        if (!h) continue;
+        if (h.id === e.id || reach(h, e.id, MAX_BRANCH_DEPTH + 1) || 1 + depthOf(h, 0) > MAX_BRANCH_DEPTH) { e[end] = ""; delete e[end === "src" ? "st" : "dt"]; freed++; }
+      }
+    }
+    if (freed) warnings.push(`${freed} arrow-to-arrow binding(s) cleared (cycle or too deep)`);
 
     const extra: Record<string, unknown> = {};
     for (const k of Object.keys(raw)) if (!ROOT_KNOWN.has(k)) extra[k] = plain({ v: raw[k] }, k).v;
@@ -283,6 +310,9 @@ export function orderEl(e: ElLike, extra?: Record<string, unknown>): string {
   if (e.text) o.text = e.text;
   if (e.locked) o.locked = true;
   if (e.hex) o.hex = e.hex;
+  if (e.fs) o.fs = e.fs;
+  if (e.align === "left" || e.align === "right") o.align = e.align;
+  if (e.kind === "arrow" && e.labels && e.labels.length) o.labels = e.labels.map((l) => ({ t: r3(l.t), text: l.text }));
   if (e.groupIds.length) o.groupIds = e.groupIds;
   if (e.kind === "icon") o.iconId = e.iconId;
   if (e.kind === "image") o.img = e.img;
@@ -290,6 +320,9 @@ export function orderEl(e: ElLike, extra?: Record<string, unknown>): string {
   if (e.o) o.o = e.o;
   if (e.kind !== "arrow" && e.dash) o.dash = e.dash;
   if (e.kind === "arrow") {
+    if (e.segs && e.segs.length) o.segs = e.segs;
+    if (e.src && e.st !== undefined) o.st = r3(e.st);
+    if (e.dst && e.dt !== undefined) o.dt = r3(e.dt);
     o.src = e.src; o.dst = e.dst; o.sp = e.sp; o.dp = e.dp; o.route = e.route; o.dash = e.dash; o.head = e.head; o.pts = e.pts.map(r3);
   }
   if (extra) for (const k of Object.keys(extra).sort()) if (!(k in o) && !EL_KNOWN.has(k)) o[k] = extra[k];

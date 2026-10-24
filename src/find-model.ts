@@ -21,10 +21,11 @@ export class FindIndex {
     for (const e of this.scene.els.values()) {
       for (const g of e.groupIds) { const a = members.get(g); if (a) a.push(e.id); else members.set(g, [e.id]); }
       let s = e.text;
+      if (e.kind === "arrow" && e.labels) for (const l of e.labels) s += " " + l.text; // connector labels are searchable
       if (e.kind === "icon") s += " " + e.iconId.replace(/-/g, " ");
       if (e.kind === "lane") s = s.replace(/\n/g, " ");
       if (!s.trim()) continue;
-      this.hay.push(s.toLowerCase()); this.targets.push([e.id]); this.labels.push(e.text || e.iconId);
+      this.hay.push(s.toLowerCase()); this.targets.push([e.id]); this.labels.push(e.text || (e.kind === "arrow" && e.labels?.[0]?.text) || e.iconId);
     }
     for (const g of this.scene.groups.values()) {
       const ids = members.get(g.id);

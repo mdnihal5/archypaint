@@ -22,7 +22,8 @@ describe("SVG export", () => {
   it("is well-formed XML with escaped text and no external references", () => {
     const svg = buildSvg(scene, LIGHT, { ...opts, icons: (id, tier) => `<rect x="1" y="1" width="9" height="9" stroke="currentColor" fill="none" data-t="${tier}${id}"/>` });
     expect(wellFormed(svg)).toBeNull();
-    expect(svg).toContain("&lt;gateway&gt; &amp; &quot;co&quot;");
+    expect(svg).toContain("&lt;gateway&gt;"); // the long label now wraps inside the 120-wide box, so the two halves are on separate lines
+    expect(svg).toContain("&amp;"); expect(svg).toContain("&quot;co&quot;");
     expect(svg).not.toMatch(/https?:\/\/(?!www\.w3\.org)/);
     expect(svg).not.toMatch(/<script|<image|<foreignObject/i);
   });

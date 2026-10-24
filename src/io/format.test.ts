@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { FORMAT_VERSION, LIMITS, parseArch, serializeArch, validateFile, type ArchFile } from "./format";
 import { el } from "./testkit";
 
-const base = (els = [el({ id: "e1", z: 1 }), el({ id: "e2", z: 2, kind: "arrow", src: "e1", dst: "e1", pts: [0, 0, 50, 50], text: "x" })]): Pick<ArchFile, "meta" | "view" | "settings" | "scene"> => ({
+const base = (els = [el({ id: "e1", z: 1 }), el({ id: "e2", z: 2, kind: "arrow", src: "e1", dst: "e1", pts: [0, 0, 50, 50], labels: [{ t: 0.25, text: "x" }, { t: 0.8, text: "y" }] })]): Pick<ArchFile, "meta" | "view" | "settings" | "scene"> => ({
   meta: { name: "demo", created: 1, updated: 2 }, view: { x: 10.5, y: -3, zoom: 1.25 }, settings: { bg: "grid" },
   scene: { els, groups: [{ id: "g1", name: "compute", cat: 3, collapsed: false, locked: false }] },
 });
