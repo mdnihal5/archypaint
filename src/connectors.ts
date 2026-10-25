@@ -1,5 +1,5 @@
-import type { ArrowLabel, El, EdgeStyle, Port, Route, Scene } from "./scene";
-import { outlinePort } from "./shape-geom";
+import { PORT_FRAC, extraPort, type ArrowLabel, type El, type EdgeStyle, type Port, type Route, type Scene } from "./scene";
+import { cylLid, outlinePort, polygonOf, rayPoly } from "./shape-geom";
 
 export interface Rect { x: number; y: number; w: number; h: number; /** element kind, so ports of polygon shapes land on the real outline */ kind?: string; /** corner radius, so corner ports sit on the rounded outline */ radius?: number }
 /** one end of a connector: either glued to a shape's port (rect set) or a free point */
@@ -14,31 +14,91 @@ export function effectiveRoute(route: Route, edge: EdgeStyle): Route {
   return route === 1 && edge === 2 ? 2 : route;
 }
 
-/** ports per shape: 4 side midpoints + 4 corners */
-export const PORT_COUNT = 8;
+/** target world spacing between connection points along a side: longer sides get more points (1/2 -> 1/4 -> 1/8 -> 1/16 divisions) */
+export const PORT_SPACING = 32;
+/** most divisions of a side (so at most 15 points between its corners) */
+export const MAX_DIVS = 16;
+/** below this on-screen gap between neighbouring points the finer divisions are not shown (and not pickable) */
+export const PORT_MIN_PX = 14;
+/** divisions of a side of length `len` (world) seen at zoom z: a power of two, 2 (just the midpoint) up to MAX_DIVS */
+export function sideDivs(len: number, z: number): number {
+  const byWorld = len / PORT_SPACING, byScreen = (len * z) / PORT_MIN_PX;
+  let m = 2;
+  while (m * 2 <= MAX_DIVS && m * 2 <= byWorld && m * 2 <= byScreen) m *= 2;
+  return m;
+}
+/** every port to show/pick on `r` at zoom z, written into `out` (cleared first): the 8 base ports, then the extra ones side by side */
+export function listPorts(r: Rect, z: number, out: number[]): number[] {
+  out.length = 0;
+  for (let i = 0; i < 8; i++) out.push(i);
+  for (let side = 0; side < 4; side++) {
+    const m = sideDivs(side === 0 || side === 2 ? r.w : r.h, z), step = PORT_FRAC / m;
+    for (let i = 1; i < m; i++) { const j = i * step; if (j !== PORT_FRAC / 2) out.push(extraPort(side, j)); }
+  }
+  return out;
+}
 const K45 = Math.SQRT1_2;
 /** the two sides a corner port can leave through: [horizontal, vertical] */
 const CORNER_SIDES: readonly [number, number][] = [[3, 0], [1, 0], [1, 2], [3, 2]];
 
-function cornerPoint(r: Rect, c: number): P {
+function cornerPoint(r: Rect, c: number, out: P): void {
   const sx = c === 1 || c === 2 ? 1 : -1, sy = c >= 2 ? 1 : -1;
   const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
-  if (r.kind === "ellipse") return [cx + sx * (r.w / 2) * K45, cy + sy * (r.h / 2) * K45];
-  if (r.kind === "diamond") return [cx + sx * r.w / 4, cy + sy * r.h / 4];
+  if (r.kind === "ellipse") { out[0] = cx + sx * (r.w / 2) * K45; out[1] = cy + sy * (r.h / 2) * K45; return; }
+  if (r.kind === "diamond") { out[0] = cx + sx * r.w / 4; out[1] = cy + sy * r.h / 4; return; }
   const inset = Math.min(r.radius ?? 0, r.w / 2, r.h / 2) * (1 - K45);
-  return [sx < 0 ? r.x + inset : r.x + r.w - inset, sy < 0 ? r.y + inset : r.y + r.h - inset];
+  out[0] = sx < 0 ? r.x + inset : r.x + r.w - inset; out[1] = sy < 0 ? r.y + inset : r.y + r.h - inset;
 }
 
-export function portPoint(r: Rect, side: number): P {
-  if (r.kind !== undefined) { const o = outlinePort(r, side); if (o) return [o[0], o[1]]; }
-  if (side >= 4) return cornerPoint(r, side - 4);
-  switch (side) {
-    case 0: return [r.x + r.w / 2, r.y];
-    case 1: return [r.x + r.w, r.y + r.h / 2];
-    case 2: return [r.x + r.w / 2, r.y + r.h];
-    default: return [r.x, r.y + r.h / 2];
+/** how far a rounded corner of radius rad pulls the outline in at distance `along` from the corner (0 past the arc) */
+const arcIn = (rad: number, along: number): number => (along >= rad ? 0 : rad - Math.sqrt(rad * rad - (rad - along) * (rad - along)));
+
+/**
+ * the extra port at fraction f (0..1) along `side` on the real outline. Writes into `out`.
+ * Ellipse, diamond, cylinder and rounded rectangles are exact; polygon kinds cast a ray from the centre through the box point.
+ */
+function fracPoint(r: Rect, side: number, f: number, out: P): void {
+  const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+  // the point on the bounding box
+  let x = side === 1 ? r.x + r.w : side === 3 ? r.x : r.x + r.w * f;
+  let y = side === 0 ? r.y : side === 2 ? r.y + r.h : r.y + r.h * f;
+  const k = r.kind;
+  if (k === "ellipse") {
+    if (side === 0 || side === 2) y = cy + (side === 0 ? -1 : 1) * (r.h / 2) * Math.sqrt(Math.max(0, 1 - ((x - cx) / (r.w / 2)) ** 2));
+    else x = cx + (side === 1 ? 1 : -1) * (r.w / 2) * Math.sqrt(Math.max(0, 1 - ((y - cy) / (r.h / 2)) ** 2));
+  } else if (k === "diamond") {
+    // |x-cx|/(w/2) + |y-cy|/(h/2) = 1
+    if (side === 0 || side === 2) y = cy + (side === 0 ? -1 : 1) * (r.h / 2) * (1 - Math.abs(x - cx) / (r.w / 2));
+    else x = cx + (side === 1 ? 1 : -1) * (r.w / 2) * (1 - Math.abs(y - cy) / (r.h / 2));
+  } else if (k === "cylinder") {
+    if (side === 0 || side === 2) { const lid = cylLid(r.h, r.w) / 2, u = (x - cx) / (r.w / 2), dy = lid * (1 - Math.sqrt(Math.max(0, 1 - u * u))); y = side === 0 ? r.y + dy : r.y + r.h - dy; }
+  } else if (k === "hexagon" || k === "triangle" || k === "parallelogram" || k === "star" || k === "cloud") {
+    const poly = polygonOf(k, r.x, r.y, r.w, r.h);
+    const hit = poly ? rayPoly(poly, cx, cy, x - cx, y - cy) : null;
+    if (hit) { out[0] = hit[0]; out[1] = hit[1]; return; }
+  } else if (r.radius) {
+    const rad = Math.min(r.radius, r.w / 2, r.h / 2);
+    if (side === 0 || side === 2) { const dx = Math.min(x - r.x, r.x + r.w - x), d = arcIn(rad, dx); y += side === 0 ? d : -d; }
+    else { const dy = Math.min(y - r.y, r.y + r.h - y), d = arcIn(rad, dy); x += side === 3 ? d : -d; }
   }
+  out[0] = x; out[1] = y;
 }
+
+/** the point of port `side` on `r`'s real outline, written into `out` (allocation-free for box-like shapes) */
+export function portInto(r: Rect, side: number, out: P): P {
+  if (side >= 8) { fracPoint(r, (side - 8) >> 6, ((side - 8) & 63) / PORT_FRAC, out); return out; }
+  if (r.kind !== undefined) { const o = outlinePort(r, side); if (o) { out[0] = o[0]; out[1] = o[1]; return out; } }
+  if (side >= 4) { cornerPoint(r, side - 4, out); return out; }
+  switch (side) {
+    case 0: out[0] = r.x + r.w / 2; out[1] = r.y; break;
+    case 1: out[0] = r.x + r.w; out[1] = r.y + r.h / 2; break;
+    case 2: out[0] = r.x + r.w / 2; out[1] = r.y + r.h; break;
+    default: out[0] = r.x; out[1] = r.y + r.h / 2;
+  }
+  return out;
+}
+
+export function portPoint(r: Rect, side: number): P { return portInto(r, side, [0, 0]); }
 
 /** side of `r` facing the point (tx,ty) */
 export function nearestSide(r: Rect, tx: number, ty: number): 0 | 1 | 2 | 3 {
@@ -53,6 +113,7 @@ function resolve(a: Anchor, other: Anchor): Resolved {
   const tx = other.rect ? other.rect.x + other.rect.w / 2 : other.pt[0];
   const ty = other.rect ? other.rect.y + other.rect.h / 2 : other.pt[1];
   if (a.rect) {
+    if (a.port >= 8) return { p: portPoint(a.rect, a.port), side: (a.port - 8) >> 6, stub: STUB }; // an extra port leaves perpendicular to its own side
     if (a.port >= 4) { // a corner leaves through whichever adjacent side faces the other end more
       const p = portPoint(a.rect, a.port), [h, v] = CORNER_SIDES[a.port - 4]!;
       return { p, side: Math.abs(tx - p[0]) > Math.abs(ty - p[1]) ? h : v, stub: STUB };
@@ -196,37 +257,131 @@ export function computeArrowPts(e: El, rectOf: RectOf): number[] {
 /* ---- manual elbow segments ----------------------------------------------------------------------------------------- */
 
 /**
- * An elbow arrow remembers where the user pushed its INTERIOR segments (not the two that touch the ends, so the ends never move).
+ * An elbow arrow remembers where the user pushed its segments.
  * `segs` is flat pairs [code, d]: code = 2 * index + (vertical ? 1 : 0), index counting segments of the auto-routed path (0 = first),
  * d = how far the segment sits from where the router puts it, perpendicular to itself. An offset from the router's own position
  * (not an absolute coordinate) follows the arrow when its shapes move, so a big move can never strand the bend in empty space.
  * An entry whose index or orientation no longer exists in the auto path (the route changed shape) is ignored, not applied wrongly.
+ * The two segments touching the ends are movable too, but the ends never move: the arrow still leaves the port straight, then jogs
+ * (a short stub is inserted at the port). The first segment is index 0; the last is LAST_K, so it stays "the last" when a re-route
+ * changes how many segments the auto path has. In a one-segment path index 0 is both, and gets a stub at each end.
  */
 export const MAX_SEG_PAIRS = 8;
+/** index used in a code for "the last segment of the auto path" */
+export const LAST_K = 4095;
+/** length of the straight stub kept at the port when an end segment is moved (world px; at most a third of the segment) */
+export const END_STUB = 20;
 /** an elbow segment shorter than this on screen gets no handle (it would sit on top of its neighbours' corners) */
 export const SEG_MIN_PX = 28;
 const segFlags: number[] = [];
 
-/** shift the recorded segments of an auto-routed orthogonal path (in place); every move keeps the path orthogonal */
-export function applySegs(p: number[], segs: readonly number[]): number[] {
+/** segment orientation of p between vertices k and k+1: 1 = horizontal, 2 = vertical, 0 = degenerate or absent */
+function orient(p: readonly number[], k: number): number {
+  if (k < 0 || 2 * k + 3 >= p.length) return 0;
+  const dx = Math.abs(p[2 * k]! - p[2 * k + 2]!), dy = Math.abs(p[2 * k + 1]! - p[2 * k + 3]!);
+  if (dy < EPS && dx >= EPS) return 1;
+  if (dx < EPS && dy >= EPS) return 2;
+  return 0;
+}
+
+/**
+ * shift the recorded segments of an auto-routed orthogonal path (in place); every move keeps the path orthogonal.
+ * Interior offsets first (in place), then end stubs (back, then front) so the indices stay valid.
+ * `map`, when given, receives for every segment of the RESULT its code (or -1 for the stubs and jogs, which get no handle).
+ */
+export function applySegs(p: number[], segs: readonly number[], map?: number[]): number[] {
   const nv = p.length >> 1;
+  const last = nv - 2;
   segFlags.length = 0;
   for (let s = 0; s + 1 < segs.length; s += 2) {
     const k = (segs[s]! as number) >> 1;
-    let f = 0; // 1 = horizontal, 2 = vertical
-    if (k >= 1 && k <= nv - 3) {
-      const dx = Math.abs(p[2 * k]! - p[2 * k + 2]!), dy = Math.abs(p[2 * k + 1]! - p[2 * k + 3]!);
-      if (dy < EPS && dx >= EPS) f = 1; else if (dx < EPS && dy >= EPS) f = 2;
-    }
-    segFlags.push(f);
+    segFlags.push(orient(p, k === LAST_K ? last : k));
   }
+  let df = 0, db = 0, hasF = false, hasB = false;
   for (let s = 0, i = 0; s + 1 < segs.length; s += 2, i++) {
-    const code = segs[s]!, d = segs[s + 1]!, k = code >> 1, f = segFlags[i]!;
+    const code = segs[s]!, d = segs[s + 1]!;
+    let k = code >> 1, f = segFlags[i]!;
     if (!Number.isFinite(d) || f === 0 || (f === 2) !== ((code & 1) === 1)) continue;
-    const o = f === 1 ? 1 : 0;
-    p[2 * k + o] = p[2 * k + o]! + d; p[2 * k + 2 + o] = p[2 * k + 2 + o]! + d;
+    const isLast = k === LAST_K;
+    if (isLast) k = last;
+    if (k < 0 || k > last) continue;
+    if (k >= 1 && k <= nv - 3) {
+      const o = f === 1 ? 1 : 0;
+      p[2 * k + o] = p[2 * k + o]! + d; p[2 * k + 2 + o] = p[2 * k + 2 + o]! + d;
+    } else if (k === 0) { df = d; hasF = true; if (last === 0) { db = d; hasB = true; } }
+    else if (k === last && isLast && last > 0) { db = d; hasB = true; }
+  }
+  if (map) {
+    map.length = 0;
+    for (let k = 0; k <= last; k++) {
+      const v = orient(p, k) === 2 ? 1 : 0;
+      map.push((k === 0 ? 0 : k === last ? LAST_K * 2 : k * 2) + v);
+    }
+  }
+  if (nv === 2) {
+    if (hasF && hasB) {
+      const horiz = orient(p, 0) === 1, dir = horiz ? Math.sign(p[2]! - p[0]!) : Math.sign(p[3]! - p[1]!);
+      const len = horiz ? Math.abs(p[2]! - p[0]!) : Math.abs(p[3]! - p[1]!), s = Math.min(END_STUB, len / 3) * dir;
+      const [x0, y0, x1, y1] = [p[0]!, p[1]!, p[2]!, p[3]!];
+      const q = horiz
+        ? [x0, y0, x0 + s, y0, x0 + s, y0 + df, x1 - s, y0 + df, x1 - s, y1, x1, y1]
+        : [x0, y0, x0, y0 + s, x0 + df, y0 + s, x0 + df, y1 - s, x1, y1 - s, x1, y1];
+      p.length = 0; p.push(...q);
+      if (map) { const c = map[0]!; map.length = 0; map.push(-1, -1, c, -1, -1); }
+    }
+    return p;
+  }
+  if (hasB) {
+    // the last segment W -> E moves sideways by db; the arrow still enters E straight through a short stub
+    const wi = 2 * last, ei = 2 * (last + 1), horiz = orient(p, last) === 1;
+    const wx = p[wi]!, wy = p[wi + 1]!, ex = p[ei]!, ey = p[ei + 1]!;
+    const dir = horiz ? Math.sign(ex - wx) : Math.sign(ey - wy), len = horiz ? Math.abs(ex - wx) : Math.abs(ey - wy);
+    const s = Math.min(END_STUB, len / 3) * dir;
+    if (horiz) { p[wi + 1] = wy + db; p.splice(ei, 0, ex - s, ey + db, ex - s, ey); }
+    else { p[wi] = wx + db; p.splice(ei, 0, ex + db, ey - s, ex, ey - s); }
+    if (map) map.push(-1, -1);
+  }
+  if (hasF) {
+    const horiz = orient(p, 0) === 1, x0 = p[0]!, y0 = p[1]!, x1 = p[2]!, y1 = p[3]!;
+    const dir = horiz ? Math.sign(x1 - x0) : Math.sign(y1 - y0), len = horiz ? Math.abs(x1 - x0) : Math.abs(y1 - y0);
+    const s = Math.min(END_STUB, len / 3) * dir;
+    if (horiz) { p[3] = y1 + df; p.splice(2, 0, x0 + s, y0, x0 + s, y0 + df); }
+    else { p[2] = x1 + df; p.splice(2, 0, x0, y0 + s, x0 + df, y0 + s); }
+    if (map) map.unshift(-1, -1);
   }
   return p;
+}
+
+const segMaps = new WeakMap<number[], number[]>();
+/**
+ * code of every displayed segment of arrow `e` (-1 = no handle), cached per `e.pts` array, so hover and frame paths cost one
+ * WeakMap lookup. Null when the stored path does not match what the router + offsets now produce (stale data: leave it alone).
+ */
+export function segMapOf(e: El, scene: Scene): number[] | null {
+  let m = segMaps.get(e.pts);
+  if (m) return m;
+  const rect = sceneRectOf(scene);
+  const [a, b] = anchorsOf(e, rect);
+  const auto = routeArrow(a, b, 1);
+  m = [];
+  const out = e.segs && e.segs.length ? applySegs(auto, e.segs, m) : (applySegs(auto, [], m), auto);
+  if (out.length !== e.pts.length) return null;
+  segMaps.set(e.pts, m);
+  return m;
+}
+
+/** visit every handle-bearing segment of an elbow arrow's displayed path: its code, midpoint, orientation and length. Allocation-free once cached. */
+export function eachElbowSeg(e: El, scene: Scene, p: readonly number[], fn: (code: number, mx: number, my: number, vertical: boolean, len: number) => void): void {
+  const map = segMapOf(e, scene);
+  if (!map || map.length !== (p.length >> 1) - 1) return;
+  for (let k = 0; k < map.length; k++) {
+    const code = map[k]!;
+    if (code < 0) continue;
+    const ax = p[2 * k]!, ay = p[2 * k + 1]!, bx = p[2 * k + 2]!, by = p[2 * k + 3]!;
+    const dx = Math.abs(ax - bx), dy = Math.abs(ay - by);
+    if (dx < EPS && dy < EPS) continue;
+    if (dy < EPS) fn(code, (ax + bx) / 2, ay, false, dx); else if (dx < EPS) fn(code, ax, (ay + by) / 2, true, dy);
+  }
 }
 
 /** visit the interior segments of a polyline: index k, midpoint, orientation and length. Allocation-free. */
@@ -254,7 +409,7 @@ export function cleanSegs(raw: unknown): number[] | undefined {
   const out: number[] = [];
   for (let i = 0; i + 1 < raw.length && out.length / 2 < MAX_SEG_PAIRS; i += 2) {
     const c = raw[i], d = raw[i + 1];
-    if (typeof c !== "number" || typeof d !== "number" || !Number.isInteger(c) || c < 2 || c > 1e4 || !Number.isFinite(d) || Math.abs(d) > 1e6 || out.includes(c)) continue;
+    if (typeof c !== "number" || typeof d !== "number" || !Number.isInteger(c) || c < 0 || c > 1e4 || !Number.isFinite(d) || Math.abs(d) > 1e6 || out.includes(c)) continue;
     out.push(c, d);
   }
   return out.length ? out : undefined;

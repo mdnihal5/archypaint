@@ -13,7 +13,23 @@ export type Head = 0 | 1 | 2; // none, arrow, dot
 
 /** side ports: 0 top, 1 right, 2 bottom, 3 left, -1 automatic */
 /** -1 = automatic, 0-3 = top/right/bottom/left side midpoints, 4-7 = top-left/top-right/bottom-right/bottom-left corners */
-export type Port = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+/**
+ * Connection point of a shape: -1 = auto (nearest side), 0-3 = side midpoints (top, right, bottom, left), 4-7 = corners (top-left,
+ * top-right, bottom-right, bottom-left); these mean exactly what they always did. The number of points a shape OFFERS grows with its
+ * size, so an extra point is stored as a stable (side, fraction) pair, not an index that would shift on resize:
+ *   port = 8 + side * 64 + j, side 0-3 as above, j = 1..63 (j !== 32, which is the midpoint) = the fraction j / 64 of the way along that
+ *   side, measured along increasing x for top and bottom, increasing y for right and left.
+ * Resizing a shape keeps the arrow at the same relative spot on the side.
+ */
+export type Port = number;
+export const PORT_FRAC = 64;
+export const PORT_MAX = 8 + 4 * PORT_FRAC - 1;
+export const extraPort = (side: number, j: number): number => 8 + side * PORT_FRAC + j;
+export function isPort(v: unknown): v is Port {
+  if (typeof v !== "number" || !Number.isInteger(v)) return false;
+  if (v >= -1 && v <= 7) return true;
+  return v >= 8 && v <= PORT_MAX && (v - 8) % PORT_FRAC !== 0 && (v - 8) % PORT_FRAC !== PORT_FRAC / 2;
+}
 
 /** a text label on a connector, at fraction `t` (0..1) of the way along its routed path (by length); survives re-routing */
 export interface ArrowLabel { t: number; text: string }

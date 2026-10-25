@@ -1,4 +1,4 @@
-import { bezierAt, effectiveRoute, roundedPolyline } from "../connectors";
+import { bezierAt, effectiveRoute, roundedPolyline, sceneRectOf, type RectOf } from "../connectors";
 import type { El } from "../scene";
 import type { Theme } from "../theme";
 import type { Ctx } from "./ctx";
@@ -24,6 +24,20 @@ const BEZIER_STEPS = 18;
 
 interface Path { v: number; poly: number[]; cum: number[]; len: number }
 interface RendererLike { dragging?: ReadonlySet<string>; ghostArrow?: unknown; hidden?: ReadonlySet<string> | null; degraded?: boolean; theme?: Theme }
+
+const probe: [number, number] = [0, 0];
+/**
+ * An end is connected when the router can resolve it, through the very same resolver connectors use (`sceneRectOf`): a shape of any
+ * kind, a group with members, or another arrow (a branch end). Nothing here lists kinds.
+ */
+export function endResolves(rectOf: RectOf, id: string): boolean {
+  return id !== "" && (rectOf(id) !== null || !!rectOf.host?.(id, 0.5, probe));
+}
+
+/** a pointed arrow connected at both ends: the only kind that flows */
+export function flows(rectOf: RectOf, e: El): boolean {
+  return e.kind === "arrow" && e.head !== 0 && endResolves(rectOf, e.src) && endResolves(rectOf, e.dst);
+}
 
 export function mountFlow(ctx: Ctx, root: HTMLElement): void {
   const { editor, settings } = ctx;
@@ -89,11 +103,11 @@ export function mountFlow(ctx: Ctx, root: HTMLElement): void {
     builtNonce = nonce; builtVp = vp.version;
     editor.scene.query(vp.x, vp.y, vp.x + vp.w / vp.zoom, vp.y + vp.h / vp.zoom, tmp);
     list = [];
+    const rectOf = sceneRectOf(editor.scene);
     const keep = new Map<string, Path>();
     for (const e of tmp) {
-      if (e.kind !== "arrow" || e.head === 0) continue;
       // a connection is two ends: an arrow attached at only one end (or to something since deleted) is unfinished, so nothing flows along it
-      if (!e.src || !e.dst || !editor.scene.els.has(e.src) || !editor.scene.els.has(e.dst)) continue;
+      if (!flows(rectOf, e)) continue;
       list.push(e);
       const c = cache.get(e.id);
       if (c) keep.set(e.id, c);

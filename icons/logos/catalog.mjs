@@ -4,6 +4,7 @@
 // Row grammar (one per line):  source | Name | aliases (comma separated) | drawn ids this logo replaces (comma separated, optional)
 //   source = si:<slug>   Simple Icons 16.33.0     (CC0-1.0 artwork, one path per logo, official brand colour)
 //          | lg:<key>    @iconify-json/logos      (gilbarbara/logos, CC0-1.0; multi-colour artwork, includes the AWS service icons)
+//          | dv:<key>    @iconify-json/devicon  (devicon, MIT; coloured "original" marks)
 //          | gcp:<key>   @iconify-json/gcp        (the official Google Cloud icon set, Apache-2.0)
 // `key=slug` overrides the id suffix (used to take an lg: `-icon` mark, the symbol without the wordmark, under the plain brand id).
 // The icon id is `logo-<slug>` (si: the Simple Icons slug, so ids of the old opt-in logos are unchanged; lg: the key; gcp: `gcp-<key>`).
@@ -36,9 +37,9 @@ export const GROUPS = {
 };
 
 export const ROWS = {
-  relational: `si:postgresql|PostgreSQL|postgres,pg,psql,sql|postgresql
-si:mysql|MySQL|sql|mysql
-si:mariadb|MariaDB|sql|mariadb
+  relational: `lg:postgresql|PostgreSQL|postgres,pg,psql,sql|postgresql
+lg:mysql-icon=mysql|MySQL|sql|mysql
+lg:mariadb-icon=mariadb|MariaDB|sql|mariadb
 si:sqlite|SQLite|embedded,sql|sqlite
 lg:oracle|Oracle Database|oracle,oracledb,oracle db,sql
 si:cockroachlabs|CockroachDB|cockroach,distributed sql|cockroachdb
@@ -56,7 +57,7 @@ gcp:cloud-spanner|Google Cloud Spanner|gcp,spanner,distributed sql|gcp-spanner`,
   document: `si:mongodb|MongoDB|mongo,nosql,document|mongodb
 si:apachecouchdb|CouchDB|couch,nosql,document
 si:couchbase|Couchbase|nosql,document,kv
-si:firebase|Firebase|firestore,baas,realtime database
+dv:firebase|Firebase|firestore,baas,realtime database
 gcp:firestore|Google Firestore|gcp,firestore,document,nosql|gcp-firestore
 lg:aws-dynamodb|Amazon DynamoDB|aws,dynamodb,dynamo,nosql,key value|aws-dynamodb
 si:etcd|etcd|kv,consensus,raft,coordination|etcd`,
@@ -72,7 +73,7 @@ lg:aws-neptune|Amazon Neptune|aws,neptune,graph|aws-neptune`,
   timeseries: `si:influxdb|InfluxDB|influx,time series,tsdb|influxdb
 si:timescale|TimescaleDB|timescale,time series,tsdb,postgresql extension
 lg:aws-timestream|Amazon Timestream|aws,timestream,time series|aws-timestream
-si:elasticsearch|Elasticsearch|elk,search,lucene,full text|elasticsearch
+lg:elasticsearch|Elasticsearch|elk,search,lucene,full text|elasticsearch
 si:opensearch|OpenSearch|search,lucene,full text|opensearch
 lg:aws-open-search|Amazon OpenSearch Service|aws,opensearch service,search|aws-opensearch-service
 si:apachesolr|Solr|search,lucene,full text
@@ -87,20 +88,20 @@ si:clickhouse|ClickHouse|olap,columnar|clickhouse
 si:apachedruid|Druid|olap,realtime analytics
 si:trino|Trino|presto,sql,query engine|trino
 si:apachehive|Hive|sql on hadoop
-si:apachehadoop|Hadoop|hdfs,mapreduce
+dv:hadoop=apachehadoop|Hadoop|hdfs,mapreduce
 si:apachespark|Spark|batch,analytics,rdd|spark
 si:apacheflink|Flink|stream processing,stateful|flink
 lg:aws-athena|Amazon Athena|aws,athena,sql on s3|
 lg:aws-glue|AWS Glue|aws,glue,etl|
 gcp:dataflow|Google Dataflow|gcp,dataflow,beam,stream processing|gcp-dataflow
 gcp:dataproc|Google Dataproc|gcp,dataproc,spark,hadoop|gcp-dataproc
-si:apacheairflow|Airflow|workflow,dag,orchestrator|airflow
-lg:dbt|dbt|transform,analytics engineering
+lg:airflow-icon=apacheairflow|Airflow|workflow,dag,orchestrator|airflow
+lg:dbt-icon=dbt|dbt|transform,analytics engineering
 si:metabase|Metabase|bi,dashboards
 si:apachesuperset|Superset|bi,dashboards`,
 
-  cache: `si:redis|Redis|cache,in memory,key value,kv|redis,memcached
-lg:valkey|Valkey|redis fork,cache,in memory
+  cache: `lg:redis|Redis|cache,in memory,key value,kv|redis,memcached
+lg:valkey-icon=valkey|Valkey|redis fork,cache,in memory
 lg:memcached|Memcached|cache,in memory,memcache|memcached
 lg:aws-elasticache|Amazon ElastiCache|aws,elasticache,redis,memcached|aws-elasticache
 gcp:memorystore|Google Memorystore|gcp,memorystore,redis,cache|gcp-memorystore`,
@@ -111,7 +112,7 @@ si:apachepulsar|Pulsar|streaming,broker|pulsar
 si:natsdotio|NATS|messaging,jetstream|nats
 si:mqtt|MQTT|iot,publish subscribe
 si:celery|Celery|task queue,python workers
-lg:temporal|Temporal|workflow,durable execution
+lg:temporal-icon=temporal|Temporal|workflow,durable execution
 lg:aws-sqs|Amazon SQS|aws,sqs,queue|
 lg:aws-sns|Amazon SNS|aws,sns,pubsub,notifications|
 lg:aws-eventbridge|Amazon EventBridge|aws,eventbridge,event bus|aws-eventbridge
@@ -138,9 +139,10 @@ lg:aws-vpc|Amazon VPC|aws,vpc,virtual network,subnet|aws-vpc
 gcp:virtual-private-cloud|Google VPC|gcp,vpc,virtual network|gcp-vpc`,
 
   proxy: `si:nginx|NGINX|reverse proxy,web server,lb,load balancer|nginx
+dv:haproxy|HAProxy|proxy,load balancer,lb,tcp,l4,l7
 si:envoyproxy|Envoy|proxy,service mesh,sidecar|envoy
 si:traefikproxy|Traefik|proxy,ingress,load balancer|traefik
-si:kong|Kong|api gateway|kong-gateway
+lg:kong-icon=kong|Kong|api gateway|kong-gateway
 si:caddy|Caddy|web server,reverse proxy,https
 si:apache|Apache HTTP Server|httpd,web server
 si:istio|Istio|service mesh|istio
@@ -174,7 +176,7 @@ gcp:cloud-functions|Google Cloud Functions|gcp,cloud functions,serverless,faas|g
 gcp:app-engine|Google App Engine|gcp,app engine,paas|gcp-app-engine`,
 
   clouds: `lg:aws|AWS|amazon web services,amazon,cloud
-si:googlecloud|GCP|google cloud,google cloud platform,cloud
+lg:google-cloud=googlecloud|GCP|google cloud,google cloud platform,cloud
 lg:microsoft-azure|Microsoft Azure|azure,microsoft,cloud
 si:digitalocean|DigitalOcean|do,droplet,cloud
 lg:heroku-icon=heroku|Heroku|paas,dyno
@@ -194,14 +196,14 @@ si:minio|MinIO|object storage,s3 compatible|minio
 si:ceph|Ceph|object storage,block,distributed storage
 si:backblaze|Backblaze|b2,object storage,backup
 si:wasabi|Wasabi|object storage,s3 compatible
-lg:cloudinary|Cloudinary|images,media,cdn`,
+lg:cloudinary-icon=cloudinary|Cloudinary|images,media,cdn`,
 
   observability: `si:prometheus|Prometheus|metrics,monitoring,scrape|prometheus
 si:grafana|Grafana|dashboards,monitoring|grafana
 si:datadog|Datadog|apm,monitoring
 si:newrelic|New Relic|apm,monitoring
-si:kibana|Kibana|elk,dashboards
-si:logstash|Logstash|elk,logs,pipeline
+lg:kibana|Kibana|elk,dashboards
+lg:logstash|Logstash|elk,logs,pipeline
 si:splunk|Splunk|logs,siem
 si:sentry|Sentry|errors,apm,crash reporting|sentry
 si:jaeger|Jaeger|tracing,distributed tracing|jaeger
@@ -218,7 +220,7 @@ si:okta|Okta|sso,identity,saml
 si:keycloak|Keycloak|sso,identity,oidc|keycloak
 si:openid|OpenID|oidc,sso
 si:jsonwebtokens|JWT|json web token,token,auth
-si:vault|Vault|secrets,hashicorp|vault
+lg:vault-icon=vault|Vault|secrets,hashicorp|vault
 si:consul|Consul|service discovery,hashicorp,service mesh|consul
 si:letsencrypt|Let's Encrypt|tls,certificates,acme
 si:snyk|Snyk|vulnerability scanning,sca
@@ -239,7 +241,7 @@ si:githubactions|GitHub Actions|ci,cd,workflow
 si:gitlab|GitLab|git,ci,vcs|gitlab
 si:bitbucket|Bitbucket|git,vcs
 si:git|Git|vcs,version control
-si:jenkins|Jenkins|ci,cd,pipeline|jenkins
+dv:jenkins|Jenkins|ci,cd,pipeline|jenkins
 si:circleci|CircleCI|ci,cd
 si:argo|Argo CD|argocd,gitops,cd,workflows
 lg:jfrog|JFrog Artifactory|artifactory,artifacts,registry
@@ -249,15 +251,15 @@ si:ansible|Ansible|automation,iac,configuration management|ansible
 si:pulumi|Pulumi|iac,infrastructure as code
 lg:aws-cloudformation|AWS CloudFormation|aws,cloudformation,iac|aws-cloudformation`,
 
-  clients: `si:googlechrome|Chrome|browser,google chrome,web client
-si:firefox|Firefox|browser,mozilla
-si:safari|Safari|browser,webkit
+  clients: `lg:chrome=googlechrome|Chrome|browser,google chrome,web client
+lg:firefox|Firefox|browser,mozilla
+dv:safari|Safari|browser,webkit
 lg:microsoft-edge|Microsoft Edge|edge,browser
 si:android|Android|mobile,google
-si:ios|iOS|mobile,iphone,apple
+si:apple=ios|iOS|mobile,iphone,apple
 si:apple|Apple|ios,macos
-si:macos|macOS|mac,apple,os
-lg:microsoft-windows|Windows|microsoft,os,desktop
+si:apple=macos|macOS|mac,apple,os
+lg:microsoft-windows-icon=microsoft-windows|Windows|microsoft,os,desktop
 si:linux|Linux|tux,os,kernel
 si:ubuntu|Ubuntu|linux,os
 si:debian|Debian|linux,os
@@ -266,9 +268,9 @@ si:electron|Electron|desktop app,chromium`,
 
   frontend: `si:react|React|frontend,ui,spa
 si:nextdotjs|Next.js|react,ssr,nextjs
-si:angular|Angular|frontend,spa
+lg:angular-icon=angular|Angular|frontend,spa
 si:vuedotjs|Vue.js|vue,frontend
-lg:nuxt|Nuxt|nuxtjs,vue framework,ssr
+lg:nuxt-icon=nuxt|Nuxt|nuxtjs,vue framework,ssr
 si:svelte|Svelte|frontend,sveltekit
 si:tailwindcss|Tailwind CSS|css,tailwind
 si:vite|Vite|bundler,dev server
@@ -278,9 +280,9 @@ si:kotlin|Kotlin|jvm,android`,
 
   languages: `si:go|Go|golang|
 si:rust|Rust|rustlang
-si:python|Python|py
+lg:python|Python|py
 si:nodedotjs|Node.js|node,nodejs,javascript
-si:openjdk|Java|jvm,openjdk
+lg:java=openjdk|Java|jvm,openjdk
 si:typescript|TypeScript|ts
 si:javascript|JavaScript|js
 si:scala|Scala|jvm
@@ -300,7 +302,7 @@ si:spring|Spring|framework,jvm
 si:springboot|Spring Boot|framework,jvm
 si:express|Express|expressjs,framework,web`,
 
-  ai: `lg:openai|OpenAI|gpt,chatgpt,llm
+  ai: `lg:openai-icon=openai|OpenAI|gpt,chatgpt,llm
 si:anthropic|Anthropic|claude,llm
 si:huggingface|Hugging Face|models,transformers
 si:tensorflow|TensorFlow|tf,ml
@@ -312,16 +314,16 @@ gcp:vertexai|Google Vertex AI|gcp,vertex,ml|gcp-vertex-ai`,
 si:paypal|PayPal|payments
 si:adyen|Adyen|payments
 si:razorpay|Razorpay|payments,india
-lg:twilio|Twilio|sms,voice,messaging|twilio
-lg:sendgrid|SendGrid|email,transactional email
+lg:twilio-icon=twilio|Twilio|sms,voice,messaging|twilio
+lg:sendgrid-icon=sendgrid|SendGrid|email,transactional email
 si:mailgun|Mailgun|email,transactional email
 si:mailchimp|Mailchimp|email,marketing
-lg:slack|Slack|chat,notifications,webhook
+lg:slack-icon=slack|Slack|chat,notifications,webhook
 si:discord|Discord|chat,bot,webhook
 si:telegram|Telegram|chat,bot
 si:whatsapp|WhatsApp|messaging,chat
 lg:onesignal|OneSignal|push notifications
-lg:segment|Segment|analytics,events
+lg:segment-icon=segment|Segment|analytics,events
 si:mapbox|Mapbox|maps
 si:googlemaps|Google Maps|maps,geocoding`,
 };

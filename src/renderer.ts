@@ -1,4 +1,4 @@
-import { PORT_COUNT, SEG_MIN_PX, arrowLabels, eachInteriorSeg, effectiveRoute, pointAtT, portPoint, type Rect } from "./connectors";
+import { SEG_MIN_PX, portInto, listPorts, arrowLabels, eachElbowSeg, effectiveRoute, pointAtT, type Rect } from "./connectors";
 import type { GroupIndex } from "./groups";
 import { drawCalcEl } from "./calc-view";
 import { drawIconEl } from "./icons";
@@ -285,16 +285,19 @@ export class Renderer {
     const hr = this.hoverRect;
     if (hr) {
       ctx.lineWidth = 1.5 / z;
-      for (let i = 0; i < PORT_COUNT; i++) {
-        const pp = portPoint(hr, i);
-        ctx.beginPath(); ctx.arc(pp[0], pp[1], (i === this.hoverPort ? 6 : 4.5) / z, 0, Math.PI * 2);
+      const list = listPorts(hr, z, this.plist), pp = this.pp;
+      for (let n = 0; n < list.length; n++) {
+        const i = list[n]!;
+        portInto(hr, i, pp);
+        ctx.beginPath(); ctx.arc(pp[0], pp[1], (i === this.hoverPort ? 6 : i >= 8 ? 3.5 : 4.5) / z, 0, Math.PI * 2);
         ctx.fillStyle = i === this.hoverPort ? th.red : th.paper; ctx.strokeStyle = th.red; ctx.fill(); ctx.stroke();
       }
     }
   }
 
+  private pp: [number, number] = [0, 0]; private plist: number[] = [];
   private hz = 1; private hctx: CanvasRenderingContext2D | null = null;
-  private segHandle = (_k: number, mx: number, my: number, vertical: boolean, len: number): void => {
+  private segHandle = (_c: number, mx: number, my: number, vertical: boolean, len: number): void => {
     const ctx = this.hctx, z = this.hz;
     if (!ctx || len * z < SEG_MIN_PX) return;
     const w = (vertical ? 5 : 11) / z, h = (vertical ? 11 : 5) / z;
@@ -330,7 +333,7 @@ export class Renderer {
       // an elbow's interior segments get a small handle at their midpoint: drag it to slide the segment sideways
       if (effectiveRoute(single.route, single.edge) === 1 && !this.scene.isLocked(single) && !this.dragging.has(single.id)) {
         this.hz = z; this.hctx = ctx;
-        eachInteriorSeg(p, this.segHandle);
+        eachElbowSeg(single, this.scene, p, this.segHandle);
       }
       return;
     }

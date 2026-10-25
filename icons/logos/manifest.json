@@ -3,11 +3,11 @@
   "id": "logo-postgresql",
   "name": "PostgreSQL",
   "group": "relational",
-  "source": "simple-icons@16.33.0",
+  "source": "@iconify-json/logos@1.2.17",
   "key": "postgresql",
   "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#4169e1",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#000000",
   "replaces": [
    "postgresql"
   ]
@@ -16,11 +16,11 @@
   "id": "logo-mysql",
   "name": "MySQL",
   "group": "relational",
-  "source": "simple-icons@16.33.0",
-  "key": "mysql",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "mysql-icon",
   "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#4479a1",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#00546b",
   "replaces": [
    "mysql"
   ]
@@ -29,11 +29,11 @@
   "id": "logo-mariadb",
   "name": "MariaDB",
   "group": "relational",
-  "source": "simple-icons@16.33.0",
-  "key": "mariadb",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "mariadb-icon",
   "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#003545",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#002b64",
   "replaces": [
    "mariadb"
   ]
@@ -223,11 +223,11 @@
   "id": "logo-firebase",
   "name": "Firebase",
   "group": "document",
-  "source": "simple-icons@16.33.0",
+  "source": "@iconify-json/devicon@1.2.71",
   "key": "firebase",
-  "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#dd2c00"
+  "licence": "MIT",
+  "upstream": "https://github.com/devicons/devicon",
+  "colour": "#ffa000"
  },
  {
   "id": "logo-gcp-firestore",
@@ -393,11 +393,11 @@
   "id": "logo-elasticsearch",
   "name": "Elasticsearch",
   "group": "timeseries",
-  "source": "simple-icons@16.33.0",
+  "source": "@iconify-json/logos@1.2.17",
   "key": "elasticsearch",
   "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#005571",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#343741",
   "replaces": [
    "elasticsearch"
   ]
@@ -557,11 +557,11 @@
   "id": "logo-apachehadoop",
   "name": "Hadoop",
   "group": "warehouse",
-  "source": "simple-icons@16.33.0",
-  "key": "apachehadoop",
-  "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#66ccff"
+  "source": "@iconify-json/devicon@1.2.71",
+  "key": "hadoop",
+  "licence": "MIT",
+  "upstream": "https://github.com/devicons/devicon",
+  "colour": "#ffff00"
  },
  {
   "id": "logo-apachespark",
@@ -639,10 +639,10 @@
   "id": "logo-apacheairflow",
   "name": "Airflow",
   "group": "warehouse",
-  "source": "simple-icons@16.33.0",
-  "key": "apacheairflow",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "airflow-icon",
   "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
+  "upstream": "https://github.com/gilbarbara/logos",
   "colour": "#017cee",
   "replaces": [
    "airflow"
@@ -653,10 +653,10 @@
   "name": "dbt",
   "group": "warehouse",
   "source": "@iconify-json/logos@1.2.17",
-  "key": "dbt",
+  "key": "dbt-icon",
   "licence": "CC0-1.0",
   "upstream": "https://github.com/gilbarbara/logos",
-  "colour": "#262a38"
+  "colour": "#ff694a"
  },
  {
   "id": "logo-metabase",
@@ -682,11 +682,11 @@
   "id": "logo-redis",
   "name": "Redis",
   "group": "cache",
-  "source": "simple-icons@16.33.0",
+  "source": "@iconify-json/logos@1.2.17",
   "key": "redis",
   "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#ff4438",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#912626",
   "replaces": [
    "redis",
    "memcached"
@@ -697,7 +697,7 @@
   "name": "Valkey",
   "group": "cache",
   "source": "@iconify-json/logos@1.2.17",
-  "key": "valkey",
+  "key": "valkey-icon",
   "licence": "CC0-1.0",
   "upstream": "https://github.com/gilbarbara/logos",
   "colour": "#6983ff"
@@ -818,7 +818,7 @@
   "name": "Temporal",
   "group": "messaging",
   "source": "@iconify-json/logos@1.2.17",
-  "key": "temporal",
+  "key": "temporal-icon",
   "licence": "CC0-1.0",
   "upstream": "https://github.com/gilbarbara/logos",
   "colour": "#000000"
@@ -1110,6 +1110,16 @@
   ]
  },
  {
+  "id": "logo-haproxy",
+  "name": "HAProxy",
+  "group": "proxy",
+  "source": "@iconify-json/devicon@1.2.71",
+  "key": "haproxy",
+  "licence": "MIT",
+  "upstream": "https://github.com/devicons/devicon",
+  "colour": "#06486d"
+ },
+ {
   "id": "logo-envoyproxy",
   "name": "Envoy",
   "group": "proxy",
@@ -1139,11 +1149,11 @@
   "id": "logo-kong",
   "name": "Kong",
   "group": "proxy",
-  "source": "simple-icons@16.33.0",
-  "key": "kong",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "kong-icon",
   "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#003459",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#169fcc",
   "replaces": [
    "kong-gateway"
   ]
@@ -1521,11 +1531,11 @@
   "id": "logo-googlecloud",
   "name": "GCP",
   "group": "clouds",
-  "source": "simple-icons@16.33.0",
-  "key": "googlecloud",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "google-cloud",
   "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#4285f4"
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#ea4335"
  },
  {
   "id": "logo-microsoft-azure",
@@ -1724,7 +1734,7 @@
   "name": "Cloudinary",
   "group": "storage",
   "source": "@iconify-json/logos@1.2.17",
-  "key": "cloudinary",
+  "key": "cloudinary-icon",
   "licence": "CC0-1.0",
   "upstream": "https://github.com/gilbarbara/logos",
   "colour": "#3448c5"
@@ -1779,21 +1789,21 @@
   "id": "logo-kibana",
   "name": "Kibana",
   "group": "observability",
-  "source": "simple-icons@16.33.0",
+  "source": "@iconify-json/logos@1.2.17",
   "key": "kibana",
   "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#005571"
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#f04e98"
  },
  {
   "id": "logo-logstash",
   "name": "Logstash",
   "group": "observability",
-  "source": "simple-icons@16.33.0",
+  "source": "@iconify-json/logos@1.2.17",
   "key": "logstash",
   "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#005571"
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#fec514"
  },
  {
   "id": "logo-splunk",
@@ -1970,11 +1980,11 @@
   "id": "logo-vault",
   "name": "Vault",
   "group": "security",
-  "source": "simple-icons@16.33.0",
-  "key": "vault",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "vault-icon",
   "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#ffec6e",
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#ffd814",
   "replaces": [
    "vault"
   ]
@@ -2212,11 +2222,11 @@
   "id": "logo-jenkins",
   "name": "Jenkins",
   "group": "cicd",
-  "source": "simple-icons@16.33.0",
+  "source": "@iconify-json/devicon@1.2.71",
   "key": "jenkins",
-  "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#d24939",
+  "licence": "MIT",
+  "upstream": "https://github.com/devicons/devicon",
+  "colour": "#d33833",
   "replaces": [
    "jenkins"
   ]
@@ -2314,31 +2324,31 @@
   "id": "logo-googlechrome",
   "name": "Chrome",
   "group": "clients",
-  "source": "simple-icons@16.33.0",
-  "key": "googlechrome",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "chrome",
   "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#4285f4"
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#ffffff"
  },
  {
   "id": "logo-firefox",
   "name": "Firefox",
   "group": "clients",
-  "source": "simple-icons@16.33.0",
+  "source": "@iconify-json/logos@1.2.17",
   "key": "firefox",
   "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#ff7139"
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#fc8f3c"
  },
  {
   "id": "logo-safari",
   "name": "Safari",
   "group": "clients",
-  "source": "simple-icons@16.33.0",
+  "source": "@iconify-json/devicon@1.2.71",
   "key": "safari",
-  "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#006cff"
+  "licence": "MIT",
+  "upstream": "https://github.com/devicons/devicon",
+  "colour": "#1c9ef8"
  },
  {
   "id": "logo-microsoft-edge",
@@ -2365,7 +2375,7 @@
   "name": "iOS",
   "group": "clients",
   "source": "simple-icons@16.33.0",
-  "key": "ios",
+  "key": "apple",
   "licence": "CC0-1.0",
   "upstream": "https://github.com/simple-icons/simple-icons",
   "colour": "#000000"
@@ -2385,7 +2395,7 @@
   "name": "macOS",
   "group": "clients",
   "source": "simple-icons@16.33.0",
-  "key": "macos",
+  "key": "apple",
   "licence": "CC0-1.0",
   "upstream": "https://github.com/simple-icons/simple-icons",
   "colour": "#000000"
@@ -2395,7 +2405,7 @@
   "name": "Windows",
   "group": "clients",
   "source": "@iconify-json/logos@1.2.17",
-  "key": "microsoft-windows",
+  "key": "microsoft-windows-icon",
   "licence": "CC0-1.0",
   "upstream": "https://github.com/gilbarbara/logos",
   "colour": "#0078d4"
@@ -2474,11 +2484,11 @@
   "id": "logo-angular",
   "name": "Angular",
   "group": "frontend",
-  "source": "simple-icons@16.33.0",
-  "key": "angular",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "angular-icon",
   "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#0f0f11"
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#c70887"
  },
  {
   "id": "logo-vuedotjs",
@@ -2495,7 +2505,7 @@
   "name": "Nuxt",
   "group": "frontend",
   "source": "@iconify-json/logos@1.2.17",
-  "key": "nuxt",
+  "key": "nuxt-icon",
   "licence": "CC0-1.0",
   "upstream": "https://github.com/gilbarbara/logos",
   "colour": "#00dc82"
@@ -2584,11 +2594,11 @@
   "id": "logo-python",
   "name": "Python",
   "group": "languages",
-  "source": "simple-icons@16.33.0",
+  "source": "@iconify-json/logos@1.2.17",
   "key": "python",
   "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#3776ab"
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#3774a6"
  },
  {
   "id": "logo-nodedotjs",
@@ -2604,11 +2614,11 @@
   "id": "logo-openjdk",
   "name": "Java",
   "group": "languages",
-  "source": "simple-icons@16.33.0",
-  "key": "openjdk",
+  "source": "@iconify-json/logos@1.2.17",
+  "key": "java",
   "licence": "CC0-1.0",
-  "upstream": "https://github.com/simple-icons/simple-icons",
-  "colour": "#000000"
+  "upstream": "https://github.com/gilbarbara/logos",
+  "colour": "#5382a1"
  },
  {
   "id": "logo-typescript",
@@ -2795,7 +2805,7 @@
   "name": "OpenAI",
   "group": "ai",
   "source": "@iconify-json/logos@1.2.17",
-  "key": "openai",
+  "key": "openai-icon",
   "licence": "CC0-1.0",
   "upstream": "https://github.com/gilbarbara/logos",
   "colour": "#000000"
@@ -2908,7 +2918,7 @@
   "name": "Twilio",
   "group": "thirdparty",
   "source": "@iconify-json/logos@1.2.17",
-  "key": "twilio",
+  "key": "twilio-icon",
   "licence": "CC0-1.0",
   "upstream": "https://github.com/gilbarbara/logos",
   "colour": "#f12e45",
@@ -2921,10 +2931,10 @@
   "name": "SendGrid",
   "group": "thirdparty",
   "source": "@iconify-json/logos@1.2.17",
-  "key": "sendgrid",
+  "key": "sendgrid-icon",
   "licence": "CC0-1.0",
   "upstream": "https://github.com/gilbarbara/logos",
-  "colour": "#212f38"
+  "colour": "#9dd6e3"
  },
  {
   "id": "logo-mailgun",
@@ -2951,10 +2961,10 @@
   "name": "Slack",
   "group": "thirdparty",
   "source": "@iconify-json/logos@1.2.17",
-  "key": "slack",
+  "key": "slack-icon",
   "licence": "CC0-1.0",
   "upstream": "https://github.com/gilbarbara/logos",
-  "colour": "#000000"
+  "colour": "#e01e5a"
  },
  {
   "id": "logo-discord",
@@ -3001,7 +3011,7 @@
   "name": "Segment",
   "group": "thirdparty",
   "source": "@iconify-json/logos@1.2.17",
-  "key": "segment",
+  "key": "segment-icon",
   "licence": "CC0-1.0",
   "upstream": "https://github.com/gilbarbara/logos",
   "colour": "#4fb58b"
