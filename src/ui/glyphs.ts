@@ -1,5 +1,5 @@
 /** 24-unit line glyphs for the chrome (same 1.6–1.75 stroke language as the icon library). Static strings only. */
-const G = {
+export const G = {
   select: `<path d="M5 3l13 7.2-5.6 1.6L10.4 18z"/>`,
   hand: `<path d="M8 12V6.5a1.3 1.3 0 0 1 2.6 0V11M10.6 11V4.8a1.3 1.3 0 0 1 2.6 0V11M13.2 11V5.8a1.3 1.3 0 0 1 2.6 0V13M15.8 9.5a1.3 1.3 0 0 1 2.6 0V14c0 3.6-2.2 6-5.6 6-2.4 0-3.7-1-5-3.2L5 13.2a1.3 1.3 0 0 1 2.2-1.3L8 13"/>`,
   rect: `<rect x="4" y="5" width="16" height="14" rx="1.4"/>`,
@@ -34,6 +34,9 @@ const G = {
   sliders: `<path d="M4 7h9M17 7h3M4 17h3M11 17h9M13 5v4M9 15v4"/>`,
   close: `<path d="M6 6l12 12M18 6L6 18"/>`,
   chevron: `<path d="M9 6l6 6-6 6"/>`,
+  sun: `<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/>`,
+  moon: `<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/>`,
+  flow: `<path d="M3 17c3.5 0 4-10 9-10s5.5 10 9 10" stroke-dasharray="0.1 4.2" stroke-width="2.6"/>`,
 } as const;
 
 export type GlyphName = keyof typeof G;

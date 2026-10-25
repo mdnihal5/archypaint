@@ -1,5 +1,5 @@
 /** Glyphs the first paint does not need (ribbon, menu, drawer): a lazy chunk, so the entry stays inside its budget. */
-import { svgIcon } from "./glyphs";
+import { G, svgIcon } from "./glyphs";
 
 const M = {
   legend: `<rect x="3.5" y="4" width="17" height="16" rx="1.5"/><path d="M7 9h2M11.5 9H17M7 12.5h2M11.5 12.5H17M7 16h2M11.5 16H17"/>`,
@@ -49,8 +49,8 @@ const M = {
   copyStyle: `<rect x="8" y="8" width="12" height="12" rx="1.6"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/>`,
   pasteStyle: `<rect x="5" y="5" width="14" height="16" rx="1.6"/><path d="M9 5V3.5h6V5M9 11h6M9 15h4"/>`,
   check: `<path d="M5 12.5l4.5 4.5L19 7.5"/>`,
-  sun: `<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/>`,
-  moon: `<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/>`,
+  sun: G.sun,
+  moon: G.moon,
   trash: `<path d="M4 7h16M9 7V4.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V7"/><path d="M6.5 7l1 13a1.5 1.5 0 0 0 1.5 1.4h6a1.5 1.5 0 0 0 1.5-1.4l1-13"/><path d="M10 11v6M14 11v6"/>`,
 } as const;
 

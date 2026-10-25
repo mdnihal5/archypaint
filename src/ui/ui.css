@@ -249,3 +249,6 @@ html[data-view="readonly"] .ap-brand { display: flex; }
   .ap-hud { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .ap-caret { animation: none; } * { transition: none !important; scroll-behavior: auto !important; } }
+
+/* the theme and flow shortcuts give way on phones: both stay in the menu's View group */
+@media (max-width: 560px) { .ap-cluster .ap-wide { display: none; } }
