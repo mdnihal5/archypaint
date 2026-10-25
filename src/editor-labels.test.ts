@@ -250,16 +250,19 @@ describe("5. dragging a whole line", () => {
     ed.undo();
     expect(a.pts).toEqual([100, 300, 250, 300, 250, 400, 400, 400]);
   });
-  it("a bound arrow dragged on its own stays glued: nothing moves, nothing detaches, no undo step is added", () => {
+  it("a bound arrow dragged on its own stays glued: nothing detaches and the ends stay on their ports (a one-segment elbow jogs through end stubs)", () => {
     const l = add({ kind: "rect", x: 100, y: 100, w: 100, h: 60 }), r = add({ kind: "rect", x: 500, y: 100, w: 100, h: 60 });
     ed.setTool("arrow"); drag(150, 130, 550, 130);
     const ar = of("arrow")[0]!;
     expect(ar.src && ar.dst).toBeTruthy();
     const before = [...ar.pts];
-    drag(350, 130, 350, 230); // a straight (two-point) elbow has no interior segment to push
+    drag(350, 130, 350, 230); // a straight (two-point) elbow: its only segment is both end segments, so both ends get a stub
     expect([ar.src, ar.dst]).toEqual([l.id, r.id]);
+    expect(ar.pts.slice(0, 2)).toEqual(before.slice(0, 2)); expect(ar.pts.slice(-2)).toEqual(before.slice(-2));
+    expect(ar.pts.length).toBe(12);
+    ed.undo(); // undoes the jog
     expect(ar.pts).toEqual(before);
-    ed.undo(); // undoes the arrow's creation, not a phantom move
+    ed.undo();
     expect(of("arrow")).toHaveLength(0);
   });
   it("an arrow caught in a multi-selection stays glued and follows its shapes instead of floating off", () => {

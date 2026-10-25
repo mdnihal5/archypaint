@@ -1,4 +1,4 @@
-import { PORT_COUNT, anchorsOf, arrowDist, arrowLabels, MAX_BRANCH_DEPTH, SEG_MIN_PX, canBindToArrow, computeArrowPts, eachInteriorSeg, hostDepth, withSeg, effectiveRoute, isCurve, migrateArrowText, nearestT, pointAtT, portPoint, routeArrow, sceneRectOf, type Anchor, type Rect, type RectOf } from "./connectors";
+import { portInto, listPorts, anchorsOf, arrowDist, arrowLabels, MAX_BRANCH_DEPTH, SEG_MIN_PX, canBindToArrow, computeArrowPts, eachElbowSeg, LAST_K, segMapOf, hostDepth, withSeg, effectiveRoute, isCurve, migrateArrowText, nearestT, pointAtT, routeArrow, sceneRectOf, type Anchor, type Rect, type RectOf } from "./connectors";
 import type { EditorAPI, EditorEvent } from "./editor-api";
 import type { GroupIndex } from "./groups";
 import type { History } from "./history";
@@ -103,7 +103,7 @@ export class Controller {
   private arrowEl: El | null = null; private endIsDst = true;
   // branch state: the arrow an arrow is starting / ending on, and where along it (fraction of its path)
   private aStartT = 0; private aStartHost = false; private endT = 0; private endHost = false;
-  private hpt: [number, number] = [0, 0]; private bpt: [number, number] = [0, 0];
+  private hpt: [number, number] = [0, 0]; private ppt: [number, number] = [0, 0]; private plist: number[] = []; private bpt: [number, number] = [0, 0];
   // elbow-segment drag state: the segment's code (see connectors applySegs), the router's own coordinate for it, the live offsets
   private segCode = 0; private segVertical = false; private segAuto = 0; private segNext: number[] | undefined = undefined; private segLive: number[] | null = null;
   private sbest = Infinity; private sk = -1; private sv = false; private spx = 0; private spy = 0; private stol = 0;
@@ -221,15 +221,15 @@ export class Controller {
   }
 
   /** hoisted visitors for segment picking (no closure per pointer move) */
-  private pickSeg = (k: number, mx: number, my: number, vertical: boolean, len: number): void => {
+  private pickSeg = (code: number, mx: number, my: number, vertical: boolean, len: number): void => {
     const along = Math.max(0, Math.abs(vertical ? this.spy - my : this.spx - mx) - len / 2), across = Math.abs(vertical ? this.spx - mx : this.spy - my);
     const d = Math.hypot(along, across);
-    if (d <= this.stol && d < this.sbest) { this.sbest = d; this.sk = k; this.sv = vertical; }
+    if (d <= this.stol && d < this.sbest) { this.sbest = d; this.sk = code; this.sv = vertical; }
   };
-  private pickHandle = (k: number, mx: number, my: number, vertical: boolean, len: number): void => {
+  private pickHandle = (code: number, mx: number, my: number, vertical: boolean, len: number): void => {
     if (len * this.vp.zoom < SEG_MIN_PX) return;
     const d = Math.hypot(this.spx - mx, this.spy - my);
-    if (d <= this.stol && d < this.sbest) { this.sbest = d; this.sk = k; this.sv = vertical; }
+    if (d <= this.stol && d < this.sbest) { this.sbest = d; this.sk = code; this.sv = vertical; }
   };
 
   /** elbow arrows (sharp or round corners) have draggable segments; a soft elbow is a curve and has none */
@@ -239,17 +239,18 @@ export class Controller {
   private segAt(a: El, wx: number, wy: number, handleOnly: boolean): boolean {
     this.spx = wx; this.spy = wy; this.sbest = Infinity; this.sk = -1;
     this.stol = (handleOnly ? 9 : 8) / this.vp.zoom;
-    eachInteriorSeg(a.pts, handleOnly ? this.pickHandle : this.pickSeg);
+    eachElbowSeg(a, this.scene, a.pts, handleOnly ? this.pickHandle : this.pickSeg);
     return this.sk >= 0;
   }
 
   /** begin dragging segment `this.sk` of arrow `a`: the router's own position for it is the zero of the offset */
   private beginSeg(a: El): boolean {
     const scene = this.scene, base = sceneRectOf(scene);
+    if (!segMapOf(a, scene)) return false; // the stored path is stale against the router: leave it alone
     const auto = computeArrowPts({ ...a, segs: undefined } as El, base);
-    if (auto.length !== a.pts.length) return false; // the stored path is stale against the router: leave it alone
-    this.segVertical = this.sv; this.segCode = this.sk * 2 + (this.sv ? 1 : 0);
-    this.segAuto = auto[2 * this.sk + (this.sv ? 0 : 1)]!;
+    const k = (this.sk >> 1) === LAST_K ? (auto.length >> 1) - 2 : this.sk >> 1; // segment index in the auto path
+    this.segVertical = this.sv; this.segCode = this.sk;
+    this.segAuto = auto[2 * k + (this.sv ? 0 : 1)]!;
     this.segNext = a.segs; this.segLive = null;
     this.arrowEl = a; this.mode = "arrowSeg";
     this.core.hist.begin(); this.core.hist.touch(a);
@@ -467,8 +468,10 @@ export class Controller {
 
   private nearestPort(r: Rect, wx: number, wy: number): number {
     let port = -1, bd = 14 / this.vp.zoom;
-    for (let s = 0; s < PORT_COUNT; s++) {
-      const p = portPoint(r, s);
+    const list = listPorts(r, this.vp.zoom, this.plist), p = this.ppt;
+    for (let i = 0; i < list.length; i++) {
+      const s = list[i]!;
+      portInto(r, s, p);
       const d = Math.hypot(p[0] - wx, p[1] - wy);
       if (d < bd) { bd = d; port = s; }
     }
@@ -477,7 +480,7 @@ export class Controller {
 
   /**
    * A group's boundary is a connection target like a shape: near its drawn outline (not its empty interior, which an arrow drawn
-   * across a group must be free to start in) the arrow binds to the group, with the same eight ports. The innermost group wins.
+   * across a group must be free to start in) the arrow binds to the group, with the same ports. The innermost group wins.
    */
   private groupAnchorAt(wx: number, wy: number): { id: string; rect: Rect | null; port: number; host: boolean; t: number } {
     const none = { id: "", rect: null, port: -1, host: false, t: 0 }, band = 10 / this.vp.zoom;

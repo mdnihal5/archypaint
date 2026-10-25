@@ -5,7 +5,7 @@ import { fromExcalidraw, toExcalidraw } from "./io/excalidraw";
 import { parseArch, serializeArch } from "./io/format";
 import { LIGHT } from "./theme";
 import type { El } from "./scene";
-import { MAX_BRANCH_DEPTH, applySegs, canBindToArrow, cleanSegs, eachInteriorSeg, hostDepth, rerouteBound, withSeg } from "./connectors";
+import { MAX_BRANCH_DEPTH, applySegs, canBindToArrow, cleanSegs, eachElbowSeg, eachInteriorSeg, hostDepth, rerouteBound, withSeg } from "./connectors";
 
 const fakeCtx = new Proxy({}, {
   get: (t: Record<string, unknown>, k: string) => (k === "measureText" ? () => ({ width: 40 }) : k in t ? t[k] : () => undefined),
@@ -129,6 +129,68 @@ describe("elbow segment drag (real pointer events)", () => {
     expect(p.ok && p.value.scene.els.find((e) => e.id === ar.id)!.segs).toEqual([3, 60]);
     const back = fromExcalidraw(JSON.parse(JSON.stringify(toExcalidraw(scene))));
     expect(back.ok && back.scene.els.find((e) => e.kind === "arrow")!.segs).toEqual([3, 60]);
+  });
+});
+
+describe("elbow end segments (stubs)", () => {
+  const boxes = () => {
+    const a = add({ kind: "rect", x: 100, y: 100, w: 100, h: 60 }), b = add({ kind: "rect", x: 500, y: 300, w: 100, h: 60 });
+    ed.setTool("arrow"); drag(200, 130, 500, 330);
+    return { a, b, ar: of("arrow")[0]! };
+  };
+  const orthogonal = (p: readonly number[]) => { for (let i = 0; i + 3 < p.length; i += 2) if (Math.abs(p[i]! - p[i + 2]!) > 0.01 && Math.abs(p[i + 1]! - p[i + 3]!) > 0.01) return false; return true; };
+  const handles = (ar: El) => { const c: number[] = []; eachElbowSeg(ar, ed.scene, ar.pts, (code) => c.push(code)); return c; };
+  it("a 3-segment elbow exposes 3 handles; stubs add none", () => {
+    const { ar } = boxes();
+    expect(handles(ar).length).toBe(3);
+    drag(275, 130, 275, 170);
+    expect(ar.pts.length / 2 - 1).toBe(5); // stub, jog, moved segment, then the 2 others
+    expect(handles(ar).length).toBe(3);
+  });
+  it("dragging the first segment keeps the start on its port, leaves straight, and undoes exactly", () => {
+    const { a, b, ar } = boxes();
+    const before = [...ar.pts];
+    drag(275, 130, 275, 170);
+    expect(ar.pts).toEqual([200, 130, 220, 130, 220, 170, 350, 170, 350, 330, 500, 330]);
+    expect(orthogonal(ar.pts)).toBe(true);
+    expect([ar.src, ar.dst]).toEqual([a.id, b.id]);
+    expect(ar.segs).toEqual([0, 40]);
+    ed.undo(); expect(ar.pts).toEqual(before); expect(ar.segs).toBeUndefined();
+    ed.redo(); expect(ar.pts).toEqual([200, 130, 220, 130, 220, 170, 350, 170, 350, 330, 500, 330]);
+  });
+  it("dragging the last segment keeps the end on its port and enters straight", () => {
+    const { a, b, ar } = boxes();
+    const before = [...ar.pts];
+    drag(425, 330, 425, 380);
+    expect(ar.pts).toEqual([200, 130, 350, 130, 350, 380, 480, 380, 480, 330, 500, 330]);
+    expect(orthogonal(ar.pts)).toBe(true);
+    expect([ar.src, ar.dst]).toEqual([a.id, b.id]);
+    expect(ar.segs).toEqual([2 * 4095 + 0, 50]);
+    ed.undo(); expect(ar.pts).toEqual(before);
+    ed.redo(); expect(ar.pts.slice(-6)).toEqual([480, 380, 480, 330, 500, 330]);
+  });
+  it("a one-segment elbow dragged sideways gets stubs at both ends", () => {
+    const a = add({ kind: "rect", x: 100, y: 100, w: 100, h: 60 }), b = add({ kind: "rect", x: 500, y: 100, w: 100, h: 60 });
+    ed.setTool("arrow"); drag(200, 130, 500, 130);
+    const ar = of("arrow")[0]!;
+    expect(ar.pts).toEqual([200, 130, 500, 130]);
+    drag(350, 130, 350, 190);
+    expect(ar.pts).toEqual([200, 130, 220, 130, 220, 190, 480, 190, 480, 130, 500, 130]);
+    expect(handles(ar).length).toBe(1);
+    expect([ar.src, ar.dst]).toEqual([a.id, b.id]);
+  });
+  it("round-trips through save/load and keeps the jog when a shape moves", () => {
+    const { b, ar } = boxes();
+    drag(275, 130, 275, 170);
+    const p = parseArch(serializeArch({ meta: { name: "t", created: 1, updated: 1 }, view: { x: 0, y: 0, zoom: 1 }, settings: {}, scene: ed.scene.toJSON() }));
+    expect(p.ok && p.value.scene.els.find((e) => e.id === ar.id)!.segs).toEqual([0, 40]);
+    ed.select([b.id]); ed.nudge(0, 100);
+    expect(ar.pts).toEqual([200, 130, 220, 130, 220, 170, 350, 170, 350, 430, 500, 430]);
+    expect(orthogonal(ar.pts)).toBe(true);
+  });
+  it("old interior-only files render the same", () => {
+    expect(applySegs([200, 130, 350, 130, 350, 330, 500, 330], [3, 50])).toEqual([200, 130, 400, 130, 400, 330, 500, 330]);
+    expect(applySegs([200, 130, 350, 130, 350, 330, 500, 330], [5, 50])).toEqual([200, 130, 350, 130, 350, 330, 500, 330]); // index 2 is not "last" in the old format
   });
 });
 

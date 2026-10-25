@@ -1,5 +1,5 @@
 import { arrowLabels, cleanLabels, cleanSegs, isCurve, pointAtT } from "../connectors";
-import type { ElJSON, GroupInfo, SceneJSON } from "../scene";
+import { isPort, type ElJSON, type GroupInfo, type SceneJSON } from "../scene";
 import { LIGHT, colourOf, normHex, type Theme } from "../theme";
 import { exportGroups } from "../groups";
 import { NEW_KINDS, legendRows } from "../shape-geom";
@@ -205,8 +205,8 @@ export function fromExcalidraw(input: unknown, th: Theme = LIGHT): ExResult {
       if (typeof cd.kind === "string" && KINDS.includes(cd.kind) && ((cd.kind === "icon" || cd.kind === "calc" || NEW_KINDS.has(cd.kind)) ? t in SHAPES : cd.kind === base.kind)) base.kind = cd.kind as ElJSON["kind"];
       const ci = num(cd.cat); if (ci !== null && Number.isInteger(ci) && ci >= 0 && ci < 256) base.cat = ci;
       const hx = normHex(cd.hex); if (hx) base.hex = hx;
-      for (const [k, allowed] of [["fill", [0, 1, 2]], ["edge", [0, 1, 2]], ["route", [0, 1, 2]], ["dash", [0, 1]], ["head", [0, 1, 2]], ["sp", [-1, 0, 1, 2, 3]], ["dp", [-1, 0, 1, 2, 3]]] as const) {
-        const v = num(cd[k]); if (v !== null && (allowed as readonly number[]).includes(v)) (base as unknown as Record<string, number>)[k] = v;
+      for (const [k, allowed] of [["fill", [0, 1, 2]], ["edge", [0, 1, 2]], ["route", [0, 1, 2]], ["dash", [0, 1]], ["head", [0, 1, 2]], ["sp", null], ["dp", null]] as const) {
+        const v = num(cd[k]); if (v !== null && (allowed === null ? isPort(v) : (allowed as readonly number[]).includes(v))) (base as unknown as Record<string, number>)[k] = v;
       }
       const r = num(cd.radius); if (r !== null && r >= 0 && r <= 1e4) base.radius = r;
       if (typeof cd.iconId === "string" && cd.iconId.length <= LIMITS.maxId) base.iconId = cd.iconId;

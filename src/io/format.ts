@@ -1,6 +1,6 @@
 import { normHex } from "../theme";
 import { MAX_BRANCH_DEPTH, cleanLabels, cleanSegs, migrateArrowText } from "../connectors";
-import type { ElJSON, GroupInfo, SceneJSON } from "../scene";
+import { isPort, type ElJSON, type GroupInfo, type Port, type SceneJSON } from "../scene";
 
 /** The `.archypaint` file format: versioned, validated, deterministic (one element per line, fixed key order). */
 export const APP = "archypaint" as const;
@@ -75,6 +75,10 @@ function oneOf<T extends number>(v: unknown, path: string, allowed: readonly T[]
   if (typeof v !== "number" || !(allowed as readonly number[]).includes(v)) throw new Bad("invalid", `${path}: expected one of ${allowed.join(", ")}`, path);
   return v as T;
 }
+function portOf(v: unknown, path: string): Port {
+  if (!isPort(v)) throw new Bad("invalid", `${path}: not a connection point`, path);
+  return v;
+}
 const opt = <T>(v: unknown, dflt: T, f: (v: unknown) => T): T => (v === undefined ? dflt : f(v));
 
 /** iterative depth check (a recursive one would itself be a stack-overflow vector) */
@@ -138,8 +142,8 @@ function readEl(raw: unknown, i: number, extras: Record<string, Record<string, u
     o: opt(raw.o, 0, (v) => oneOf(v, `${p}.o`, [0, 1, 2, 3] as const)),
     src: opt(raw.src, "", (v) => fstr(v, `${p}.src`, LIMITS.maxId)),
     dst: opt(raw.dst, "", (v) => fstr(v, `${p}.dst`, LIMITS.maxId)),
-    sp: opt(raw.sp, -1, (v) => oneOf(v, `${p}.sp`, [-1, 0, 1, 2, 3, 4, 5, 6, 7] as const)),
-    dp: opt(raw.dp, -1, (v) => oneOf(v, `${p}.dp`, [-1, 0, 1, 2, 3, 4, 5, 6, 7] as const)),
+    sp: opt(raw.sp, -1, (v) => portOf(v, `${p}.sp`)),
+    dp: opt(raw.dp, -1, (v) => portOf(v, `${p}.dp`)),
     route: opt(raw.route, 1, (v) => oneOf(v, `${p}.route`, [0, 1, 2] as const)),
     dash: opt(raw.dash, 0, (v) => oneOf(v, `${p}.dash`, [0, 1] as const)),
     head: opt(raw.head, 1, (v) => oneOf(v, `${p}.head`, [0, 1, 2] as const)),

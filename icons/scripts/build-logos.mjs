@@ -25,12 +25,13 @@ const GRID = 24;
 let IGNORE_MASK = false; // set per logo: the one GCP mark that masks its spokes (drawn full length, a negligible difference)
 const CATEGORIES = ["data", "cache", "network", "compute", "queue", "security", "client", "external"];
 const PAPER = { light: "#ffffff", dark: "#18181b" }; // theme.ts LIGHT.paper / DARK.paper
-const MAX_LOGO_BYTES = 12000;
+const MAX_LOGO_BYTES = 16000;
 
 const pkgJson = (name) => JSON.parse(readFileSync(join(ROOT, "node_modules", name, "package.json"), "utf8"));
 const SOURCES = {
   si: { pkg: "simple-icons", licence: "CC0-1.0", upstream: "https://github.com/simple-icons/simple-icons" },
   lg: { pkg: "@iconify-json/logos", licence: "CC0-1.0", upstream: "https://github.com/gilbarbara/logos" },
+  dv: { pkg: "@iconify-json/devicon", licence: "MIT", upstream: "https://github.com/devicons/devicon" },
   gcp: { pkg: "@iconify-json/gcp", licence: "Apache-2.0", upstream: "https://cloud.google.com/icons (via Iconify)" },
 };
 for (const s of Object.values(SOURCES)) s.version = pkgJson(s.pkg).version;
@@ -38,7 +39,7 @@ for (const s of Object.values(SOURCES)) s.version = pkgJson(s.pkg).version;
 const si = require("simple-icons");
 const siBySlug = new Map(Object.values(si).filter((x) => x && x.slug).map((x) => [x.slug, x]));
 const loadSet = (pkg) => { const j = JSON.parse(readFileSync(join(ROOT, "node_modules", pkg, "icons.json"), "utf8")); return j; };
-const sets = { lg: loadSet("@iconify-json/logos"), gcp: loadSet("@iconify-json/gcp") };
+const sets = { lg: loadSet("@iconify-json/logos"), dv: loadSet("@iconify-json/devicon"), gcp: loadSet("@iconify-json/gcp") };
 
 /* ------------------------------------------------------------------ colour helpers */
 

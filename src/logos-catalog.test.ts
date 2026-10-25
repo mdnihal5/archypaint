@@ -73,7 +73,7 @@ describe("catalog shape", () => {
 describe("artwork", () => {
   it("every logo parses with the renderer's own parser: filled paths only, literal brand colours, 24 grid, bounded size", () => {
     for (const [id, , m] of [...packs.values()].flatMap((p) => p.icons)) {
-      expect(m.length, id).toBeLessThanOrEqual(12_000);
+      expect(m.length, id).toBeLessThanOrEqual(16_000);
       const ops = parseIconMarkup(m, ROOT_STROKE.glyph);
       expect(ops.length, id).toBeGreaterThan(0);
       expect(ops.length, id).toBeLessThanOrEqual(40);
@@ -102,8 +102,8 @@ describe("provenance", () => {
   it("records source, licence and upstream for every logo", () => {
     expect(manifest.map((r) => r.id).sort()).toEqual(logosIndex.icons.map((r) => r[0]).sort());
     for (const r of manifest) {
-      expect(["CC0-1.0", "Apache-2.0"], r.id).toContain(r.licence);
-      expect(r.source, r.id).toMatch(/^(simple-icons|@iconify-json\/(logos|gcp))@\d+\.\d+\.\d+$/);
+      expect(["CC0-1.0", "Apache-2.0", "MIT"], r.id).toContain(r.licence);
+      expect(r.source, r.id).toMatch(/^(simple-icons|@iconify-json\/(logos|gcp|devicon))@\d+\.\d+\.\d+$/);
       expect(r.upstream, r.id).toMatch(/^https:\/\//);
     }
   });
