@@ -27,6 +27,16 @@ export function colourOf(th: Theme, e: { cat: number; hex?: string | undefined }
   return e.hex ? e.hex : th.cats[e.cat % th.cats.length]!;
 }
 
+/** the colour index a new free-text element gets. It reads as the plain ink colour: files written before text could be coloured all carry it */
+export const TEXT_CAT = 6;
+/** padding and corner radius of the tinted / solid box behind a free text */
+export const TEXT_BOX = { padX: 6, padY: 3, r: 6 } as const;
+
+/** a free text's own colour: its custom hex or any colour but the default slot; the default slot is the theme ink (so existing files look as before) */
+export function textInk(th: Theme, e: { kind: string; cat: number; hex?: string | undefined }): string {
+  return e.hex || e.cat !== TEXT_CAT ? colourOf(th, e) : th.ink;
+}
+
 /** text/glyph colour that stays readable on a solid fill of `col`: ink on light fills, paper on dark ones */
 const onCache = new Map<string, boolean>();
 export function onSolid(th: Theme, col: string): string {

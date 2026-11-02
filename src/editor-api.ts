@@ -49,6 +49,8 @@ export interface EditorAPI {
 
   deleteSelection(): void;
   duplicateSelection(): void;
+  /** false when grouping would do nothing: fewer than two elements, or the selection is exactly one existing top-level group */
+  canGroup(): boolean;
   group(name?: string): string | null;
   ungroup(): void;
   renameGroup(id: string, name: string): void;
@@ -114,8 +116,10 @@ export interface EditorAPI {
   zoomBy(factor: number): void;
   resetView(): void;
 
-  /** replace the entire document (load / open). Clears history. */
-  load(data: import("./scene").SceneJSON): void;
+  /** replace the entire document (load / open). Clears history, or adopts `hist` (a board's stacks from takeHistory) when given. */
+  load(data: import("./scene").SceneJSON, hist?: import("./history").HistState): void;
+  /** copy out the newest `steps` undo steps (a board that is being left); does not touch the live history */
+  takeHistory(steps: number): import("./history").HistState;
   /** true when the document differs from the last load/save */
   dirty(): boolean;
   markSaved(): void;

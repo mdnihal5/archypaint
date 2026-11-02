@@ -4,7 +4,7 @@ import { fromHTML, h, setAttr, setText } from "./dom";
 import { glyph } from "./glyphs";
 import type { SaveStatus } from "../io";
 
-export interface Top { nameInput: HTMLInputElement; refresh(): void }
+export interface Top { /** the name button (opens the boards list) */ nameBtn: HTMLButtonElement; /** the name it shows now */ shown(): string; refresh(): void }
 
 /**
  * Top-left chip (menu button, mark, sheet name, save dot) and the top-right cluster (find, layers, properties).
@@ -15,11 +15,11 @@ export function mountTop(ctx: Ctx, root: HTMLElement): Top {
 
   /* ---------- chip ---------- */
   const menuBtn = h("button", { class: "ap-ib", attrs: { type: "button", title: "Menu", "aria-label": "Menu", "aria-haspopup": "true", "aria-expanded": "false", "data-menubtn": "" }, on: { click: () => ctx.toggleMenu() } }, glyph("menu", 20));
-  const nameInput = h("input", { class: "ap-name", attrs: { type: "text", value: io.docName(), "aria-label": "Sheet name", maxlength: 60, spellcheck: "false", autocomplete: "off" } });
-  nameInput.addEventListener("change", () => { io.setDocName(nameInput.value.trim() || "untitled"); ctx.refresh(); });
-  nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") nameInput.blur(); else if (e.key === "Escape") { nameInput.value = io.docName(); nameInput.blur(); } });
+  const nameText = h("span", { class: "ap-nm", text: io.docName() });
+  // the name opens the boards list; renaming lives in the list. The chevron says "this is a menu"
+  const nameBtn = h("button", { class: "ap-name", attrs: { type: "button", title: "Boards", "aria-label": "Boards", "aria-haspopup": "dialog", "aria-expanded": "false", "data-boardsbtn": "" }, on: { click: () => ctx.toggleBoards() } }, nameText, glyph("chevron", 12));
   const state = h("span", { class: "ap-state", attrs: { role: "status", "data-s": "saved" } });
-  const chip = h("div", { class: "ap-chip ap-hit" }, menuBtn, fromHTML(MARK), nameInput, state);
+  const chip = h("div", { class: "ap-chip ap-hit" }, menuBtn, fromHTML(MARK), nameBtn, state);
   root.append(chip);
 
   /* ---------- cluster ---------- */
@@ -48,7 +48,8 @@ export function mountTop(ctx: Ctx, root: HTMLElement): Top {
   let status: SaveStatus = "saved";
   const render = () => {
     const n = io.docName();
-    if (document.activeElement !== nameInput && nameInput.value !== n) nameInput.value = n;
+    setText(nameText, n);
+    if (document.title !== `${n} · archypaint`) document.title = `${n} · archypaint`;
     const s = status === "saving" ? "saving…" : status === "error" ? "save failed" : status === "dirty" || editor.dirty() ? "unsaved" : "saved";
     setText(state, s);
     setAttr(state, "data-s", s === "unsaved" ? "dirty" : s === "save failed" ? "error" : s === "saving…" ? "saving" : "saved");
@@ -65,5 +66,5 @@ export function mountTop(ctx: Ctx, root: HTMLElement): Top {
   ctx.onSlowTick(() => { if (state.textContent === "saved" && editor.dirty()) u.schedule(); });
   ctx.d.add(() => { chip.remove(); cluster.remove(); });
   render();
-  return { nameInput, refresh: () => u.schedule() };
+  return { nameBtn, shown: () => nameText.textContent ?? "", refresh: () => u.schedule() };
 }

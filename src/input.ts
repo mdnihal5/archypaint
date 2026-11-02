@@ -1,4 +1,4 @@
-import { portInto, listPorts, anchorsOf, arrowDist, arrowLabels, MAX_BRANCH_DEPTH, SEG_MIN_PX, canBindToArrow, computeArrowPts, eachElbowSeg, LAST_K, segMapOf, hostDepth, withSeg, effectiveRoute, isCurve, migrateArrowText, nearestT, pointAtT, routeArrow, sceneRectOf, type Anchor, type Rect, type RectOf } from "./connectors";
+import { labelBlock, portInto, listPorts, anchorsOf, arrowDist, arrowLabels, MAX_BRANCH_DEPTH, SEG_MIN_PX, canBindToArrow, computeArrowPts, eachElbowSeg, LAST_K, segMapOf, hostDepth, withSeg, effectiveRoute, isCurve, migrateArrowText, nearestT, pointAtT, routeArrow, sceneRectOf, type Anchor, type Rect, type RectOf } from "./connectors";
 import type { EditorAPI, EditorEvent } from "./editor-api";
 import type { GroupIndex } from "./groups";
 import type { History } from "./history";
@@ -400,7 +400,7 @@ export class Controller {
       for (let i = 0; i < ls.length; i++) {
         const l = ls[i]!;
         pointAtT(a.pts, isCurve(a), l.t, this.lpt);
-        const w = textWidth(l.text, a.fs || 13) + 10, h = Math.round((a.fs || 13) * 1.5);
+        const fs = a.fs || 13, bk = labelBlock(l.text, fs, (t) => textWidth(t, fs)), w = bk.w, h = bk.h;
         if (Math.abs(wx - this.lpt[0]) <= w / 2 + 2 && Math.abs(wy - this.lpt[1]) <= h / 2 + 2) { best = { arrow: a, idx: i }; bz = a.z; }
       }
     }

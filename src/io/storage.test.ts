@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { serializeArch } from "./format";
-import { Autosave, DEBOUNCE_MS, MAX_WAIT_MS, memKV, serializeSliced, type KV, type SaveStatus, type StorageEnv, type StorageSource } from "./storage";
+import { Autosave, DEBOUNCE_MS, MAX_WAIT_MS, bkey, memKV, serializeSliced, type KV, type SaveStatus, type StorageEnv, type StorageSource } from "./storage";
 import { el } from "./testkit";
 import type { ElJSON } from "../scene";
 
@@ -65,7 +65,7 @@ describe("Autosave", () => {
   it("does nothing until armed (an empty scene must never overwrite a saved one)", async () => {
     const h = harness();
     h.a.schedule(); await h.tick(5000);
-    expect(await h.kv.get("current")).toBeUndefined();
+    expect(await h.kv.get(bkey("b0", "current"))).toBeUndefined();
   });
 
   it("coalesces a burst of changes into one write after the debounce", async () => {
@@ -88,10 +88,10 @@ describe("Autosave", () => {
   it("keeps one rolling backup of the previous document", async () => {
     const h = harness(); h.a.arm();
     h.edit(); h.a.schedule(); await h.tick(DEBOUNCE_MS);
-    const first = (await h.kv.get("current")) as { text: string };
+    const first = (await h.kv.get(bkey("b0", "current"))) as { text: string };
     h.edit(); h.a.schedule(); await h.tick(DEBOUNCE_MS);
-    const second = (await h.kv.get("current")) as { text: string };
-    const backup = (await h.kv.get("backup")) as { text: string };
+    const second = (await h.kv.get(bkey("b0", "current"))) as { text: string };
+    const backup = (await h.kv.get(bkey("b0", "backup"))) as { text: string };
     expect(second.text).not.toBe(first.text);
     expect(backup.text).toBe(first.text);
   });
@@ -107,7 +107,7 @@ describe("Autosave", () => {
   it("records the file-dirty flag so a restore knows whether to prompt on discard", async () => {
     const h = harness(); h.a.arm(); h.setDirty(true);
     h.edit(); h.a.schedule(); await h.tick(DEBOUNCE_MS);
-    expect(((await h.kv.get("current")) as { fileDirty: boolean }).fileDirty).toBe(true);
+    expect(((await h.kv.get(bkey("b0", "current"))) as { fileDirty: boolean }).fileDirty).toBe(true);
   });
 
   it("surfaces quota/permission failures as status 'error', never as an exception", async () => {
@@ -123,7 +123,7 @@ describe("Autosave", () => {
     const h = harness(); h.a.arm();
     h.edit(); h.a.flushSync();
     await h.tick(0);
-    expect(await h.kv.get("current")).toBeDefined();
+    expect(await h.kv.get(bkey("b0", "current"))).toBeDefined();
   });
 
   it("flushSync starts the write synchronously through writeDocNow (no awaits before it — the page may be gone)", () => {

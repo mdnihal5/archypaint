@@ -74,17 +74,19 @@ describe("adoptCurrent (make an editable copy of a shared link)", () => {
     io.dispose();
   });
 
-  it("adoptCurrent() makes it the autosaved document without loading the stored one", async () => {
+  it("adoptCurrent() saves the copy as a board of its own and keeps the stored sheet (migrated) without loading it", async () => {
     const ed = fakeEditor(); const kv = memKV();
-    kv.data.set("current", { key: "current", text: "{}", name: "mine", savedAt: 1, fileDirty: false });
+    kv.data.set("current", { key: "current", text: "{}", name: "mine", savedAt: 1, fileDirty: false }); // the old single-document layout
     const io = createIO(ed, document.createElement("div"), { kv });
     ed.scene.add({ kind: "rect", text: "shared" });
     ed.markSaved(); // as openSharedFromHash does after loading: the shared document is "clean", so nothing would be written without adoptCurrent
     io.adoptCurrent();
     await settle(900);
-    const rec = kv.data.get("current") as { text: string } | undefined;
-    expect(rec).toBeDefined();
-    expect(rec!.text).toContain('"text":"shared"'); // the copy replaced the previous autosave, on purpose
+    const copies = [...kv.data.values()].filter((r) => r.key.endsWith(":current") && r.key !== "b:b0:current") as Array<{ text: string }>;
+    expect(copies).toHaveLength(1);
+    expect(copies[0]!.text).toContain('"text":"shared"');
+    expect((kv.data.get("b:b0:current") as { name: string }).name).toBe("mine"); // the user's own sheet survived, under board b0
+    expect((kv.data.get("current") as { name: string }).name).toBe("mine"); // the old keys stay as a read-only snapshot
     expect((ed.load as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBe(0); // and nothing was loaded over the copy
     io.dispose();
   });

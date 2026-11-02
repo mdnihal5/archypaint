@@ -1,6 +1,6 @@
 import { arrowLabels, cleanLabels, cleanSegs, isCurve, pointAtT } from "../connectors";
 import { isPort, type ElJSON, type GroupInfo, type SceneJSON } from "../scene";
-import { LIGHT, colourOf, normHex, type Theme } from "../theme";
+import { LIGHT, TEXT_CAT, colourOf, normHex, onSolid, textInk, type Theme } from "../theme";
 import { exportGroups } from "../groups";
 import { NEW_KINDS, legendRows } from "../shape-geom";
 import { APP, FORMAT_VERSION, LIMITS, validateFile } from "./format";
@@ -145,7 +145,7 @@ export function fromExcalidraw(input: unknown, th: Theme = LIGHT): ExResult {
 
   const groupNames = new Map<string, GroupInfo>();
   const top = isObj(input[APP]) ? (input[APP] as Obj) : null;
-  if (top && Array.isArray(top.groups)) for (const g of top.groups) if (isObj(g) && typeof g.id === "string") groupNames.set(g.id, { id: "", name: str(g.name).slice(0, LIMITS.maxName), cat: num(g.cat) ?? 0, collapsed: g.collapsed === true, locked: g.locked === true });
+  if (top && Array.isArray(top.groups)) for (const g of top.groups) if (isObj(g) && typeof g.id === "string") groupNames.set(g.id, { id: "", name: str(g.name).slice(0, LIMITS.maxName), cat: num(g.cat) ?? 0, collapsed: g.collapsed === true, locked: g.locked === true, ...(normHex(g.hex) ? { hex: normHex(g.hex) } : {}), ...(g.fill === 0 || g.fill === 1 || g.fill === 2 ? { fill: g.fill } : {}) });
 
   let rotated = 0, farColour = 0, badGeom = 0;
   const out: ElJSON[] = [];
@@ -178,7 +178,7 @@ export function fromExcalidraw(input: unknown, th: Theme = LIGHT): ExResult {
     } else if (t === "image") {
       base.kind = "image"; base.img = imageKey.get(exId) ?? ""; base.fill = 0; base.edge = 1; base.radius = 8;
     } else if (t === "text") {
-      base.kind = "text"; base.text = str(e.text) || str(e.originalText); base.fill = 0;
+      base.kind = "text"; base.text = str(e.text) || str(e.originalText); base.fill = 0; base.cat = TEXT_CAT; // Excalidraw's own text colour is not carried over: the default reads as ink
       if (e.textAlign === "left" || e.textAlign === "right") base.align = e.textAlign;
       if (base.text.length > LIMITS.maxText) base.text = base.text.slice(0, LIMITS.maxText);
     } else {
@@ -315,8 +315,8 @@ export function toExcalidraw(scene: SceneJSON, th: Theme = LIGHT, images?: Recor
     for (const e of els) for (const g of e.groupIds) counts.set(g, (counts.get(g) ?? 0) + 1);
     for (const g of exportGroups(els, scene.groups, (id) => counts.get(id) ?? 0)) {
       const b = g.box, oid = `${g.id}_outline`;
-      const fake: ElJSON = { id: oid, kind: "rect", x: b.x, y: b.y, w: b.w, h: b.h, z: 0, version: 1, cat: g.cat, fill: 0, radius: 14, text: "", edge: 1, groupIds: [], iconId: "", img: "", locked: true, n: 0, o: 0, src: "", dst: "", sp: -1, dp: -1, route: 1, dash: 1, head: 1, pts: [] };
-      out.push(Object.assign(common(fake, "rectangle"), { roundness: { type: 3 }, strokeWidth: 1.6, opacity: 100, customData: { [APP]: { groupOutline: g.id } } }));
+      const fake: ElJSON = { id: oid, kind: "rect", x: b.x, y: b.y, w: b.w, h: b.h, z: 0, version: 1, cat: g.cat, ...(g.hex ? { hex: g.hex } : {}), fill: 0, radius: 14, text: "", edge: 1, groupIds: [], iconId: "", img: "", locked: true, n: 0, o: 0, src: "", dst: "", sp: -1, dp: -1, route: 1, dash: 1, head: 1, pts: [] };
+      out.push(Object.assign(common(fake, "rectangle"), { ...(g.fill === 2 ? { backgroundColor: mix(colourOf(th, fake), 0.84) } : {}), roundness: { type: 3 }, strokeWidth: 1.6, opacity: 100, customData: { [APP]: { groupOutline: g.id } } }));
       if (g.name) {
         const w = Math.max(10, Math.min(200, g.name.length * 9.6));
         label(oid, g.name, b.x + 12 + w / 2, b.y - 8 - 10, w, 0, `${g.id}_tag`, "left"); // box = the text itself, so its left edge is the tag's
@@ -364,7 +364,7 @@ export function toExcalidraw(scene: SceneJSON, th: Theme = LIGHT, images?: Recor
     }
     if (e.kind === "text") {
       const el = common(e, "text");
-      Object.assign(el, { text: e.text, originalText: e.text, fontSize: e.fs ? Math.round((e.fs * 16) / 13) : 16, fontFamily: 3, textAlign: e.align ?? "center", verticalAlign: "middle", containerId: null, autoResize: true, lineHeight: 1.25, boundElements: null, customData: meta(e) });
+      Object.assign(el, { strokeColor: e.fill === 2 ? onSolid(th, colourOf(th, e)) : textInk(th, e), backgroundColor: e.fill === 1 ? mix(colourOf(th, e), 0.87) : e.fill === 2 ? colourOf(th, e) : "transparent", text: e.text, originalText: e.text, fontSize: e.fs ? Math.round((e.fs * 16) / 13) : 16, fontFamily: 3, textAlign: e.align ?? "center", verticalAlign: "middle", containerId: null, autoResize: true, lineHeight: 1.25, boundElements: null, customData: meta(e) });
       out.push(el);
       continue;
     }

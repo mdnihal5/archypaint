@@ -8,14 +8,14 @@ npm install
 npm run dev          # http://localhost:5173
 npm run check        # typecheck + unit tests + build + bundle-size budget
 npx vitest run       # unit tests only
-npm run size         # entry <= 68 KB gzip, every lazy chunk <= 30 KB gzip (after a build)
+npm run size         # startup JS (entry + preloaded/static chunks) <= 69 KB gzip, every lazy chunk <= 30 KB gzip (after a build)
 npm run perf -- 5000 --mixed   # 5,000 realistic elements: idle frames, JS ms/frame, heap growth (add --noflow to isolate the animation)
 node perf/interact.mjs  |  node scripts/ui-check.mjs  |  node scripts/present-check.mjs  |  npm run perf:images  |  npm run perf:tidy
 ```
 The Puppeteer scripts read `PUPPETEER_DIR` (a node_modules containing `puppeteer-core`) and use `/usr/bin/google-chrome`.
 
 ## What it does
-Drawing and editing (shapes, connectors that stay attached (a bound connector never comes unglued by dragging its body; on an elbow that drag pushes the segment under the pointer, and a midpoint handle does the same), connectors that branch from another connector, and can carry several labels each, groups you can grab anywhere and bind connectors to, named icons, text sizes and alignment, wrapped labels, type-to-edit labels, layers, align, find, minimap, undo) · 269 real brand logos (databases, caches, queues, CDNs, clouds and their services, observability, auth, CI/CD, clients, languages...) in 20 lazy category packs, in their brand colours, offline · 321 original generic icons as a secondary pack · insert image / SVG · **Y** auto-tidy layout · **C** capacity notes (back-of-envelope maths, with starter templates: URL shortener, chat, feed, video, file storage, CRUD) · diagram from text or Mermaid · **P** present mode · read-only share link (no backend) · autosave, PNG / SVG / Excalidraw export, offline · flow animation on pointed arrows · double-click a tool to keep it active.
+Drawing and editing (shapes, connectors that stay attached (a bound connector never comes unglued by dragging its body; on an elbow that drag pushes the segment under the pointer, and a midpoint handle does the same), connectors that branch from another connector, and can carry several labels each, groups you can grab anywhere and bind connectors to, named icons, text sizes and alignment, wrapped labels, type-to-edit labels, layers, align, find, minimap, undo) · 269 real brand logos (databases, caches, queues, CDNs, clouds and their services, observability, auth, CI/CD, clients, languages...) in 20 lazy category packs, in their brand colours, offline · 321 original generic icons as a secondary pack · insert image / SVG · **Y** auto-tidy layout · **C** capacity notes (back-of-envelope maths, with starter templates: URL shortener, chat, feed, video, file storage, CRUD) · diagram from text or Mermaid · **P** present mode · read-only share link (no backend) · **boards** (several designs: click the name in the top-left chip; rename, duplicate, delete with Undo; each keeps its own autosave and its last 20 undo steps) · autosave, PNG / SVG / Excalidraw export, offline · flow animation on pointed arrows · double-click a tool to keep it active.
 
 Keys worth knowing: `/` icon search, `I` show / hide the properties panel (drag its header to move it, double-click the header to put it back), `C` capacity note, `?` the full list.
 
@@ -28,7 +28,7 @@ Keys worth knowing: `/` icon search, `I` show / hide the properties panel (drag 
 | `src/editor-api.ts` | the one seam between the engine and UI / palette / I/O |
 | `src/icons.ts` `icon-pack.ts` `palette.ts` | vector icon rendering (lazy pack) and the `/` search |
 | `src/ui/*` | chrome: home sheet, tool strip, panels, layers (virtualised) |
-| `src/io/*` | `.archypaint` format, IndexedDB autosave, files, PNG/SVG, Excalidraw, offline |
+| `src/io/*` | `.archypaint` format, IndexedDB autosave (per-board records + a small `boards` index), files, PNG/SVG, Excalidraw, offline; `boards.ts` (lazy) is the boards manager and the old-layout migration |
 | `src/features/*` | menu/keyboard actions contributed by features; each feature's code is a lazy chunk (tidy, calc, text import, present, share, images) |
 | `src/layout.ts` `calc.ts` `textdsl.ts` `images.ts` `logos.ts` `share.ts` `present.ts` | the lazily loaded feature implementations |
 | `icons/` | the standalone drawn icon library (two tiers each) and the brand-logo catalog + build (`npm run logos`) — see `icons/README.md` |

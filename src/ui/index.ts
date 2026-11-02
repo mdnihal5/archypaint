@@ -8,7 +8,6 @@ import { mountBottom } from "./bottom";
 import { mountBrand } from "./brand";
 import { mountFlow } from "./flow";
 import { mountFooter } from "./footer";
-import { mountFind } from "./find";
 import { mountKeys } from "./keys";
 import { mountMinimap } from "./minimap";
 import { mountPanels } from "./panels";
@@ -49,6 +48,9 @@ export function mountUI(deps: UiDeps): UiHandle {
   // the main menu sheet is a lazy chunk: built on the first open, then kept (closed) until the chrome is disposed
   type MenuApi = { toggle(): void; close(): void };
   let menuApi: MenuApi | null = null, menuLoad: Promise<MenuApi | null> | null = null;
+  // the boards list is a lazy chunk too, built on the first open
+  let boardsApi: MenuApi | null = null, boardsLoad: Promise<MenuApi | null> | null = null;
+  const boardsUi = (): Promise<MenuApi | null> => (boardsLoad ??= import("./boards").then((m) => (d.isDisposed() ? null : (boardsApi = m.mountBoards(ctx, root))), () => { boardsLoad = null; return null; }));
   const menu = (): Promise<MenuApi | null> => (menuLoad ??= import("./menu").then((m) => (d.isDisposed() ? null : (menuApi = m.mountMenu(ctx, root))), () => { menuLoad = null; return null; }));
   let pendingConfirm: { close(): void } | null = null;
 
@@ -66,6 +68,8 @@ export function mountUI(deps: UiDeps): UiHandle {
     },
     toggleMenu() { void menu().then((m) => m?.toggle()); },
     closeMenu() { menuApi?.close(); },
+    toggleBoards() { void boardsUi().then((m) => m?.toggle()); },
+    closeBoards() { boardsApi?.close(); },
     run(fn) { Promise.resolve().then(fn).catch((e: unknown) => toasts.toast(e instanceof Error ? e.message : String(e), "err")); },
     modalOpen,
   };
@@ -80,17 +84,20 @@ export function mountUI(deps: UiDeps): UiHandle {
   mountBrand(ctx, root);
   mountFooter(ctx, root);
   mountKeys(ctx);
-  mountFind(ctx, root);
+  // the find bar is a lazy chunk: the first ⌘F / click loads it, then it opens (its own handlers take over from this stub)
+  let findLoad: Promise<void> | null = null;
+  const findStub = () => {
+    findLoad ??= import("./find").then((m) => { if (!d.isDisposed()) m.mountFind(ctx, root); }, () => { findLoad = null; });
+    void findLoad.then(() => { if (ctx.openFind && ctx.openFind !== findStub) ctx.openFind(); });
+  };
+  ctx.openFind = findStub;
+  d.on(window, "keydown", (e: KeyboardEvent) => {
+    if (ctx.openFind === findStub && (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "f" && !ctx.modalOpen()) { e.preventDefault(); findStub(); }
+  });
   mountMinimap(ctx, root);
 
-  // keep the name field in step with the document without ever clobbering it while it is being typed in
-  const sync = ctx.update("docname", () => {
-    const n = io.docName();
-    const i = top.nameInput;
-    if (document.activeElement !== i && i.value !== n) i.value = n;
-  });
-  ctx.wire(sync, "change");
-  ctx.onSlowTick(() => { const n = io.docName(); if (top.nameInput.value !== n && document.activeElement !== top.nameInput) sync.schedule(); });
+  // the chip's name (and the tab title) follow the open board: a switch, a rename, a loaded file
+  ctx.onSlowTick(() => { if (top.shown() !== io.docName()) top.refresh(); });
 
   // direct scene mutations (benchmarks, load paths) may not emit an editor event: notice a changed scene cheaply
   let seenNonce = editor.scene.nonce;

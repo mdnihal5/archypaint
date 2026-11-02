@@ -77,7 +77,8 @@ export interface El {
 
 export type ElInit = Partial<Omit<El, "id" | "z" | "version" | "gx0" | "gy0" | "gx1" | "gy1" | "seen">> & { kind: Kind };
 
-export interface GroupInfo { id: string; name: string; cat: number; collapsed: boolean; locked: boolean }
+/** `hex` / `fill` are the group's own outline colour and fill (absent = the colour slot `cat` and the soft tint every group had): 0 outline only, 1 tint, 2 stronger tint */
+export interface GroupInfo { id: string; name: string; cat: number; collapsed: boolean; locked: boolean; hex?: string | undefined; fill?: 0 | 1 | 2 | undefined }
 
 /** persisted element: everything except spatial-index bookkeeping */
 export type ElJSON = Omit<El, "gx0" | "gy0" | "gx1" | "gy1" | "seen">;

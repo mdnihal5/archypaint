@@ -268,11 +268,15 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
     await p.evaluate((l) => document.querySelector(`.ap-ribbon button[aria-label^="${l}"]`).click(), label); await sleep(80);
     check(`props: arrange ${label} -> editor.${fn}`, await has(p, fn));
   }
+  check("props: group button is disabled for a single element", await p.evaluate(() => [...document.querySelectorAll(".ap-ribbon .ap-btn")].find((x) => x.querySelector("span")?.textContent === "group").disabled));
+  await p.evaluate(() => window.__ap.editor.select([window.__ids[0], window.__ids[1]])); await sleep(200);
   await p.evaluate(() => [...document.querySelectorAll(".ap-ribbon .ap-btn")].find((x) => x.querySelector("span")?.textContent === "group").click()); await sleep(120);
   check("props: group -> editor.group", await has(p, "group"));
+  await p.evaluate(() => { window.__ap.editor.undo(); window.__ap.editor.select([window.__ids[0]]); }); await sleep(200); // back to the plain single selection the next checks expect
   check("props: name field hidden for an ungrouped selection", !(await vis(p, '.ap-ribbon input[aria-label="Group name"]')));
   await p.evaluate(() => window.__ap.editor.select([window.__ids[2], window.__ids[3]])); await sleep(200);
   check("props: name field shows the group's name", await p.evaluate(() => document.querySelector('.ap-ribbon input[aria-label="Group name"]').value === "compute-tier"));
+  check("props: group button is disabled when the selection is exactly one existing group (no nested duplicate)", await p.evaluate(() => [...document.querySelectorAll(".ap-ribbon .ap-btn")].find((x) => x.querySelector("span")?.textContent === "group").disabled));
   await clear(p);
   await p.focus('.ap-ribbon input[aria-label="Group name"]'); await p.keyboard.press("End"); await p.keyboard.type("-x"); await p.keyboard.press("Enter"); await sleep(150);
   check("props: Enter commits -> renameGroup('g1','compute-tier-x')", await has(p, "renameGroup", (c) => c[1] === "g1" && c[2] === "compute-tier-x"));
@@ -386,6 +390,96 @@ for (const w of [390, 820, 1024]) {
     await click(p, 'button[aria-label="Properties"]'); await until(p, ".ap-ribbon");
     check(`responsive ${w}px: toggle opens the ribbon inside the window`, await p.evaluate(() => { const r = document.querySelector(".ap-ribbon").getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 0.5; }));
   }
+  await cx.close();
+}
+
+/* ================= 7. boards: the list under the name chip ================= */
+{
+  const { p, cx, errs } = await open(URL0 + "?theme=light");
+  const rows = () => p.evaluate(() => [...document.querySelectorAll(".ap-bd")].map((r) => ({ n: r.querySelector(".n").textContent, cur: r.classList.contains("cur"), t: r.querySelector(".t")?.textContent })));
+  const chipName = () => p.evaluate(() => document.querySelector(".ap-chip .ap-nm").textContent);
+  const rowBtn = async (name, label) => { const h = await p.evaluateHandle((n, l) => { const r = [...document.querySelectorAll(".ap-bd")].find((x) => x.querySelector(".n")?.textContent === n); return r?.querySelector(`button[aria-label^="${l}"]`) ?? null; }, name, label); return h.asElement(); };
+  const rowHover = async (name) => { const h = await p.evaluateHandle((n) => [...document.querySelectorAll(".ap-bd")].find((x) => x.querySelector(".n")?.textContent === n), name); await h.asElement().hover(); await sleep(80); };
+  const drawRect = async (x, y) => { await p.keyboard.press("r"); await p.mouse.move(x, y); await p.mouse.down(); await p.mouse.move(x + 60, y + 40, { steps: 3 }); await p.mouse.up(); await sleep(80); await p.evaluate(() => window.__ap.editor.clearSelection()); };
+
+  check("boards: the chip name is a button with a chevron, and no text field is left in the chip", await p.evaluate(() => { const n = document.querySelector(".ap-chip .ap-name"); return n?.tagName === "BUTTON" && !!n.querySelector("svg") && !document.querySelector(".ap-chip input"); }));
+  check("boards: the tab title is the board name", await p.evaluate(() => document.title === "untitled · archypaint"));
+  await click(p, ".ap-chip .ap-name"); await until(p, ".ap-boards");
+  check("boards: clicking the name opens the list (aria-expanded, one row, the current board marked)", (await p.evaluate(() => document.querySelector(".ap-chip .ap-name").getAttribute("aria-expanded"))) === "true" && JSON.stringify((await rows()).map((r) => [r.n, r.cur])) === JSON.stringify([["untitled", true]]));
+  check("boards: it is the menu sheet style (.ap-menu.ap-card) with a Boards header and a New board row", await p.evaluate(() => { const m = document.querySelector(".ap-boards"); return m.classList.contains("ap-menu") && m.classList.contains("ap-card") && m.querySelector(".ap-gh").textContent === "Boards" && !!m.querySelector(".ap-newb"); }));
+  check("boards: no search field with 8 boards or fewer", !(await vis(p, ".ap-bsearch")));
+  await p.keyboard.press("Escape"); await sleep(120);
+  check("boards: Esc closes it and returns focus to the name", !(await vis(p, ".ap-boards")) && (await p.evaluate(() => document.activeElement === document.querySelector(".ap-chip .ap-name"))));
+
+  // draw in board 1, rename it from the list, make a second board, draw there, switch back
+  await drawRect(400, 300);
+  await click(p, ".ap-chip .ap-name"); await until(p, ".ap-boards");
+  await rowHover("untitled");
+  check("boards: hovering a row shows rename / duplicate / delete", (await vis(p, '.ap-bd button[aria-label^="Rename"]')) && (await vis(p, '.ap-bd button[aria-label^="Duplicate"]')) && (await vis(p, '.ap-bd button[aria-label^="Delete"]')));
+  await (await rowBtn("untitled", "Rename")).click(); await until(p, ".ap-bd input.ap-input");
+  check("boards: rename is an inline field, focused, with the name selected", await p.evaluate(() => { const i = document.querySelector(".ap-bd input"); return document.activeElement === i && i.selectionStart === 0 && i.selectionEnd === i.value.length; }));
+  await p.keyboard.type("Checkout flow"); await p.keyboard.press("Escape"); await sleep(120);
+  check("boards: Esc cancels the rename and keeps the list open", (await vis(p, ".ap-boards")) && (await rows())[0].n === "untitled");
+  await p.keyboard.press("F2"); await sleep(120);
+  check("boards: F2 on the focused row starts a rename", await vis(p, ".ap-bd input.ap-input"));
+  await p.keyboard.type("Checkout flow"); await p.keyboard.press("Enter"); await sleep(250);
+  check("boards: Enter saves the rename; list, chip and tab title follow", (await rows())[0].n === "Checkout flow" && (await chipName()) === "Checkout flow" && (await p.evaluate(() => document.title)) === "Checkout flow · archypaint");
+  await click(p, ".ap-newb"); await sleep(400);
+  check("boards: New board opens an empty board, closes the list, and the chip shows it", !(await vis(p, ".ap-boards")) && (await chipName()) === "untitled" && (await p.evaluate(() => window.__ap.editor.scene.els.size)) === 0);
+  await drawRect(500, 380); await drawRect(620, 380);
+  const idB = await p.evaluate(() => window.__ap.io.boardId());
+  await click(p, ".ap-chip .ap-name"); await until(p, ".ap-boards");
+  const r2 = await rows();
+  check("boards: the list now has both, the open one first and marked, with a relative time", r2.length === 2 && r2[0].n === "untitled" && r2[0].cur && r2[1].n === "Checkout flow" && /just now|min ago/.test(r2[1].t), JSON.stringify(r2));
+  await p.evaluate(() => { document.querySelectorAll(".ap-bd")[1].click(); }); await sleep(500);
+  check("boards: clicking a row switches: its scene (1 shape) is loaded and the chip shows its name", (await chipName()) === "Checkout flow" && (await p.evaluate(() => window.__ap.editor.scene.els.size)) === 1);
+  check("boards: switching back keeps that board's Ctrl+Z working", await (async () => { await p.keyboard.down("Control"); await p.keyboard.press("z"); await p.keyboard.up("Control"); await sleep(120); return (await p.evaluate(() => window.__ap.editor.scene.els.size)) === 0; })());
+  await p.keyboard.down("Control"); await p.keyboard.down("Shift"); await p.keyboard.press("z"); await p.keyboard.up("Shift"); await p.keyboard.up("Control"); await sleep(100);
+
+  // duplicate, then delete with undo
+  await click(p, ".ap-chip .ap-name"); await until(p, ".ap-boards");
+  await rowHover("Checkout flow"); await (await rowBtn("Checkout flow", "Duplicate")).click(); await sleep(300);
+  check("boards: Duplicate adds 'Checkout flow copy' without switching", JSON.stringify((await rows()).map((r) => r.n).sort()) === JSON.stringify(["Checkout flow", "Checkout flow copy", "untitled"]) && (await chipName()) === "Checkout flow");
+  await rowHover("untitled"); await (await rowBtn("untitled", "Delete")).click(); await sleep(300);
+  check("boards: Delete removes the row at once and shows a toast with Undo", (await rows()).every((r) => r.n !== "untitled") && (await p.evaluate(() => [...document.querySelectorAll(".ap-toast")].some((t) => t.textContent.startsWith("Deleted “untitled”") && !!t.querySelector(".ap-tact")))));
+  await click(p, ".ap-tact"); await sleep(400);
+  check("boards: Undo brings the row back, and its content is still there", (await rows()).some((r) => r.n === "untitled") && !(await p.evaluate(() => !!document.querySelector(".ap-tact"))));
+  await p.evaluate(() => { document.querySelectorAll(".ap-bd")[0].focus(); }); await p.keyboard.press("ArrowDown"); await sleep(60);
+  check("boards: ArrowDown moves focus to the next row", await p.evaluate(() => document.activeElement === document.querySelectorAll(".ap-bd")[1]));
+  await p.keyboard.press("Escape"); await sleep(100);
+  // idle after all that
+  await sleep(600);
+  const quiet = await p.evaluate(async () => { const r = window.__ap.renderer, t = r.lastFrameAt, raf0 = window.__inst.raf(); await new Promise((x) => setTimeout(x, 1500)); return { frames: r.lastFrameAt === t, raf: window.__inst.raf() - raf0 }; });
+  check("boards: after all that, no frame is scheduled while idle", quiet.frames && quiet.raf === 0, JSON.stringify(quiet));
+  // it all survives a reload
+  p.on("dialog", (d) => d.accept()); // the unsaved-changes prompt of beforeunload
+  await p.reload(); await p.waitForFunction(() => window.__ap && window.__ap.ui); await sleep(900);
+  check("boards: after a reload the open board and the list come back", (await chipName()) === "Checkout flow" && (await p.evaluate(() => window.__ap.editor.scene.els.size)) === 1);
+  check("boards: a second tab's old-layout store is not involved: no stray legacy keys", await p.evaluate(() => new Promise((res) => { const r = indexedDB.open("archypaint"); r.onsuccess = () => { const g = r.result.transaction("docs").objectStore("docs").getAllKeys(); g.onsuccess = () => { r.result.close(); res(!g.result.some((k) => ["current", "backup", "view", "handle"].includes(k)) && g.result.includes("boards")); }; }; })));
+  check("boards: no page errors", errs.length === 0, errs.slice(0, 2).join(" | "));
+  await cx.close();
+}
+{
+  // the old single-document layout is migrated on first load, with the sheet and name intact
+  const { p, cx } = await open(URL0 + "?theme=light");
+  await p.evaluate(() => { window.__ap.editor.importElements({ els: [{ id: "legacy1", kind: "rect", x: 10, y: 10, w: 80, h: 40, text: "legacy" }], groups: [] }, false); });
+  await p.evaluate(() => window.__ap.io.boards().then((b) => b.list())); // flush
+  const doc = await p.evaluate(() => new Promise((res) => { const r = indexedDB.open("archypaint"); r.onsuccess = () => { const s = r.result.transaction("docs").objectStore("docs"); s.getAll().onsuccess = (e) => { r.result.close(); res(e.target.result.find((x) => x.key.endsWith(":current")).text); }; }; }));
+  await cx.close();
+  const c2 = await b.createBrowserContext(); const p2 = await c2.newPage();
+  await p2.goto(URL0 + "?theme=light&stress=0"); await p2.waitForFunction(() => window.__ap && window.__ap.ui);
+  await p2.evaluate((t) => new Promise((res, rej) => { const q = indexedDB.deleteDatabase("archypaint"); q.onsuccess = q.onerror = () => { const r = indexedDB.open("archypaint", 1); r.onupgradeneeded = () => r.result.createObjectStore("docs", { keyPath: "key" }); r.onsuccess = () => { const tx = r.result.transaction("docs", "readwrite"); tx.objectStore("docs").put({ key: "current", text: t, name: "Old sheet", savedAt: 5, fileDirty: false }); tx.oncomplete = () => { r.result.close(); res(); }; }; }; }), doc);
+  await p2.reload(); await p2.waitForFunction(() => window.__ap && window.__ap.ui); await sleep(900);
+  const ok = await p2.evaluate(() => ({ els: [...window.__ap.editor.scene.els.values()].map((e) => e.text), name: window.__ap.io.docName(), id: window.__ap.io.boardId() }));
+  check("boards: an old single-document store is migrated into board b0 on first load: content and name intact", JSON.stringify(ok.els) === JSON.stringify(["legacy"]) && ok.name === "Old sheet" && ok.id === "b0", JSON.stringify(ok));
+  await c2.close();
+}
+{
+  // phone width: the row actions are always visible, the list fits the window
+  const { p, cx } = await open(URL0 + "?theme=light", 390, 800);
+  await click(p, ".ap-chip .ap-name"); await until(p, ".ap-boards");
+  const m = await p.evaluate(() => { const r = document.querySelector(".ap-boards").getBoundingClientRect(), a = document.querySelector(".ap-bd button").getBoundingClientRect(); return { l: r.left, r: r.right, iw: innerWidth, aw: a.width, ah: a.height, sw: document.documentElement.scrollWidth }; });
+  check("boards: 390px: the list fits, actions are visible without hover, targets are >= 38px, no horizontal scroll", m.l >= 0 && m.r <= m.iw && m.aw >= 38 && m.ah >= 38 && m.sw <= m.iw, JSON.stringify(m));
   await cx.close();
 }
 

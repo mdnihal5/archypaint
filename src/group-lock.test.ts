@@ -114,3 +114,36 @@ describe("group lock", () => {
     expect(json.groups.find((g) => g.id === gid)!.locked).toBe(true);
   });
 });
+
+describe("Ctrl+G on an existing group", () => {
+  it("is a no-op when the selection is exactly one top-level group: no duplicate group, no history step", () => {
+    const { a, b, gid } = lockedGroup();
+    ed.setGroupLocked(gid, false);
+    ed.select([a.id, b.id]);
+    expect(ed.canGroup()).toBe(false);
+    const groups = ed.scene.groups.size, undos = ed.canUndo();
+    expect(ed.group()).toBeNull();
+    expect(ed.scene.groups.size).toBe(groups);
+    expect(ed.scene.els.get(a.id)!.groupIds).toEqual([gid]);
+    expect(ed.canUndo()).toBe(undos);
+  });
+  it("still groups when the membership differs: an added element, a removed one, or two groups", () => {
+    const { a, b, gid } = lockedGroup();
+    ed.setGroupLocked(gid, false);
+    const c = add({ kind: "rect", x: 600, y: 100, w: 50, h: 50 });
+    ed.select([a.id, b.id, c.id]);
+    expect(ed.canGroup()).toBe(true);
+    const outer = ed.group("outer")!;
+    expect(ed.scene.els.get(a.id)!.groupIds).toEqual([gid, outer]); // the old group is nested inside the new one
+    ed.select([a.id, b.id, c.id]);
+    expect(ed.canGroup()).toBe(false); // now exactly `outer`
+    // part of a group: 2 of 3 members
+    ed.select([a.id, b.id]);
+    expect(ed.canGroup()).toBe(true);
+    // two separate groups
+    const d = add({ kind: "rect", x: 800, y: 100, w: 50, h: 50 }), e2 = add({ kind: "rect", x: 900, y: 100, w: 50, h: 50 });
+    ed.select([d.id, e2.id]); ed.group("g2");
+    ed.select([a.id, b.id, c.id, d.id, e2.id]);
+    expect(ed.canGroup()).toBe(true); // two groups together are not one group
+  });
+});

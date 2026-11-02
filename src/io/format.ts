@@ -175,6 +175,8 @@ function readGroup(raw: unknown, i: number): GroupInfo {
     cat: opt(raw.cat, 0, (v) => fint(v, `${p}.cat`, 0, 255)),
     collapsed: opt(raw.collapsed, false, (v) => fbool(v, `${p}.collapsed`)),
     locked: opt(raw.locked, false, (v) => fbool(v, `${p}.locked`)),
+    ...(normHex(raw.hex) ? { hex: normHex(raw.hex) } : {}),
+    ...(raw.fill !== undefined ? { fill: oneOf(raw.fill, `${p}.fill`, [0, 1, 2] as const) } : {}),
   };
 }
 

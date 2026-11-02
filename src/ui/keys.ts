@@ -23,7 +23,7 @@ export function mountKeys(ctx: Ctx): void {
     if (meta) {
       const k = e.key.toLowerCase();
       if (k === "s") { e.preventDefault(); ctx.run(() => (e.shiftKey ? io.saveAs() : io.save())); }
-      else if (k === "o") { e.preventDefault(); const go = () => ctx.run(() => io.open()); if (editor.dirty()) void ctx.confirm("This sheet has unsaved changes. Discard them?").then((ok) => ok && go()); else go(); }
+      else if (k === "o") { e.preventDefault(); ctx.run(() => io.open()); } // opens into a new board: nothing to discard
       else if (k === "e" && e.shiftKey) { e.preventDefault(); ctx.run(() => io.exportPng({ scale: 2, background: true })); }
       return;
     }

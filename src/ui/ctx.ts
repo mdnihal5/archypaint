@@ -3,6 +3,7 @@ import type { IO } from "../io";
 import type { Palette } from "../palette";
 import { createUpdater, type Disposer, type Updater } from "./dom";
 import type { SettingsStore } from "./settings";
+import type { ToastAction } from "./toast";
 
 /** what the footer reads from the renderer (optional: the UI works without it) */
 export interface HudSource { visibleCount: number; lastFrameMs: number; lastFrameAt: number; degraded: boolean; p95(): number }
@@ -23,7 +24,8 @@ export interface Ctx {
   refresh(): void;
   /** called every ~500 ms for cheap polled state (zoom %, save state, footer) */
   onSlowTick(fn: () => void): void;
-  toast(msg: string, kind?: "ok" | "err"): void;
+  /** `action` adds one button (Undo) and a longer life; see ToastAction */
+  toast(msg: string, kind?: "ok" | "err", action?: ToastAction): void;
   confirm(msg: string, yes?: string): Promise<boolean>;
   showShortcuts(): void;
   /** run an async action; failures become an error toast instead of an unhandled rejection */
@@ -36,6 +38,9 @@ export interface Ctx {
   toggleMenu(): void;
   /** closes the main menu if it is open */
   closeMenu(): void;
+  /** opens / closes the boards list under the name chip (its code is a lazy chunk, loaded on the first open) */
+  toggleBoards(): void;
+  closeBoards(): void;
   /** set by the panels module: shows / hides the properties ribbon (the `I` key); the ribbon's code loads on the first open */
   toggleProps?: () => void;
   /** set by the panels module: is it open (the toggle button shows this) */
