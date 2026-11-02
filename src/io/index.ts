@@ -3,7 +3,9 @@ import type { SceneJSON } from "../scene";
 import { LIGHT, type Theme } from "../theme";
 import { Files, fileKindFromName, safeFileName, sniffKind, stripExt, type FSHandle } from "./file";
 import { LIMITS, parseArch, serializeArch, type ArchFile, type ArchMeta, type ArchView, type Settings } from "./format";
-import { Autosave, idbKV, memKV, serializeSliced, type KV, type SaveStatus, type StorageSource } from "./storage";
+import type { HistState } from "../history";
+import type { BoardRecs, BoardsApi, BoardsHost } from "./boards";
+import { Autosave, idbKV, memKV, newBoardId, serializeSliced, type DocRec, type KV, type SaveStatus, type Stamp, type StorageSource } from "./storage";
 
 export type { SaveStatus } from "./storage";
 
@@ -24,8 +26,12 @@ export interface IO {
   save(): Promise<void>;
   saveAs(): Promise<void>;
   open(): Promise<void>;
-  /** restore the autosaved document on startup; true if something was restored */
+  /** restore the autosaved board (the one that was open) on startup; true if something was restored */
   restore(): Promise<boolean>;
+  /** the open board's id */
+  boardId(): string;
+  /** the boards manager (list, create, switch, rename, duplicate, delete with undo): a lazy chunk, loaded on first use */
+  boards(): Promise<BoardsApi>;
   /**
    * Make the document currently in the editor the autosaved one, without loading the stored sheet. Used by "Make an
    * editable copy" of a shared link: the link was opened without restore(), so autosave was never armed and nothing
@@ -61,6 +67,7 @@ export interface IOOptions {
 const lazyExport = () => import("./export");
 const lazyExcalidraw = () => import("./excalidraw");
 const lazyImgIo = () => import("./images-io");
+const lazyBoards = () => import("./boards");
 const hasImages = (scene: { els: Map<string, { kind: string }> }): boolean => { for (const e of scene.els.values()) if (e.kind === "image") return true; return false; };
 /** set by the images chunk whenever it stores something, so startup only loads that chunk (to delete unreferenced blobs) when images were ever used */
 const IMAGES_FLAG = "archypaint.images.v1";
@@ -100,6 +107,8 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
     setStatus(s);
     if (s === "error") say("error", "Autosave failed — your browser may be blocking or out of storage. Save to a file to be safe.");
   });
+  autosave.id = newBoardId(); // a board of its own until restore() opens a stored one (b0 is reserved for the migrated old document)
+  autosave.onMoved = (_id, name) => { meta = { ...meta, name }; say("warn", `Another tab changed this board, so your version was saved as “${name}”. Nothing was overwritten.`); };
   if (typeof document !== "undefined") autosave.attachLifecycle();
   const files = new Files();
 
@@ -118,11 +127,11 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
 
   const setView = (v: ArchView) => { vp.x = v.x; vp.y = v.y; vp.zoom = Math.min(LIMITS.maxZoom, Math.max(LIMITS.minZoom, v.zoom)); vp.version++; };
 
-  function apply(f: ArchFile, o: { view?: ArchView; markSaved: boolean }): void {
+  function apply(f: ArchFile, o: { view?: ArchView; markSaved: boolean; hist?: HistState }): void {
     meta = { ...f.meta }; settings = { ...f.settings }; extra = f.extra; elExtra = f.elExtra; nameDirty = false;
     const v = o.view ?? f.view;
     setView(v);
-    editor.load(f.scene);
+    editor.load(f.scene, o.hist);
     if (Math.abs(vp.zoom - v.zoom) > 1e-9 || vp.x !== v.x || vp.y !== v.y) { setView(v); editor.zoomBy(1.000001); } // editor.load reset the view; re-assert and force a redraw
     if (o.markSaved) editor.markSaved();
     for (const f2 of [...loadSubs]) f2(settings);
@@ -141,6 +150,7 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
     try { await fn(); } catch (e) { say("error", e instanceof Error ? e.message : String(e)); } finally { busy = false; }
   }
 
+  /** File > Open, drop and Excalidraw import all land in a NEW board named after the file: opening never overwrites a board */
   async function loadFile(file: File, h: FSHandle | null): Promise<void> {
     const r = await files.readText(file);
     if (!r.ok) { say("error", r.message); return; }
@@ -151,19 +161,20 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
       try { raw = JSON.parse(r.text); } catch { say("error", `${file.name} is not valid JSON.`); return; }
       const ex = (await lazyExcalidraw()).fromExcalidraw(raw, themeOf(editor));
       if (!ex.ok) { say("error", ex.message); return; }
-      handle = null; void autosave.saveHandle(null);
       if (ex.images && !(await (await lazyImgIo()).hydrateExcalidraw(ex.images, ex.scene.els))) ex.warnings.push("some images could not be loaded");
-      loadScene(ex.scene, stripExt(file.name));
-      say(ex.warnings.length ? "warn" : "info", ex.warnings.length ? `Imported ${file.name}. ${ex.warnings.join("; ")}.` : `Imported ${file.name}.`);
+      const ok = await boards().then((b) => b.createFrom(stripExt(file.name), () => { handle = null; void autosave.saveHandle(null); loadScene(ex.scene, stripExt(file.name)); }));
+      if (ok) say(ex.warnings.length ? "warn" : "info", ex.warnings.length ? `Imported ${file.name}. ${ex.warnings.join("; ")}.` : `Imported ${file.name}.`);
       return;
     }
     const p = parseArch(r.text);
     if (!p.ok) { say("error", p.error.code === "unsupported_version" || p.error.code === "not_archypaint" ? p.error.message : `Could not open ${file.name}: ${p.error.message}`); return; }
     if ("images" in p.value.extra) await (await lazyImgIo()).hydrateFile(p.value, say);
-    apply(p.value, { markSaved: true });
-    meta = { ...meta, name: cleanName(stripExt(file.name)) };
-    handle = h; void autosave.saveHandle(h);
-    if (p.warnings.length) say("warn", `Opened ${file.name}. ${p.warnings.join("; ")}.`);
+    const ok = await boards().then((b) => b.createFrom(stripExt(file.name), () => {
+      apply(p.value, { markSaved: true });
+      meta = { ...meta, name: cleanName(stripExt(file.name)) };
+      handle = h; void autosave.saveHandle(h);
+    }));
+    if (ok && p.warnings.length) say("warn", `Opened ${file.name}. ${p.warnings.join("; ")}.`);
   }
 
   /** startup only, and only if images were ever stored: delete blobs no element of the restored sheet uses */
@@ -172,8 +183,62 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
     let flagged = false;
     try { flagged = localStorage.getItem(IMAGES_FLAG) === "1"; } catch { /* storage blocked: nothing to collect */ }
     if (!flagged || gcTimer !== null || disposed) return;
-    gcTimer = setTimeout(() => { gcTimer = null; if (!disposed) void lazyImgIo().then((m) => m.gcUnused(editor.scene)).catch(() => {}); }, 5000);
+    gcTimer = setTimeout(() => {
+      gcTimer = null;
+      // pictures of the other boards count as used: only what NO board refers to is deleted
+      if (!disposed) void Promise.all([lazyImgIo(), lazyBoards().then((m) => m.otherImageKeys(kv, autosave.id))]).then(([m, others]) => m.gcUnused(editor.scene, others)).catch(() => {});
+    }, 5000);
   }
+
+  /** the board index; an old single-document store is moved into board b0 first (atomically, once) */
+  async function prepare() {
+    let ix = await autosave.loadIndex();
+    if (!ix && (await autosave.hasLegacy())) ix = await (await lazyBoards()).migrateLegacy(kv).catch((e) => { autosave.lastError = e; return undefined; });
+    return ix;
+  }
+  const stampOf = (r?: DocRec): Stamp | null => (r ? { tab: r.tab, seq: r.seq ?? 0 } : null);
+
+  /**
+   * Make a board the open one, synchronously. `recs` empty = a new board named `name`. Returns false, changing nothing, when its
+   * records exist but none can be read. The name comes from the index (renaming another board never rewrites its document).
+   */
+  function activate(id: string, name: string, recs: BoardRecs, hist?: HistState): boolean {
+    let file: ArchFile | undefined, from: DocRec | undefined;
+    for (const [label, rec] of [["current", recs.current], ["backup", recs.backup]] as const) {
+      if (!rec) continue;
+      const p = parseArch(rec.text);
+      if (!p.ok) { say("warn", `The autosaved ${label} copy could not be read (${p.error.message}).`); continue; }
+      file = p.value; from = rec;
+      if (label === "backup") say("warn", "Restored the previous autosave — the latest one was unreadable.");
+      break;
+    }
+    if (!file && (recs.current || recs.backup)) return false;
+    if (file && from) {
+      const v: ArchView | undefined = recs.view && from === recs.current ? { x: recs.view.x, y: recs.view.y, zoom: recs.view.zoom } : undefined;
+      apply(file, { ...(v ? { view: v } : {}), markSaved: !from.fileDirty, ...(hist ? { hist } : {}) });
+      const h = recs.handle as FSHandle | undefined;
+      handle = h && typeof h.createWritable === "function" ? h : null;
+    } else {
+      meta = { name, created: Date.now(), updated: Date.now() }; extra = {}; elExtra = {}; nameDirty = false; handle = null;
+      editor.load({ els: [], groups: [] }, hist);
+      editor.resetView();
+      for (const f of [...loadSubs]) f(settings);
+    }
+    meta = { ...meta, name };
+    autosave.bind(id, stampOf(recs.current)); // after the load: the loaded state is what counts as saved
+    return true;
+  }
+
+  const host: BoardsHost = {
+    kv,
+    id: () => autosave.id, name: () => meta.name,
+    flush: () => autosave.flush(), stamp: () => autosave.known,
+    loadRecords: (id) => autosave.loadRecords(id),
+    takeHistory: (n) => editor.takeHistory(n),
+    activate, setName: (n) => io.setDocName(n), clean: cleanName, say,
+  };
+  let boardsApi: Promise<BoardsApi> | null = null;
+  const boards = (): Promise<BoardsApi> => (boardsApi ??= lazyBoards().then((m) => m.createBoards(host)));
 
   const io: IO = {
     newDoc() {
@@ -192,34 +257,39 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
     async saveAs() { await doSave(true); },
     open() {
       return withBusy(async () => {
-        if (!(await confirmDiscard())) return;
         const picked = await files.pick();
         if (picked) await loadFile(picked.file, picked.handle);
       });
     },
 
     adoptCurrent() {
-      autosave.arm(); // savedKey = the current state ...
-      nameDirty = true; // ... so mark it changed: the copy must be written even though nothing was edited, and counts as unsaved to a file
-      meta = { ...meta, updated: Date.now() };
-      autosave.schedule();
+      void (async () => {
+        await prepare(); // an old single-document store moves into its board first: the copy is saved as a board of its own, never over the user's sheet
+        if (disposed) return;
+        autosave.known = null;
+        autosave.arm(); // savedKey = the current state ...
+        nameDirty = true; // ... so mark it changed: the copy must be written even though nothing was edited, and counts as unsaved to a file
+        meta = { ...meta, updated: Date.now() };
+        autosave.schedule();
+      })();
     },
+    boardId: () => autosave.id,
+    boards,
 
     async restore() {
       let applied = false;
       try {
-        const recs = await autosave.loadRecords();
-        for (const [label, rec] of [["current", recs.current], ["backup", recs.backup]] as const) {
-          if (!rec) continue;
-          const p = parseArch(rec.text);
-          if (!p.ok) { say("warn", `The autosaved ${label} copy could not be read (${p.error.message}).`); continue; }
-          const v: ArchView | undefined = recs.view && label === "current" ? { x: recs.view.x, y: recs.view.y, zoom: recs.view.zoom } : undefined;
-          apply(p.value, { ...(v ? { view: v } : {}), markSaved: !rec.fileDirty });
-          if (label === "backup") say("warn", "Restored the previous autosave — the latest one was unreadable.");
-          applied = true; break;
+        const ix = await prepare();
+        const open = ix?.boards.find((b) => b.id === ix.active) ?? ix?.boards[0];
+        if (open) {
+          const recs = await autosave.loadRecords(open.id);
+          applied = activate(open.id, open.name, recs);
+          if (!applied) autosave.bind(open.id, stampOf(recs.current)); // unreadable: start empty on this board, as before
         }
-        const h = recs.handle as FSHandle | undefined;
-        if (applied && h && typeof h.createWritable === "function") handle = h;
+        if (ix?.trash?.length) void lazyBoards().then((m) => m.sweepTrash(kv)).catch(() => {});
+        // an older build or a stale tab wrote the old-layout record after the migration: keep that work as a board of its own
+        if (ix?.legacy) void autosave.legacySavedAt().then((at) => (at > ix.legacy!.at ? lazyBoards().then((m) => m.recoverLegacy(kv)) : undefined))
+          .then((r) => { if (r && !disposed) say("warn", `Found newer edits from an older version of the app and kept them as “${r.name}”. Open the boards list to see it.`); }).catch(() => {});
       } finally { autosave.arm(); }
       if (!disposed) setStatus("saved");
       scheduleImageGc();
@@ -258,7 +328,6 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
 
     importExcalidraw() {
       return withBusy(async () => {
-        if (!(await confirmDiscard())) return;
         const picked = await files.pick();
         if (picked) await loadFile(picked.file, null);
       });
@@ -288,6 +357,7 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
       for (const f of offs) f();
       offs.length = 0;
       autosave.dispose();
+      void boardsApi?.then((b) => b.dispose());
       files.dispose();
       statusSubs.clear(); msgSubs.clear(); loadSubs.clear();
     },
@@ -295,7 +365,7 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
 
   files.onDrop(stage, (f) => {
     if (f.type.startsWith("image/")) return; // pictures are inserted by the image input, not opened as documents
-    void withBusy(async () => { if (await confirmDiscard()) await loadFile(f, null); });
+    void withBusy(() => loadFile(f, null));
   });
 
   async function doSave(forcePicker: boolean): Promise<void> {

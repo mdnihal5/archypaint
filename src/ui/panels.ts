@@ -1,19 +1,28 @@
 import type { Ctx } from "./ctx";
-import { mountLayers } from "./layers";
+import type { LayersPanel } from "./layers";
 import type { Ribbon } from "./ribbon";
 import { loadPrefs } from "./props-pos";
 
 /**
  * The panels the viewer opens: the layers card (setting + non-empty scene) and the properties ribbon above the dock.
  * The ribbon opens only when the viewer asks (`I` or the toggle button), never on selection, and its code and DOM are built on
- * the first open: a closed ribbon costs nothing at load. One updater renders both.
+ * the first open: a closed ribbon costs nothing at load. The layers card is off by default, so its code is a lazy chunk too, fetched
+ * the first time it would show. One updater renders both.
  */
 export function mountPanels(ctx: Ctx, root: HTMLElement): void {
-  const layers = mountLayers(ctx, root);
+  let layers: LayersPanel | null = null, layersLoading = false;
+  const wantLayers = () => ctx.settings.get().layers && ctx.editor.scene.els.size > 0;
   let ribbon: Ribbon | null = null, loading = false, gone = false;
   let wantOpen = loadPrefs().open; // the stored "open" flag: mounted on the first idle moment, not at load
 
-  const u = ctx.update("panels", () => { ribbon?.render(); layers.render(); });
+  const u = ctx.update("panels", () => {
+    ribbon?.render();
+    if (layers) layers.render();
+    else if (wantLayers() && !layersLoading) {
+      layersLoading = true;
+      void import("./layers").then((m) => { if (!gone) { layers = m.mountLayers(ctx, root); u.schedule(); } }, () => { layersLoading = false; });
+    }
+  });
   const load = (then?: () => void) => {
     if (ribbon) { then?.(); return; }
     if (loading) return;

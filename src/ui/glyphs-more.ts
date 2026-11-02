@@ -51,6 +51,8 @@ const M = {
   check: `<path d="M5 12.5l4.5 4.5L19 7.5"/>`,
   sun: G.sun,
   moon: G.moon,
+  pencil: `<path d="M4.5 19.5l.8-3.8L16.4 4.6a2 2 0 0 1 2.8 2.8L8.3 18.7z"/><path d="M14.5 6.5l3 3"/>`,
+  copy: `<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2"/>`,
   trash: `<path d="M4 7h16M9 7V4.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V7"/><path d="M6.5 7l1 13a1.5 1.5 0 0 0 1.5 1.4h6a1.5 1.5 0 0 0 1.5-1.4l1-13"/><path d="M10 11v6M14 11v6"/>`,
 } as const;
 

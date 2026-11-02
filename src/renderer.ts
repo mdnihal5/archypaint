@@ -1,10 +1,10 @@
-import { SEG_MIN_PX, portInto, listPorts, arrowLabels, eachElbowSeg, effectiveRoute, pointAtT, type Rect } from "./connectors";
-import type { GroupIndex } from "./groups";
+import { SEG_MIN_PX, labelBlock, portInto, listPorts, arrowLabels, eachElbowSeg, effectiveRoute, pointAtT, type Rect } from "./connectors";
+import { groupTint, type GroupIndex } from "./groups";
 import { drawCalcEl } from "./calc-view";
 import { drawIconEl } from "./icons";
 import { handlePoints, type ArrowLabel, type El, type Kind, type Scene } from "./scene";
 import { CONTAINER_KINDS, FRAME_HEADER, LANE_COL_HEADER, LANE_HEADER, LEGEND_PAD, LEGEND_ROW_H, LEGEND_TITLE_H, PATH_KINDS, labelPoint, laneCells, legendRows, shapeParts } from "./shape-geom";
-import { colourOf, onSolid, type Theme } from "./theme";
+import { TEXT_BOX, colourOf, onSolid, textInk, type Theme } from "./theme";
 import type { Viewport } from "./viewport";
 import { alignX, labelLineHeight, wrapCached, wrapWidth } from "./wrap";
 
@@ -198,8 +198,9 @@ export class Renderer {
       if (moved !== onlyDragged) continue;
       const x = b.x + (moved ? this.dragDx : 0), y = b.y + (moved ? this.dragDy : 0);
       if (x > vx1 || y > vy1 || x + b.w < vp.x || y + b.h < vp.y) continue;
-      const col = th.cats[g.cat % th.cats.length]!;
-      ctx.globalAlpha = 0.05; ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(x, y, b.w, b.h, 14); ctx.fill();
+      const col = colourOf(th, g), tint = groupTint(g.fill);
+      ctx.beginPath(); ctx.roundRect(x, y, b.w, b.h, 14);
+      if (tint > 0) { ctx.globalAlpha = tint; ctx.fillStyle = col; ctx.fill(); }
       ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = Math.max(1.6, 1 / z);
       ctx.setLineDash([8, 4]); ctx.stroke(); ctx.setLineDash([]);
       if (g.name && z >= 0.3) {
@@ -425,9 +426,16 @@ export function drawArrow(ctx: CanvasRenderingContext2D, e: ArrowStyle, th: Them
       const l = ls[i]!;
       if (!l.text) continue;
       pointAtT(pts, curve, l.t, tmp);
-      const w = ctx.measureText(l.text).width + 10;
-      ctx.fillStyle = th.paper; ctx.fillRect(tmp[0] - w / 2, tmp[1] - lh / 2, w, lh);
-      ctx.fillStyle = th.ink; ctx.fillText(l.text, tmp[0], tmp[1]);
+      if (l.text.indexOf("\n") < 0) {
+        const w = ctx.measureText(l.text).width + 10;
+        ctx.fillStyle = th.paper; ctx.fillRect(tmp[0] - w / 2, tmp[1] - lh / 2, w, lh);
+        ctx.fillStyle = th.ink; ctx.fillText(l.text, tmp[0], tmp[1]);
+      } else { // several lines: one plate behind the whole block, each line centred on the label point
+        const b = labelBlock(l.text, fs, (t) => ctx.measureText(t).width);
+        ctx.fillStyle = th.paper; ctx.fillRect(tmp[0] - b.w / 2, tmp[1] - b.h / 2, b.w, b.h);
+        ctx.fillStyle = th.ink;
+        for (let k = 0; k < b.lines.length; k++) ctx.fillText(b.lines[k]!, tmp[0], tmp[1] + (k - (b.lines.length - 1) / 2) * b.pitch);
+      }
     }
     if (e.fs) ctx.font = FONT;
   }
@@ -494,7 +502,7 @@ function drawPathKind(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number
     if (!CONTAINER_KINDS.has(e.kind) && !c.open) { ctx.fillStyle = col; ctx.fill(c.body); }
     ctx.globalAlpha = 1; return;
   }
-  if (c.open) { ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.stroke(c.body); return; }
+  if (c.open) { ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = lw; if (e.dash === 1) ctx.setLineDash([9, 5]); ctx.stroke(c.body); if (e.dash === 1) ctx.setLineDash([]); return; }
   const container = CONTAINER_KINDS.has(e.kind);
   if (e.fill === 1) { ctx.globalAlpha = container ? th.tint * 0.55 : th.tint; ctx.fillStyle = col; ctx.fill(c.body); }
   else if (e.fill === 2) { ctx.globalAlpha = container ? 0.16 : 1; ctx.fillStyle = col; ctx.fill(c.body); }
@@ -569,18 +577,27 @@ export function drawEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: numbe
   if (e.kind === "icon") { drawIconEl(ctx, e, th, z, hideText, hideIcons); ctx.globalAlpha = 1; return; } // label included: it must not be drawn twice
   if (e.kind === "image") {
     if (imageDrawer) imageDrawer(ctx, e, th, z, hideText);
-    else { ctx.globalAlpha = th.tint * 1.4; ctx.fillStyle = col; ctx.fillRect(e.x, e.y, e.w, e.h); ensureImageChunk(); }
+    else { ctx.globalAlpha = th.tint * 1.4; ctx.fillStyle = th.mid; ctx.fillRect(e.x, e.y, e.w, e.h); ensureImageChunk(); }
     ctx.globalAlpha = 1; return;
   }
-  else if (e.kind !== "text") {
+  else if (e.kind === "text") {
+    // a free text has no outline; fill adds a rounded box behind it (tint = soft, solid = opaque with contrast text)
+    if (e.fill === 1 || e.fill === 2) {
+      ctx.beginPath(); ctx.roundRect(e.x - TEXT_BOX.padX, e.y - TEXT_BOX.padY, e.w + 2 * TEXT_BOX.padX, e.h + 2 * TEXT_BOX.padY, TEXT_BOX.r);
+      ctx.globalAlpha = e.fill === 1 ? th.tint : 1; ctx.fillStyle = col; ctx.fill();
+    }
+  } else {
     tracePath(ctx, e.kind, e.x, e.y, e.w, e.h, e.radius);
     if (e.fill === 1) { ctx.globalAlpha = th.tint; ctx.fillStyle = col; ctx.fill(); }
     else if (e.fill === 2) { ctx.globalAlpha = 1; ctx.fillStyle = col; ctx.fill(); }
-    ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = Math.max(2, 1 / z); ctx.stroke();
+    ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = Math.max(2, 1 / z);
+    if (e.dash) ctx.setLineDash([8, 4]);
+    ctx.stroke();
+    if (e.dash) ctx.setLineDash([]);
   }
   if (e.text && z >= 0.3 && !hideText) {
     ctx.globalAlpha = 1; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillStyle = e.fill === 2 && e.kind !== "text" ? onSolid(th, colourOf(th, e)) : th.ink;
+    ctx.fillStyle = e.fill === 2 ? onSolid(th, col) : e.kind === "text" ? textInk(th, e) : th.ink;
     drawLabel(ctx, e, e.x + e.w / 2, e.y + e.h / 2);
   }
   ctx.globalAlpha = 1;

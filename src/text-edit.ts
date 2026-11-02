@@ -33,7 +33,7 @@ export function measureText(text: string, fs = 0): { w: number; h: number } {
 export type EditTarget = Pick<El, "x" | "y" | "w" | "h" | "kind" | "text" | "fs" | "align">;
 
 /** where the editor overlay sits (world units, centre) and how it looks; a function so it follows the thing while panning/zooming */
-export interface EditAnchor { cx: number; cy: number; /** minimum / fixed overlay width */ w: number; fs: number; /** grow to fit the text (free text, labels) instead of filling `w` */ fit: boolean; /** one line: Enter commits instead of adding a line (names, connector labels) */ single?: boolean }
+export interface EditAnchor { cx: number; cy: number; /** minimum / fixed overlay width */ w: number; fs: number; /** grow to fit the text (free text, labels) instead of filling `w` */ fit: boolean; /** Enter commits instead of adding a line (names, connector labels); Shift+Enter still adds one */ single?: boolean }
 
 /**
  * DOM textarea overlay for editing an element's text. At most one exists at a time; it is

@@ -37,3 +37,26 @@ describe("toasts", () => {
     expect(vi.getTimerCount()).toBe(0); expect(root.querySelector(".ap-toasts")).toBeNull();
   });
 });
+
+describe("toast with an action (Undo)", () => {
+  it("shows a button, runs it once, removes the toast, and lives 7 s", () => {
+    const t = createToasts(root);
+    const run = vi.fn();
+    t.toast("Deleted “x”", "ok", { label: "Undo", run });
+    vi.advanceTimersByTime(6900); expect(shown()).toEqual(["Deleted “x”Undo"]);
+    root.querySelector<HTMLButtonElement>(".ap-tact")!.click();
+    expect(run).toHaveBeenCalledTimes(1); expect(shown()).toEqual([]);
+    t.toast("Deleted “y”", "ok", { label: "Undo", run }); vi.advanceTimersByTime(7100); expect(shown()).toEqual([]);
+    t.dispose();
+  });
+  it("keeps coalescing: the same action toast restarts its timer and uses the newest handler; dispose leaves no timers", () => {
+    const t = createToasts(root);
+    const a = vi.fn(), b = vi.fn();
+    t.toast("same", "ok", { label: "Undo", run: a }); t.toast("same", "ok", { label: "Undo", run: b });
+    expect(root.querySelectorAll(".ap-toast")).toHaveLength(1);
+    root.querySelector<HTMLButtonElement>(".ap-tact")!.click();
+    expect(a).not.toHaveBeenCalled(); expect(b).toHaveBeenCalledTimes(1);
+    t.toast("again", "ok", { label: "Undo", run: a });
+    t.dispose(); expect(vi.getTimerCount()).toBe(0);
+  });
+});

@@ -1,0 +1,27 @@
+/* The boards list under the name chip (loaded with boards.ts on the first open). Sheet, header and "New board" row reuse menu.css. */
+.ap-bl { display: flex; flex-direction: column; gap: 1px; }
+.ap-bd { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; padding: 0 6px 0 10px; border-radius: 7px; cursor: pointer; color: var(--ink); }
+.ap-bd:hover, .ap-bd:focus-within { background: var(--hover); }
+.ap-bd:focus-visible { outline: none; background: var(--hover); box-shadow: inset 0 0 0 1.5px var(--red-ink); }
+.ap-bd.cur { background: var(--red-wash); }
+.ap-bd.cur .n { color: var(--red-ink); font-weight: 600; }
+.ap-bd .tx { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.ap-bd .n { font: 500 13px/1.1 var(--sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ap-bd .t { font: 500 11px/1 var(--sans); color: var(--mid); }
+.ap-bd .acts { display: none; flex: none; }
+.ap-bd:hover .acts, .ap-bd:focus-within .acts { display: flex; }
+.ap-bd .ap-ib { width: 28px; height: 28px; }
+.ap-bd .rn { height: 26px; padding: 0 8px; }
+.ap-bd .rk { flex: none; padding-right: 4px; white-space: nowrap; }
+.ap-bl-sep { height: 1px; background: var(--line-soft); margin: 5px 4px; }
+.ap-bsearch { margin: 2px 4px 6px; width: calc(100% - 8px); }
+.ap-bnone { padding: 10px; font: 500 12px var(--sans); color: var(--mid); }
+/* touch has no hover: the row actions are always there, with bigger targets */
+@media (hover: none) and (pointer: coarse), (max-width: 599px) {
+  .ap-bd .acts { display: flex; }
+  .ap-bd { min-height: 48px; padding-right: 2px; }
+  .ap-bd .ap-ib { width: 38px; height: 38px; }
+  .ap-bd .n { max-width: 150px; }
+  .ap-menu.ap-boards .ap-mi { height: 40px; }
+  .ap-menu.ap-boards .ap-kbd { display: none; }
+}

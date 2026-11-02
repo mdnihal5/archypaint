@@ -41,6 +41,7 @@ export function mountMenu(ctx: Ctx, root: HTMLElement): Menu {
   const group = (title: string, ...kids: Array<HTMLElement | false>) => [h("div", { class: "ap-gh", text: title }), ...kids.filter((k): k is HTMLElement => !!k)];
 
   const open = () => {
+    ctx.closeBoards();
     const fctx: FeatureCtx = { editor, io, toast: ctx.toast, confirm: ctx.confirm, stage: document.getElementById("stage") ?? document.body };
     const actions = (pred: (a: Action) => boolean) => ACTIONS.filter((a) => pred(a) && (a.enabled?.(fctx) ?? true))
       .map((a) => item(ACTION_ICON[a.id] ?? "file", a.label, a.hint && a.hint.length <= 3 ? a.hint : "", act(() => a.run(fctx))));
@@ -90,7 +91,7 @@ export function mountMenu(ctx: Ctx, root: HTMLElement): Menu {
 
     sheet = h("div", { class: "ap-menu ap-card ap-hit", attrs: { role: "menu", "aria-label": "Main menu" } },
       ...group("File",
-        item("file", "New", "", guarded(() => io.newDoc())), item("folder", "Open…", "⌘O", guarded(() => io.open())),
+        item("file", "New", "", guarded(() => io.newDoc())), item("folder", "Open…", "⌘O", act(() => io.open())),
         item("save", "Save", "⌘S", act(() => io.save())), item("save", "Save as…", "⇧⌘S", act(() => io.saveAs()))),
       ...group("Export",
         item("download", "PNG", "⇧⌘E", act(() => io.exportPng({ scale: 2, background: true }))),
@@ -98,7 +99,7 @@ export function mountMenu(ctx: Ctx, root: HTMLElement): Menu {
         item("download", "SVG", "", act(() => io.exportSvg({ background: true }))),
         item("image", "Copy as PNG", "", act(() => io.copyPng({ scale: 2, background: true }))),
         item("download", "Excalidraw", "", act(() => io.exportExcalidraw()))),
-      ...group("Import", item("upload", "Excalidraw…", "", guarded(() => io.importExcalidraw())), ...actions((a) => IMPORT_IDS.has(a.id))),
+      ...group("Import", item("upload", "Excalidraw…", "", act(() => io.importExcalidraw())), ...actions((a) => IMPORT_IDS.has(a.id))),
       ...group("Share", ...actions((a) => a.section === "file")),
       ...group("Insert", ...actions((a) => a.section === "insert" && !IMPORT_IDS.has(a.id)),
         item("legend", "Legend", "", act(() => { editor.insertLegend(); })), item("renumber", "Renumber step badges", "", act(() => editor.renumberBadges())),

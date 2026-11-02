@@ -94,3 +94,21 @@ describe("history", () => {
     expect(out.length).toBe(scene.els.size);
   }, 30_000); // the final query spans ~6e7 grid cells on purpose; under CPU contention it can exceed the 5 s default
 });
+
+describe("history take / adopt (a board's undo kept while another is open)", () => {
+  it("take copies the newest steps; adopt on a fresh History restores undo and redo", () => {
+    const { scene, h } = setup();
+    const a = scene.add({ kind: "rect", x: 0, y: 0 });
+    for (let i = 1; i <= 30; i++) { h.begin(); h.touch(a); scene.set(a, i, 0); h.commit(`m${i}`); }
+    h.undo();
+    const st = h.take(20);
+    expect(st.undo).toHaveLength(20); expect(st.redo).toHaveLength(1);
+    h.clear();
+    expect(h.canUndo()).toBe(false);
+    const h2 = new History(scene); h2.adopt(st);
+    expect(h2.size()).toBe(21);
+    h2.redo(); expect(scene.els.get(a.id)!.x).toBe(30);
+    let n = 0; while (h2.canUndo()) { h2.undo(); n++; }
+    expect(n).toBe(21); expect(scene.els.get(a.id)!.x).toBe(9); // 30 - 21 steps: the oldest 9 were dropped
+  });
+});

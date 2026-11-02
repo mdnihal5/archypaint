@@ -26,7 +26,7 @@ function sameEl(a: ElJSON | null, b: ElJSON | null): boolean {
   return true;
 }
 const sameGroup = (a: GroupInfo | null, b: GroupInfo | null) =>
-  a === b || (!!a && !!b && a.name === b.name && a.cat === b.cat && a.collapsed === b.collapsed && a.locked === b.locked);
+  a === b || (!!a && !!b && a.name === b.name && a.cat === b.cat && a.collapsed === b.collapsed && a.locked === b.locked && a.hex === b.hex && a.fill === b.fill);
 
 /**
  * Patch-based undo: a transaction records, for each element it touches, the state BEFORE the first
@@ -36,6 +36,9 @@ const sameGroup = (a: GroupInfo | null, b: GroupInfo | null) =>
  */
 /** snapshots one entry holds (each Change keeps up to two element copies) */
 const weightOf = (en: Entry): number => en.ch.length * 2 + en.gch.length;
+
+/** a board's undo/redo stacks kept while another board is open: plain data only, never aliases the live stacks */
+export interface HistState { undo: Entry[]; redo: Entry[]; weight: number }
 
 export class History {
   /** bumps on every commit/undo/redo — the editor's "dirty" counter */
@@ -150,6 +153,17 @@ export class History {
     this.rev++; this.scene.nonce++;
     return en.ch.filter((c) => c.after).map((c) => c.id);
   }
+
+  /** copy out the newest `steps` undo steps (and redo steps that still fit): the stacks of a board that is being left */
+  take(steps: number, maxSnapshots = this.maxSnapshots): HistState {
+    let weight = 0;
+    const undo: Entry[] = [], redo: Entry[] = [];
+    for (let i = this.undoS.length - 1; i >= 0 && undo.length < steps; i--) { const w = weightOf(this.undoS[i]!); if (undo.length && weight + w > maxSnapshots) break; undo.push(this.undoS[i]!); weight += w; }
+    for (let i = this.redoS.length - 1; i >= 0 && redo.length < steps; i--) { const w = weightOf(this.redoS[i]!); if (weight + w > maxSnapshots) break; redo.push(this.redoS[i]!); weight += w; }
+    return { undo: undo.reverse(), redo: redo.reverse(), weight };
+  }
+  /** replace both stacks with a state from take(); bumps rev like any change */
+  adopt(s: HistState): void { this.undoS = [...s.undo]; this.redoS = [...s.redo]; this.weight = s.weight; this.tx = null; this.rev++; }
 
   clear(): void { this.undoS.length = 0; this.redoS.length = 0; this.tx = null; this.weight = 0; }
   /** stored element snapshots across both stacks (tests / diagnostics) */

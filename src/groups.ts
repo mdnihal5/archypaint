@@ -131,12 +131,14 @@ export function groupBox(els: readonly Pick<El, "x" | "y" | "w" | "h" | "groupId
   return { x: x0 - pad, y: y0 - pad, w: x1 - x0 + 2 * pad, h: y1 - y0 + 2 * pad };
 }
 
-export interface GroupOutline { id: string; name: string; cat: number; box: Box }
+export interface GroupOutline { id: string; name: string; cat: number; hex?: string | undefined; fill?: 0 | 1 | 2 | undefined; box: Box }
+/** a group outline's tint opacity: the soft default, none, or a stronger wash (members are drawn on top, so it never hides them) */
+export const groupTint = (fill: 0 | 1 | 2 | undefined): number => (fill === 0 ? 0 : fill === 2 ? 0.16 : 0.05);
 /**
  * outlines to draw for an export of `els`: every group whose members are ALL among `els` (a partial selection would draw a boundary
  * around only some members), parents and children both, in scene order. Pure: the same numbers the canvas uses.
  */
-export function exportGroups(els: readonly Pick<El, "id" | "x" | "y" | "w" | "h" | "groupIds">[], groups: Iterable<{ id: string; name: string; cat: number }>, allMembers: (gid: string) => number): GroupOutline[] {
+export function exportGroups(els: readonly Pick<El, "id" | "x" | "y" | "w" | "h" | "groupIds">[], groups: Iterable<{ id: string; name: string; cat: number; hex?: string | undefined; fill?: 0 | 1 | 2 | undefined }>, allMembers: (gid: string) => number): GroupOutline[] {
   const by = new Map<string, Pick<El, "id" | "x" | "y" | "w" | "h" | "groupIds">[]>();
   for (const e of els) for (const g of e.groupIds) { const a = by.get(g); if (a) a.push(e); else by.set(g, [e]); }
   const out: GroupOutline[] = [];
@@ -144,7 +146,7 @@ export function exportGroups(els: readonly Pick<El, "id" | "x" | "y" | "w" | "h"
     const m = by.get(g.id);
     if (!m || m.length !== allMembers(g.id)) continue;
     const box = groupBox(m, g.id);
-    if (box) out.push({ id: g.id, name: g.name, cat: g.cat, box });
+    if (box) out.push({ id: g.id, name: g.name, cat: g.cat, ...(g.hex ? { hex: g.hex } : {}), ...(g.fill !== undefined ? { fill: g.fill } : {}), box });
   }
   return out;
 }

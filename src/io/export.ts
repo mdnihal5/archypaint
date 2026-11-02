@@ -5,7 +5,7 @@ import type { El } from "../scene";
 import { LIGHT, colourOf, onSolid, type Theme } from "../theme";
 import * as Icons from "../icons";
 import { arrowLabels, isCurve, pointAtT } from "../connectors";
-import { exportGroups, type GroupOutline } from "../groups";
+import { exportGroups, groupTint, type GroupOutline } from "../groups";
 import { textWidth } from "../text-edit";
 import { arrowHead, arrowPathD, boundsWithGroups, buildSvg, planExport, unionBounds } from "./svg";
 import type { ExportOpts } from "./index";
@@ -45,8 +45,9 @@ export function groupsFor(editor: EditorAPI, els: readonly El[]): GroupOutline[]
 /** dashed, tinted outline and name tag per group, under the elements: the same drawing as Renderer.drawGroups (which works from the live GroupIndex) */
 function drawGroupOutlines(ctx: CanvasRenderingContext2D, th: Theme, groups: readonly GroupOutline[]): void {
   for (const g of groups) {
-    const col = th.cats[g.cat % th.cats.length]!, b = g.box;
-    ctx.globalAlpha = 0.05; ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 14); ctx.fill();
+    const col = colourOf(th, g), b = g.box, tint = groupTint(g.fill);
+    ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 14);
+    if (tint > 0) { ctx.globalAlpha = tint; ctx.fillStyle = col; ctx.fill(); }
     ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.setLineDash([8, 4]); ctx.stroke(); ctx.setLineDash([]);
     if (g.name) {
       ctx.fillStyle = col; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
@@ -89,8 +90,11 @@ function drawArrow(ctx: CanvasRenderingContext2D, e: El, th: Theme): void {
     ctx.font = `${e.fs || 12}px 'JetBrains Mono','DejaVu Sans Mono',monospace`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     for (const l of ls) {
       pointAtT(e.pts, curve, l.t, at);
-      ctx.lineWidth = 4; ctx.strokeStyle = th.paper; ctx.strokeText(l.text, at[0], at[1]);
-      ctx.fillStyle = th.ink; ctx.fillText(l.text, at[0], at[1]);
+      const lines = l.text.split("\n"), pitch = Math.round((e.fs || 12) * 1.3);
+      ctx.lineWidth = 4; ctx.strokeStyle = th.paper;
+      for (let k = 0; k < lines.length; k++) ctx.strokeText(lines[k]!, at[0], at[1] + (k - (lines.length - 1) / 2) * pitch);
+      ctx.fillStyle = th.ink;
+      for (let k = 0; k < lines.length; k++) ctx.fillText(lines[k]!, at[0], at[1] + (k - (lines.length - 1) / 2) * pitch);
     }
   }
 }

@@ -40,5 +40,5 @@ export async function collectForExport(scene: Scene, say: Say): Promise<Record<s
   return c.images;
 }
 
-/** once per startup, when idle: delete stored images no element of the restored sheet uses (history is empty now, so this is safe) */
-export async function gcUnused(scene: Scene): Promise<void> { await (await import("../images")).gcImages(new Set(imageKeysOf(scene))); }
+/** once per startup, when idle: delete stored images no element of the open board (nor, via `others`, of any other board) uses (history is empty now, so this is safe) */
+export async function gcUnused(scene: Scene, others: Iterable<string> = []): Promise<void> { await (await import("../images")).gcImages(new Set([...imageKeysOf(scene), ...others])); }

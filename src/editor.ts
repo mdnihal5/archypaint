@@ -4,7 +4,7 @@ import { calcSize, ensureCalc, onCalcReady, SAMPLE as CALC_SAMPLE } from "./calc
 import { buildLegend, renumberBadges as renumberPlan } from "./edit-ops";
 import type { EditorAPI, EditorEvent, StyleProps } from "./editor-api";
 import { GroupIndex } from "./groups";
-import { History } from "./history";
+import { History, type HistState } from "./history";
 import { Controller, type Core, type Tool } from "./input";
 import { Renderer } from "./renderer";
 import { Scene, isPort, type ArrowLabel, type El, type ElInit, type ElJSON, type GroupInfo, type Port, type SceneJSON } from "./scene";
@@ -116,7 +116,7 @@ export function createEditor(d: EditorDeps): Editor {
     for (const [old, nid] of gMap) {
       const info = groups.find((g) => g.id === old);
       hist.touchGroup(nid);
-      scene.groups.set(nid, { id: nid, name: info?.name ?? "group", cat: info?.cat ?? 0, collapsed: false, locked: false });
+      scene.groups.set(nid, { id: nid, name: info?.name ?? "group", cat: info?.cat ?? 0, collapsed: false, locked: false, ...(info?.hex ? { hex: info.hex } : {}), ...(info?.fill !== undefined ? { fill: info.fill } : {}) });
     }
     const out: string[] = [];
     for (const j of [...list].sort((a, b) => a.z - b.z)) {
@@ -308,7 +308,8 @@ export function createEditor(d: EditorDeps): Editor {
   function commitLabel(id: string, idx: number, t: number, value: string): void {
     const a = scene.els.get(id);
     if (!a || a.kind !== "arrow") return;
-    const v = value.replace(/\s+/g, " ").trim().slice(0, MAX_LABEL_TEXT);
+    // lines are kept (Shift+Enter): spaces collapse within a line, blank lines and the ends are dropped
+    const v = value.split("\n").map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n").slice(0, MAX_LABEL_TEXT);
     const ls = labelsOf(a), cur = idx >= 0 ? ls[idx] : undefined;
     if (cur ? cur.text === v && a.text === "" : v === "") return; // nothing changed: no empty undo step
     if (cur) { if (v === "") ls.splice(idx, 1); else cur.text = v; }
@@ -435,9 +436,17 @@ export function createEditor(d: EditorDeps): Editor {
       if (!sel().size) return;
       run("duplicate", () => { setSel(core.duplicateIds([...sel()], 20, 20)); });
     },
+    canGroup() {
+      const ids = [...sel()];
+      if (ids.length < 2) return false;
+      const top = scene.els.get(ids[0]!)?.groupIds.at(-1);
+      if (top === undefined) return true;
+      // exactly one top-level group's members (same top group on every element, same size): grouping again would nest a duplicate
+      return !(groupIdx.membersOf(top).length === ids.length && ids.every((id) => scene.els.get(id)?.groupIds.at(-1) === top));
+    },
     group(name) {
       const ids = [...sel()];
-      if (ids.length < 2) return null;
+      if (ids.length < 2 || !api.canGroup()) return null;
       for (const id of ids) { const m = scene.els.get(id); if (m && scene.groupLocked(m)) return null; } // a locked group's membership is frozen
       return run("group", () => {
         const gid = `g${(++gc).toString(36)}${Math.random().toString(36).slice(2, 5)}`;
@@ -480,6 +489,20 @@ export function createEditor(d: EditorDeps): Editor {
     setStyle(p) {
       if (!sel().size) return;
       run("style", () => {
+        // a whole group selected: colour, custom colour and fill style the GROUP (its outline and tint), the members keep theirs
+        const gid = api.selectedGroup(), grp = gid ? scene.groups.get(gid) : undefined;
+        if (grp) {
+          if (!grp.locked && (p.cat !== undefined || p.hex !== undefined || p.fill !== undefined)) {
+            hist.touchGroup(grp.id);
+            if (p.cat !== undefined) grp.cat = p.cat;
+            if (p.hex !== undefined) grp.hex = normHex(p.hex) || undefined;
+            if (p.fill !== undefined) grp.fill = p.fill === 0 || p.fill === 1 || p.fill === 2 ? p.fill : undefined;
+            scene.nonce++;
+          }
+          const { cat: _c, hex: _h, fill: _f, ...rest } = p; // the members never take the group's colour
+          void _c; void _h; void _f;
+          p = rest;
+        }
         for (const id of sel()) {
           const e = scene.els.get(id);
           if (!e || scene.groupLocked(e)) continue;
@@ -682,13 +705,14 @@ export function createEditor(d: EditorDeps): Editor {
     zoomBy(f) { vp.zoomAt(vp.w / 2, vp.h / 2, f); renderer.invalidate(true, true); emit("viewport"); },
     resetView() { vp.reset(); renderer.invalidate(true, true); emit("viewport"); },
 
-    load(data: SceneJSON) {
+    load(data: SceneJSON, keep?: HistState) {
       if (text.isOpen) text.close(false);
       scene.replaceAll(data);
-      hist.clear(); renderer.selected.clear(); renderer.dragging.clear(); renderer.livePts.clear(); entered.clear();
+      hist.clear(); if (keep) hist.adopt(keep); renderer.selected.clear(); renderer.dragging.clear(); renderer.livePts.clear(); entered.clear();
       savedRev = hist.rev;
       renderer.invalidate(true, true); emit("selection"); emit("change"); emit("history");
     },
+    takeHistory: (steps) => hist.take(steps),
     dirty: () => hist.rev !== savedRev,
     markSaved() { savedRev = hist.rev; },
 

@@ -3,9 +3,9 @@ import { arrowLabels, isCurve, pointAtT } from "../connectors";
 import { iconStrip, isBareLogo, ROOT_ATTRS } from "../icons";
 import { logoBox } from "../icon-pack";
 import { isDarkPaper, themedLogoMarkup } from "../logos";
-import { colourOf, onSolid, type Theme } from "../theme";
+import { TEXT_BOX, colourOf, onSolid, textInk, type Theme } from "../theme";
 import type { CalcRow } from "../calc";
-import { TAG_RISE, tagReach, type GroupOutline } from "../groups";
+import { TAG_RISE, groupTint, tagReach, type GroupOutline } from "../groups";
 import { alignX, monoMeasure, wrapText, wrapWidth, type TextAlign } from "../wrap";
 import { CALC_LINE, CALC_PAD } from "../calc-view";
 import { CONTAINER_KINDS, FRAME_HEADER, LEGEND_PAD, LEGEND_ROW_H, LEGEND_TITLE_H, PATH_KINDS, labelPoint, laneCells, legendRows, shapeParts } from "../shape-geom";
@@ -154,8 +154,8 @@ export function buildSvg(els: readonly ElLike[], th: Theme, o: SvgOpts): string 
 
   // group outlines first: they sit beneath everything, like on the canvas
   for (const g of o.groups ?? []) {
-    const gc = th.cats[g.cat % th.cats.length]!;
-    body.push(`<rect x="${n(g.box.x)}" y="${n(g.box.y)}" width="${n(g.box.w)}" height="${n(g.box.h)}" rx="14" fill="${gc}" fill-opacity="0.05" stroke="${gc}" stroke-width="1.6" stroke-dasharray="8 4"/>`);
+    const gc = colourOf(th, g), tint = groupTint(g.fill);
+    body.push(`<rect x="${n(g.box.x)}" y="${n(g.box.y)}" width="${n(g.box.w)}" height="${n(g.box.h)}" rx="14" ${tint > 0 ? `fill="${gc}" fill-opacity="${tint}"` : `fill="none"`} stroke="${gc}" stroke-width="1.6" stroke-dasharray="8 4"/>`);
     if (g.name) body.push(`<text x="${n(g.box.x + 12)}" y="${n(g.box.y - 8)}" font-size="13" fill="${gc}">${esc(g.name)}</text>`);
   }
 
@@ -189,7 +189,9 @@ export function buildSvg(els: readonly ElLike[], th: Theme, o: SvgOpts): string 
       body.push(`<polygon ${geom} ${shapeFill(e, c)} ${stroke(e, c)}/>`);
       if (e.text) body.push(shapeLabel(e, cx, cy, labelFill, `<polygon ${geom}/>`));
     } else if (e.kind === "text") {
-      if (e.text) body.push(shapeLabel(e, cx, cy, th.ink, ""));
+      // same look as the canvas: an optional rounded box (tint / solid) behind the text, which is drawn in the text's own colour
+      if (e.fill === 1 || e.fill === 2) body.push(`<rect x="${n(e.x - TEXT_BOX.padX)}" y="${n(e.y - TEXT_BOX.padY)}" width="${n(e.w + 2 * TEXT_BOX.padX)}" height="${n(e.h + 2 * TEXT_BOX.padY)}" rx="${TEXT_BOX.r}" fill="${c}"${e.fill === 1 ? ` fill-opacity="${th.tint}"` : ""}/>`);
+      if (e.text) body.push(shapeLabel(e, cx, cy, e.fill === 2 ? onSolid(th, c) : textInk(th, e), ""));
     } else if (e.kind === "arrow") {
       body.push(`<path d="${arrowPathD(e)}" fill="none" ${stroke(e, c)}/>`);
       const hd = arrowHead(e);

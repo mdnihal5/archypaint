@@ -246,7 +246,7 @@ function ioEditor() {
   const scene = new Scene();
   let saved = scene.nonce;
   const loaded: unknown[] = [];
-  const ed = { scene, vp: new Viewport(), dirty: () => scene.nonce !== saved, markSaved: () => { saved = scene.nonce; }, on: () => () => {}, load: (s: unknown) => { loaded.push(s); }, resetView() {}, zoomToFit() {}, zoomBy() {}, selection: () => new Set<string>() };
+  const ed = { scene, vp: new Viewport(), dirty: () => scene.nonce !== saved, markSaved: () => { saved = scene.nonce; }, on: () => () => {}, load: (s: unknown) => { loaded.push(s); }, resetView() {}, zoomToFit() {}, zoomBy() {}, takeHistory: () => ({ undo: [], redo: [], weight: 0 }), selection: () => new Set<string>() };
   return { ed: ed as unknown as EditorAPI, scene, loaded };
 }
 type W = Window & { showSaveFilePicker?: unknown; showOpenFilePicker?: unknown };
@@ -274,7 +274,7 @@ describe("IO embeds pictures in saved files and restores them when opened", () =
     (window as W).showOpenFilePicker = async () => [{ name: "doc.archypaint", getFile: async () => new File([written], "doc.archypaint"), createWritable: async () => ({}) }];
     const io2 = createIO(b.ed, document.createElement("div"), { kv: memKV() });
     await io2.open();
-    const scn = b.loaded[0] as { els: Array<{ kind: string; img: string }> } | undefined;
+    const scn = b.loaded.at(-1) as { els: Array<{ kind: string; img: string }> } | undefined;
     expect(scn?.els.find((e) => e.kind === "image")?.img).toBe(p.key);
     expect(await (await import("./images")).collectImages([p.key]).then((c) => Object.keys(c.images))).toEqual([p.key]);
     io2.dispose();

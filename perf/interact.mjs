@@ -216,6 +216,62 @@ try {
   const idle = await p.evaluate(async () => { const r = window.__ap.renderer; const t = r.lastFrameAt; await new Promise((x) => setTimeout(x, 1500)); return r.lastFrameAt === t; });
   check("idle after interaction schedules no frames", idle);
 
+  /* ---- boards: real clicks and keys on the name chip, then a memory check across many boards ---- */
+  {
+    const chip = ".ap-chip .ap-name";
+    const nm = () => p.evaluate(() => document.querySelector(".ap-chip .ap-nm").textContent);
+    const size = () => p.evaluate(() => window.__ap.editor.scene.els.size);
+    const rowsNow = () => p.evaluate(() => [...document.querySelectorAll(".ap-bd")].map((r) => r.querySelector(".n").textContent));
+    await ed((e) => e.clearSelection());
+    await p.keyboard.press("r"); await drag(cx - 200, cy + 200, cx - 120, cy + 250); await sleep(60); await ed((e) => e.clearSelection());
+    await p.keyboard.press("o"); await drag(cx + 100, cy + 200, cx + 180, cy + 250); await sleep(60); await ed((e) => e.clearSelection());
+    const n1 = await size(), id1 = await p.evaluate(() => window.__ap.io.boardId());
+    await (await q(chip)).click(); await p.waitForSelector(".ap-boards", { visible: true, timeout: 3000 }); await sleep(150);
+    check("boards: clicking the name chip opens the list, with the current board focused", await p.evaluate(() => document.activeElement?.classList.contains("cur")));
+    await (await q(".ap-newb")).click(); await sleep(400);
+    check("boards: New board gives an empty board and closes the list", (await size()) === 0 && (await nm()) === "untitled" && !(await q(".ap-boards")));
+    await (await q(chip)).click(); await p.waitForSelector(".ap-boards", { visible: true }); await sleep(150);
+    await p.keyboard.press("F2"); await sleep(100); await p.keyboard.type("Second"); await p.keyboard.press("Enter"); await sleep(250);
+    check("boards: F2 + typing + Enter renames the board in place", (await rowsNow())[0] === "Second" && (await nm()) === "Second", JSON.stringify(await rowsNow()));
+    const rows = await p.$$(".ap-bd"); await rows[1].click(); await sleep(500);
+    check("boards: clicking the other row switches back: its shapes are there", (await size()) === n1 && (await p.evaluate(() => window.__ap.io.boardId())) === id1, `${n1} shapes`);
+    const before = await p.evaluate(() => JSON.stringify([...window.__ap.editor.scene.els.values()].map((e) => [e.id, e.x, e.y])));
+    check("boards: the board's undo history survived the switch", await ed((e) => e.canUndo()));
+    await p.keyboard.down("Control"); await p.keyboard.press("z"); await p.keyboard.up("Control"); await sleep(120);
+    check("boards: Ctrl+Z undoes a step of THAT board", (await p.evaluate(() => JSON.stringify([...window.__ap.editor.scene.els.values()].map((e) => [e.id, e.x, e.y])))) !== before);
+    await (await q(chip)).click(); await p.waitForSelector(".ap-boards", { visible: true }); await sleep(150);
+    const second = (await p.$$(".ap-bd"))[1]; await second.hover(); await sleep(80);
+    await (await second.$('button[aria-label^="Delete"]')).click(); await sleep(300);
+    check("boards: Delete removes the row and offers Undo", (await rowsNow()).length === 1 && (await p.evaluate(() => !!document.querySelector(".ap-tact"))));
+    await (await q(".ap-tact")).click(); await sleep(400);
+    check("boards: Undo restores it", (await rowsNow()).length === 2);
+    await p.keyboard.press("Escape"); await sleep(100);
+
+    // memory: 5 boards of ~200 shapes, 100 switches. Heap must stay flat and nothing may schedule a frame afterwards.
+    const ids = await p.evaluate(async () => {
+      const { editor, io } = window.__ap; const bm = await io.boards(); const out = [];
+      for (let b = 0; b < 5; b++) {
+        out.push(await bm.create(`M${b}`));
+        for (let s = 0; s < 10; s++) editor.importElements({ els: Array.from({ length: 20 }, (_, i) => ({ id: `m${b}_${s}_${i}`, kind: "rect", x: i * 30, y: s * 50, w: 80, h: 40, text: `r${i}` })), groups: [] }, false);
+      }
+      await bm.list();
+      return out;
+    });
+    const sw = (n) => p.evaluate(async (ids, n) => { const bm = await window.__ap.io.boards(); for (let i = 0; i < n; i++) await bm.switchTo(ids[i % ids.length]); return window.__ap.editor.scene.els.size; }, ids, n);
+    await sw(25);
+    const m0 = await gcHeap();
+    const last = await sw(100);
+    const m1 = await gcHeap();
+    const m2 = (await sw(100), await gcHeap());
+    const st = await p.evaluate(async () => (await window.__ap.io.boards()).stashed());
+    check("boards: 5 boards x ~200 shapes, 100 switches keep the heap flat (< 500 KB), and the next 100 add less than that", m1 - m0 < 500 * 1024 && m2 - m1 < 500 * 1024, `${Math.round((m1 - m0) / 1024)} KB, then ${Math.round((m2 - m1) / 1024)} KB; open board has ${last} shapes; stash ${JSON.stringify(st)}`);
+    check("boards: every board still has its 200 shapes after the 225 switches", await p.evaluate(async (ids) => { const bm = await window.__ap.io.boards(); const c = []; for (const id of ids) { await bm.switchTo(id); c.push(window.__ap.editor.scene.els.size); } return c.every((n) => n === 200); }, ids));
+    await sleep(600);
+    const still = await p.evaluate(async () => { const r = window.__ap.renderer, t = r.lastFrameAt; await new Promise((x) => setTimeout(x, 1500)); return r.lastFrameAt === t; });
+    check("boards: after the switching, no frame is scheduled while idle", still);
+    console.log(`      memory: ${Math.round((m1 - m0) / 1024)} KB over the first 100 switches, ${Math.round((m2 - m1) / 1024)} KB over the next 100`);
+  }
+
   check("no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
 } catch (e) { failed = true; console.error(e); } finally { await b.close(); srv.kill(); }
 const bad = results.filter((r) => !r.ok).length;

@@ -4,7 +4,7 @@ import type { Ctx } from "./ctx";
 import type { AlignMode } from "../align";
 import { glyphMore, type MoreGlyph } from "./glyphs-more";
 import { Disposer, h, setAttr, setDisabled, setHidden, setPressed, setText } from "./dom";
-import { commonGroupId, commonValue, selectionEls } from "./props-model";
+import { anyCap, commonGroupId, commonValue, selectionEls, styleCaps } from "./props-model";
 import { COLOUR_NAMES, normHex } from "../theme";
 import { iconMeta } from "../icon-pack";
 import { isLogoId } from "../logos";
@@ -16,10 +16,6 @@ import { clampPos, loadPrefs, savePrefs, type PropsPlace } from "./props-pos";
 const FILL = ["outline", "tint", "solid", "none"] as const;
 const EDGE = ["sharp", "round", "soft"] as const;
 const ROUTE: ReadonlyArray<[MoreGlyph, string]> = [["routeStraight", "straight"], ["routeElbow", "elbow"], ["routeCurve", "curve"]];
-/** kinds whose text is not a free label (a number, structured rows, a picture caption): no text-size control for them */
-const NO_TEXT_SIZE: ReadonlySet<string> = new Set(["brace", "badge", "calc", "legend", "image", "lane"]);
-/** kinds whose label cannot be aligned: it sits on a line or under a tile (connectors, icons) or is not free text */
-const NO_ALIGN: ReadonlySet<string> = new Set([...NO_TEXT_SIZE, "icon", "arrow"]);
 const ALIGNS: ReadonlyArray<[TextAlign, MoreGlyph]> = [["left", "textLeft"], ["center", "textCenter"], ["right", "textRight"]];
 const KIND: Record<string, string> = { arrow: "Connector", rect: "Rectangle", ellipse: "Ellipse", diamond: "Diamond", text: "Text", line: "Line", cylinder: "Database", note: "Sticky note", frame: "Frame", lane: "Swimlane", badge: "Step badge", calc: "Capacity note", legend: "Legend", image: "Image" };
 /** swatches shown inline; the other 16 and the hex field are behind the "…" popover */
@@ -65,7 +61,8 @@ export function mountRibbon(ctx: Ctx, parent: HTMLElement): Ribbon {
   const edge = seg("Edge", EDGE, "edge");
   let dashNow: 0 | 1 | undefined;
   const dash = h("button", { class: "ap-btn", text: "dashed", attrs: { type: "button", "aria-pressed": "false" }, on: { click: () => set({ dash: dashNow === 1 ? 0 : 1 }) } });
-  const rowA = h("div", { class: "rr" }, grip, kind, name, colourField, field("Fill", fill.el), field("Edge", edge.el), dash);
+  const fillField = field("Fill", fill.el), edgeField = field("Edge", edge.el);
+  const rowA = h("div", { class: "rr" }, grip, kind, name, colourField, fillField, edgeField, dash);
 
   /* ---------- row B: route, text, arrange, group, lock, style, delete ---------- */
   const route = segEl("Route", ROUTE.map(([g, n]) => radioBtn(glyphMore(g, 18), `Route: ${n}`, () => set({ route: ROUTE.findIndex((r) => r[1] === n) as 0 | 1 | 2 }), true)));
@@ -206,23 +203,28 @@ export function mountRibbon(ctx: Ctx, parent: HTMLElement): Ribbon {
     if (!wasVis) reclamp();
     const first = els[0];
     setText(kind, sel.size > 1 ? `${sel.size} selected` : first?.kind === "icon" ? `${isLogoId(first.iconId) ? "Logo" : "Icon"} · ${iconMeta(first.iconId)?.name ?? first.iconId}` : KIND[first?.kind ?? ""] ?? first?.kind ?? "1 selected");
-    catNow = commonValue(els, (e) => e.cat);
-    const hex = commonValue(els, (e) => e.hex ?? "");
+    // a whole group selected: colour and fill belong to the group (its outline and tint), so show and set those
+    const wholeGrp = editor.selectedGroup(), gInfo = wholeGrp ? editor.scene.groups.get(wholeGrp) : undefined;
+    catNow = gInfo ? gInfo.cat : commonValue(els, (e) => e.cat);
+    const hex = gInfo ? gInfo.hex : commonValue(els, (e) => e.hex ?? "");
     hexNow = hex ?? "";
+    const showColour = !!gInfo || anyCap(els, "colour"), showFill = !!gInfo || anyCap(els, "fill");
+    setHidden(colourField, !showColour); setHidden(fillField, !showFill);
+    setHidden(edgeField, !anyCap(els, "edge")); setHidden(dash, !anyCap(els, "dash"));
     sw.forEach((b, i) => setPressed(b, !hex && catNow === i));
     setAttr(moreBtn, "data-on", (hex || (catNow !== undefined && catNow >= INLINE_SW)) ? "true" : "false");
     moreBtn.style.setProperty("--c", hex ? hex : catNow !== undefined && catNow >= INLINE_SW ? `var(--cat${catNow})` : "transparent");
     if (pop) paintPop();
-    radio(fill.btns, commonValue(els, (e) => e.fill));
-    setHidden(fill.btns[3]!, !els.every((e) => e.kind === "icon" && isLogoId(e.iconId)));
+    radio(fill.btns, gInfo ? (gInfo.fill ?? 1) : commonValue(els, (e) => e.fill));
+    setHidden(fill.btns[3]!, !els.every((e) => e.kind === "icon" && isLogoId(e.iconId)) || !!gInfo);
     radio(edge.btns, commonValue(els, (e) => e.edge));
     const arrows = els.some((e) => e.kind === "arrow");
     setHidden(routeField, !arrows);
     radio(routeBtns, arrows ? commonValue(els.filter((e) => e.kind === "arrow"), (e) => e.route) : undefined);
-    const texty = els.some((e) => !NO_TEXT_SIZE.has(e.kind));
+    const texty = anyCap(els, "size");
     setHidden(sizeField, !texty);
-    if (texty) { const fs = commonValue(els.filter((e) => !NO_TEXT_SIZE.has(e.kind)), (e) => e.fs ?? 0); sizeBtns.forEach((b, i) => setPressed(b, fs === TEXT_SIZES[i]!.px, "aria-checked")); }
-    const aligned = els.filter((e) => !NO_ALIGN.has(e.kind));
+    if (texty) { const fs = commonValue(els.filter((e) => styleCaps(e).size), (e) => e.fs ?? 0); sizeBtns.forEach((b, i) => setPressed(b, fs === TEXT_SIZES[i]!.px, "aria-checked")); }
+    const aligned = els.filter((e) => styleCaps(e).align);
     setHidden(alignField, aligned.length === 0);
     if (aligned.length) { const al = commonValue(aligned, (e) => e.align ?? "center"); alignBtns.forEach((b, i) => setPressed(b, al === ALIGNS[i]![0], "aria-checked")); }
     const braces = els.length > 0 && els.every((e) => e.kind === "brace"), lanes = els.length > 0 && els.every((e) => e.kind === "lane");
@@ -243,6 +245,7 @@ export function mountRibbon(ctx: Ctx, parent: HTMLElement): Ribbon {
     setDisabled(deleteBtn, els.length === 0 || els.every((e) => scene.isLocked(e)));
     dashNow = commonValue(els, (e) => e.dash);
     setPressed(dash, dashNow === 1);
+    setDisabled(groupBtn, !editor.canGroup());
     setDisabled(ungroupBtn, !els.some((e) => e.groupIds.length > 0) || els.some((e) => scene.groupLocked(e)));
     gid = commonGroupId(els);
     setHidden(name, gid === null); setHidden(kind, gid !== null);

@@ -483,6 +483,14 @@ export function arrowLabels(e: { labels?: readonly ArrowLabel[] | undefined; tex
   return LEGACY;
 }
 
+/** the box a (possibly multi-line) connector label occupies, centred on its point: lines, plate width and height, line pitch */
+export function labelBlock(text: string, fs: number, measure: (line: string) => number): { lines: string[]; w: number; h: number; pitch: number } {
+  const lines = text.split("\n"), pitch = Math.round(fs * 1.3);
+  let w = 0;
+  for (const l of lines) w = Math.max(w, measure(l));
+  return { lines, w: w + 10, h: Math.round(fs * 1.5) + (lines.length - 1) * pitch, pitch };
+}
+
 export const MAX_LABELS = 12;
 export const MAX_LABEL_TEXT = 200;
 
