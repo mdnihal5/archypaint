@@ -111,24 +111,41 @@ export class GroupIndex {
   private computeBounds(gid: string): Box | null {
     const ids = this.membersOf(gid), els: El[] = [];
     for (const id of ids) { const e = this.scene.els.get(id); if (e) els.push(e); }
-    return groupBox(els, gid);
+    return groupBox(els, gid, this.scene.groups.get(gid)?.name);
   }
 }
 const EMPTY: readonly string[] = [];
 /** the monospace 13px tag: about 7.8 units per character, 16 tall */
 const TAG_CHAR_W = 7.9, TAG_H = 16;
+/** width of a monospace character per unit of font size: wrap.ts's MONO_ADVANCE, repeated so the startup chunk does not pull wrap.ts in */
+const MONO_ADVANCE = 0.6;
 
-/** padded outline of group `gid` around its members (`els` = those members); nested groups get a wider boundary so outlines never coincide */
-export function groupBox(els: readonly Pick<El, "x" | "y" | "w" | "h" | "groupIds">[], gid: string): Box | null {
+type Member = Pick<El, "x" | "y" | "w" | "h" | "groupIds"> & Partial<Pick<El, "kind" | "text" | "fs">>;
+
+/** how far a member's text reaches past its box on each side: an icon's name is centred under the tile (drawIconLabel squeezes it to the same cap), free text is centred on its box. Shape labels wrap inside the shape. */
+function overhang(e: Member): number {
+  if (!e.text) return 0;
+  let w = 0;
+  if (e.kind === "icon") w = Math.min(e.text.length * (e.fs || 12) * MONO_ADVANCE, Math.max(e.w + 16, 140));
+  else if (e.kind === "text") { let n = 0; for (const l of e.text.split("\n")) n = Math.max(n, l.length); w = n * (e.fs || 13) * MONO_ADVANCE; }
+  return Math.max(0, (w - e.w) / 2);
+}
+
+/**
+ * padded outline of group `gid` around what its members draw (`els` = those members); nested groups get a wider boundary so outlines never
+ * coincide. A `name` wider than that grows the outline to the right, so the tag above it never runs past the box.
+ */
+export function groupBox(els: readonly Member[], gid: string, name = ""): Box | null {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, depth = 0;
   for (const e of els) {
-    if (e.x < x0) x0 = e.x; if (e.y < y0) y0 = e.y;
-    if (e.x + e.w > x1) x1 = e.x + e.w; if (e.y + e.h > y1) y1 = e.y + e.h;
+    const o = overhang(e);
+    if (e.x - o < x0) x0 = e.x - o; if (e.y < y0) y0 = e.y;
+    if (e.x + e.w + o > x1) x1 = e.x + e.w + o; if (e.y + e.h > y1) y1 = e.y + e.h;
     depth = Math.max(depth, e.groupIds.indexOf(gid));
   }
   if (x0 === Infinity) return null;
   const pad = 12 + 10 * depth;
-  return { x: x0 - pad, y: y0 - pad, w: x1 - x0 + 2 * pad, h: y1 - y0 + 2 * pad };
+  return { x: x0 - pad, y: y0 - pad, w: Math.max(x1 - x0 + 2 * pad, 24 + name.length * TAG_CHAR_W), h: y1 - y0 + 2 * pad };
 }
 
 export interface GroupOutline { id: string; name: string; cat: number; hex?: string | undefined; fill?: 0 | 1 | 2 | undefined; box: Box }
@@ -138,14 +155,14 @@ export const groupTint = (fill: 0 | 1 | 2 | undefined): number => (fill === 0 ? 
  * outlines to draw for an export of `els`: every group whose members are ALL among `els` (a partial selection would draw a boundary
  * around only some members), parents and children both, in scene order. Pure: the same numbers the canvas uses.
  */
-export function exportGroups(els: readonly Pick<El, "id" | "x" | "y" | "w" | "h" | "groupIds">[], groups: Iterable<{ id: string; name: string; cat: number; hex?: string | undefined; fill?: 0 | 1 | 2 | undefined }>, allMembers: (gid: string) => number): GroupOutline[] {
-  const by = new Map<string, Pick<El, "id" | "x" | "y" | "w" | "h" | "groupIds">[]>();
+export function exportGroups(els: readonly (Member & Pick<El, "id">)[], groups: Iterable<{ id: string; name: string; cat: number; hex?: string | undefined; fill?: 0 | 1 | 2 | undefined }>, allMembers: (gid: string) => number): GroupOutline[] {
+  const by = new Map<string, (Member & Pick<El, "id">)[]>();
   for (const e of els) for (const g of e.groupIds) { const a = by.get(g); if (a) a.push(e); else by.set(g, [e]); }
   const out: GroupOutline[] = [];
   for (const g of groups) {
     const m = by.get(g.id);
     if (!m || m.length !== allMembers(g.id)) continue;
-    const box = groupBox(m, g.id);
+    const box = groupBox(m, g.id, g.name);
     if (box) out.push({ id: g.id, name: g.name, cat: g.cat, ...(g.hex ? { hex: g.hex } : {}), ...(g.fill !== undefined ? { fill: g.fill } : {}), box });
   }
   return out;

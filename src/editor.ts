@@ -269,11 +269,12 @@ export function createEditor(d: EditorDeps): Editor {
         v = v.replace(/\s*\n\s*/g, " ");
         if ((el.text !== "") !== (v !== "")) scene.set(el, el.x, el.y, el.w, iconBoxH(el, el.fs, el.fs, v !== ""));
         scene.patch(el, { text: v });
-        rerouteIds(new Set([el.id])); // a bound connector follows the new box
+        rerouteIds(new Set([el.id, ...el.groupIds])); // a bound connector follows the new box, and the group outline the name may have widened
         return;
       }
       scene.patch(el, { text: v });
       growToFit(el);
+      if (el.groupIds.length) rerouteIds(new Set(el.groupIds));
     });
   };
 
@@ -482,7 +483,7 @@ export function createEditor(d: EditorDeps): Editor {
     renameGroup(id, name) {
       const g = scene.groups.get(id);
       if (!g || g.name === name || g.locked) return;
-      run("rename group", () => { hist.touchGroup(id); g.name = name; scene.nonce++; });
+      run("rename group", () => { hist.touchGroup(id); g.name = name; scene.nonce++; rerouteIds(new Set([id])); }); // a long name can widen the outline
     },
     bringToFront() { reorder("front"); }, bringForward() { reorder("forward"); },
     sendBackward() { reorder("backward"); }, sendToBack() { reorder("back"); },
