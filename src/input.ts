@@ -69,6 +69,12 @@ const MIN_SIZE = 16;
  * handler ever draws or writes reactive state. Every listener is registered through on() and
  * removed by destroy().
  */
+/** the event started in a text field the stage hosts (the inline editor's textarea), not on the canvas */
+const fromField = (e: Event): boolean => {
+  const t = e.target as HTMLElement | null;
+  return !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+};
+
 export class Controller {
   tool: Tool = "select";
   onTool: (t: Tool) => void = () => {};
@@ -174,7 +180,7 @@ export class Controller {
   // ---- pointer -----------------------------------------------------------------------------
 
   private down(e: PointerEvent): void {
-    if (e.button === 2) return;
+    if (e.button === 2 || fromField(e)) return; // a press in the inline text editor selects text there: it must not start a canvas gesture or capture the pointer
     try { this.stage.setPointerCapture(e.pointerId); } catch { /* the pointer already ended (or the event is synthetic): dragging still works without capture */ }
     const [x, y] = this.pt(e);
     this.sx = this.mx = x; this.sy = this.my = y; this.moved = false;
@@ -873,7 +879,7 @@ export class Controller {
   // ---- double click ------------------------------------------------------------------------
 
   private dbl(e: MouseEvent): void {
-    if (this.readOnly) return;
+    if (this.readOnly || fromField(e)) return; // a double-click in the inline editor selects a word there
     const [x, y] = this.pt(e);
     const wx = this.vp.toWorldX(x), wy = this.vp.toWorldY(y), core = this.core;
     const hit = this.scene.hit(wx, wy, 4 / this.vp.zoom);
