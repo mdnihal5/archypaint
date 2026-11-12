@@ -91,3 +91,28 @@ describe("adoptCurrent (make an editable copy of a shared link)", () => {
     io.dispose();
   });
 });
+
+describe("createIO newDoc (File > New)", () => {
+  it("opens a NEW empty board without asking: nothing is destroyed, the old board stays in the list", async () => {
+    const ed = fakeEditor() as unknown as EditorAPI & { load: ReturnType<typeof vi.fn> };
+    (ed as unknown as { takeHistory: () => unknown }).takeHistory = () => ({ undo: [], redo: [], weight: 0 });
+    const subs: Array<() => void> = [];
+    (ed as unknown as { on: (ev: string, f: () => void) => () => void }).on = (ev, f) => { if (ev === "change") subs.push(f); return () => {}; };
+    const confirm = vi.fn(() => false), opts = { kv: memKV() };
+    const prev = window.confirm; window.confirm = confirm;
+    const io = createIO(ed, document.createElement("div"), opts);
+    await io.restore(); // arms autosave, as at startup
+    const first = io.boardId();
+    ed.scene.add({ kind: "rect" }); // unsaved edit: the old behaviour would have prompted
+    for (const f of subs) f(); // the edit reaches autosave, as a real change event does
+    io.newDoc();
+    await vi.waitFor(() => expect(io.boardId()).not.toBe(first));
+    expect(confirm).not.toHaveBeenCalled();
+    expect(ed.load).toHaveBeenCalledWith({ els: [], groups: [] }, undefined);
+    const rows = await (await io.boards()).list();
+    expect(rows.map((r) => r.id)).toContain(first);
+    expect(rows.length).toBe(2);
+    window.confirm = prev;
+    io.dispose();
+  });
+});

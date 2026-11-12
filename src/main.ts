@@ -4,7 +4,6 @@ import { createIO } from "./io";
 import { registerPwa } from "./io/pwa";
 import { mountPalette } from "./palette";
 import { bboxOfPts, computeArrowPts, sceneRectOf } from "./connectors";
-import { stress, stressMixed } from "./stress";
 import { onThemeChange, theme } from "./theme";
 import { mountUI } from "./ui";
 import { createSettings } from "./ui/settings";
@@ -31,11 +30,15 @@ const offTheme = onThemeChange(() => renderer.invalidate(true, true));
 
 const n = Number(new URLSearchParams(location.search).get("stress") ?? 0);
 const mixed = Number(new URLSearchParams(location.search).get("mixed") ?? 0);
-if (n > 0) stress(scene, n);
-if (mixed > 0) {
-  const rectOf = sceneRectOf(scene);
-  stressMixed(scene, mixed, (id) => { const a = scene.els.get(id)!; const pts = computeArrowPts(a, rectOf); const b = bboxOfPts(pts); scene.set(a, b.x, b.y, b.w, b.h); scene.patch(a, { pts }); });
-}
+// benchmark scenes (?stress=N / ?mixed=N): the generators are a lazy chunk, they are not part of a normal start
+if (n > 0 || mixed > 0) void import("./stress").then(({ stress, stressMixed }) => {
+  if (n > 0) stress(scene, n);
+  if (mixed > 0) {
+    const rectOf = sceneRectOf(scene);
+    stressMixed(scene, mixed, (id) => { const a = scene.els.get(id)!; const pts = computeArrowPts(a, rectOf); const b = bboxOfPts(pts); scene.set(a, b.x, b.y, b.w, b.h); scene.patch(a, { pts }); });
+  }
+  renderer.invalidate(true, true);
+});
 
 let lw = 0, lh = 0, ldpr = 0;
 const ro = new ResizeObserver(() => {

@@ -8,6 +8,7 @@ import type { AlignMode } from "./align";
 import { frameChildren, isContainer, nextBadgeNumber } from "./edit-ops";
 import { textWidth } from "./text-edit";
 import { minLabelHeight } from "./wrap";
+import { ROT_HANDLE_PX, aabbInto, normAngle, snapAngle, toLocal, toWorld, type Box } from "./rotate";
 import type { Viewport } from "./viewport";
 
 export type ShapeTool = "rect" | "ellipse" | "diamond" | "cylinder" | "cloud" | "hexagon" | "parallelogram" | "triangle" | "star" | "note" | "brace" | "badge" | "frame" | "lane";
@@ -23,7 +24,7 @@ export const SHAPE_SIZE: Record<ShapeTool, { w: number; h: number }> = {
 };
 export const isShapeTool = (t: Tool): t is ShapeTool => t in SHAPE_SIZE;
 const isArrowTool = (t: Tool): boolean => t === "arrow" || t === "line";
-type Mode = "none" | "pan" | "move" | "create" | "marquee" | "resize" | "arrow" | "arrowEnd" | "arrowSeg" | "text" | "label";
+type Mode = "none" | "pan" | "move" | "create" | "marquee" | "resize" | "rotate" | "arrow" | "arrowEnd" | "arrowSeg" | "text" | "label";
 
 /** internal surface the controller needs from the editor (EditorAPI + a few engine hooks) */
 export interface Core extends EditorAPI {
@@ -101,6 +102,12 @@ export class Controller {
   private rbox: Rect | null = null;
   private rorig = new Map<string, Rect>();
   private rlock = false;
+  /** resize of ONE rotated text: the pointer is taken into the text's own frame (its unrotated box + angle at the start of the drag) */
+  private rframe: Box & { angle: number } | null = null;
+  // rotate state
+  private rotEl: El | null = null; private rotA0: number | undefined = undefined; private rotP0 = 0;
+  private bb: Box = { x: 0, y: 0, w: 0, h: 0 };
+  private rp: [number, number] = [0, 0];
   // arrow state
   private aStart: Anchor | null = null;
   /** view-only: pointer drag pans, every editing gesture and key is ignored (shared links, presentations) */
@@ -144,7 +151,7 @@ export class Controller {
 
   destroy(): void {
     for (const off of this.offs) off();
-    this.offs.length = 0; this.origins.clear(); this.rorig.clear(); this.movArrows.length = 0; this.scratch.length = 0;
+    this.offs.length = 0; this.rotEl = null; this.rframe = null; this.origins.clear(); this.rorig.clear(); this.movArrows.length = 0; this.scratch.length = 0;
     this.r.onBeforeFrame = null;
   }
 
@@ -309,15 +316,27 @@ export class Controller {
         return false;
       }
     }
-    const box = r.selectionBox();
+    const lone = this.loneText();
+    if (lone && !this.scene.isLocked(lone)) {
+      const rp = this.rotHandle(lone);
+      if (Math.hypot(wx - rp[0], wy - rp[1]) <= hs) {
+        const cx = lone.x + lone.w / 2, cy = lone.y + lone.h / 2;
+        this.rotEl = lone; this.rotA0 = lone.angle; this.rotP0 = Math.atan2(wy - cy, wx - cx);
+        this.core.hist.begin(); this.core.hist.touch(lone);
+        this.mode = "rotate";
+        return true;
+      }
+    }
+    const box = lone?.angle ? { x: lone.x, y: lone.y, w: lone.w, h: lone.h } : r.selectionBox(); // one rotated text resizes in its own frame
     if (!box) return false;
     let anyShape = false;
     for (const id of r.selected) { const se = this.scene.els.get(id); if (se && se.kind !== "arrow" && !this.scene.isLocked(se)) { anyShape = true; break; } }
     if (!anyShape) return false;
-    const pts = handlePoints(box);
+    const pts = this.handlePts(box, lone);
     for (let i = 0; i < 8; i++) {
       if (Math.abs(wx - pts[i]![0]) <= hs && Math.abs(wy - pts[i]![1]) <= hs) {
         this.handle = i; this.rbox = box; this.rorig.clear(); this.rlock = false;
+        this.rframe = lone?.angle ? { x: lone.x, y: lone.y, w: lone.w, h: lone.h, angle: lone.angle } : null;
         this.core.hist.begin();
         for (const id of r.selected) {
           const e = this.scene.els.get(id);
@@ -332,6 +351,26 @@ export class Controller {
     return false;
   }
 
+  /** the one selected free text (what a rotate handle belongs to), else null */
+  private loneText(): El | null {
+    if (this.r.selected.size !== 1) return null;
+    const e = this.scene.els.get(this.r.selected.values().next().value as string);
+    return e && e.kind === "text" ? e : null;
+  }
+
+  /** world position of the rotate handle of a text: straight above its top edge in the text's own frame */
+  private rotHandle(e: El): [number, number] {
+    toWorld(e, e.x + e.w / 2, e.y - ROT_HANDLE_PX / this.vp.zoom, this.rp);
+    return this.rp;
+  }
+
+  /** world positions of the 8 resize handles: the box's own, turned with the text when one rotated text is selected */
+  private handlePts(box: Rect, lone: El | null): [number, number][] {
+    const pts = handlePoints(box);
+    if (lone?.angle) for (const p of pts) { toWorld(lone, p[0], p[1], this.rp); p[0] = this.rp[0]; p[1] = this.rp[1]; }
+    return pts;
+  }
+
   private beginMove(): void {
     const r = this.r, scene = this.scene;
     this.mode = "move"; this.origins.clear(); this.movArrows.length = 0;
@@ -344,7 +383,7 @@ export class Controller {
       if (e.kind === "arrow" && ((e.src && !r.selected.has(e.src) && !this.groupSelected(e.src)) || (e.dst && !r.selected.has(e.dst) && !this.groupSelected(e.dst)))) continue;
       this.origins.set(id, { x: e.x, y: e.y });
       r.dragging.add(id);
-      if (e.kind !== "arrow") { x0 = Math.min(x0, e.x); y0 = Math.min(y0, e.y); x1 = Math.max(x1, e.x + e.w); y1 = Math.max(y1, e.y + e.h); }
+      if (e.kind !== "arrow") { const b = aabbInto(e, this.bb); x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); }
     }
     this.moveBox = x0 === Infinity ? null : { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
     // dragging a frame / swimlane carries everything fully inside it
@@ -552,6 +591,7 @@ export class Controller {
         r.invalidate(false, true); break;
       }
       case "resize": this.applyResize(wx, wy); break;
+      case "rotate": this.applyRotate(wx, wy); break;
       case "arrow": this.applyArrowDrag(wx, wy); break;
       case "arrowEnd": this.applyArrowEnd(wx, wy); break;
       case "arrowSeg": this.segLive = this.segLive ?? []; this.applySeg(wx, wy); break;
@@ -566,17 +606,19 @@ export class Controller {
     if (isArrowTool(this.tool)) {
       const a = this.anchorAt(wx, wy, "");
       const changed = r.hoverRect !== a.rect || r.hoverPort !== a.port || this.hoverHost(a.host);
-      r.hoverRect = a.rect ? { x: a.rect.x, y: a.rect.y, w: a.rect.w, h: a.rect.h, kind: a.rect.kind, radius: a.rect.radius } : null; r.hoverPort = a.port;
+      r.hoverRect = a.rect ? { x: a.rect.x, y: a.rect.y, w: a.rect.w, h: a.rect.h, kind: a.rect.kind, radius: a.rect.radius, angle: a.rect.angle } : null; r.hoverPort = a.port;
       if (changed) r.invalidate(false, true);
       return;
     }
     if (this.tool !== "select") return;
     const z = vp.zoom, hs = 9 / z;
     let c = "";
-    const box = r.selectionBox();
-    if (box && r.selected.size) {
-      const pts = handlePoints(box);
-      for (let i = 0; i < 8; i++) if (Math.abs(wx - pts[i]![0]) <= hs && Math.abs(wy - pts[i]![1]) <= hs) { c = HANDLE_CURSORS[i]!; break; }
+    const lone = this.loneText(), canRot = !!lone && !this.scene.isLocked(lone);
+    if (canRot) { const rp = this.rotHandle(lone!); if (Math.hypot(wx - rp[0], wy - rp[1]) <= hs) c = "grab"; }
+    const box = lone?.angle ? { x: lone.x, y: lone.y, w: lone.w, h: lone.h } : r.selectionBox();
+    if (!c && box && r.selected.size) {
+      const pts = this.handlePts(box, lone), turn = lone?.angle ? Math.round(lone.angle / (Math.PI / 4)) : 0; // a turned box points its resize cursors the other way
+      for (let i = 0; i < 8; i++) if (Math.abs(wx - pts[i]![0]) <= hs && Math.abs(wy - pts[i]![1]) <= hs) { c = HANDLE_CURSORS[(((i + turn) % 8) + 8) % 8]!; break; }
     }
     if (!c && r.selected.size === 1) { // an elbow arrow's segment handle: the cursor says which way it slides
       const a = this.scene.els.get(r.selected.values().next().value as string);
@@ -641,7 +683,8 @@ export class Controller {
     for (const c of this.scratch) {
       if (c.kind === "arrow" || r.dragging.has(c.id)) continue;
       if (++n > 64) break;
-      const cx = [c.x, c.x + c.w / 2, c.x + c.w], cy = [c.y, c.y + c.h / 2, c.y + c.h];
+      const cb = c.angle ? aabbInto(c, this.bb) : c;
+      const cx = [cb.x, cb.x + cb.w / 2, cb.x + cb.w], cy = [cb.y, cb.y + cb.h / 2, cb.y + cb.h];
       const mxs = mine(b.x + dx, b.w), mys = mine(b.y + dy, b.h);
       for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
         const ddx = cx[i]! - mxs[j]!; if (Math.abs(ddx) < bx) { bx = Math.abs(ddx); ax = ddx; gx = cx[i]!; }
@@ -689,8 +732,30 @@ export class Controller {
 
   // ---- resize ------------------------------------------------------------------------------
 
+  /** drag the rotate handle: the angle follows the pointer about the text's centre, snapped to 15 degrees unless Shift */
+  private applyRotate(wx: number, wy: number): void {
+    const e = this.rotEl;
+    if (!e) return;
+    const cx = e.x + e.w / 2, cy = e.y + e.h / 2;
+    const a = normAngle(snapAngle((this.rotA0 ?? 0) + (Math.atan2(wy - cy, wx - cx) - this.rotP0), this.shift));
+    if (Math.abs(a - (e.angle ?? 0)) < 1e-9) return; // snapped to where it already is: nothing to redraw
+    this.scene.setAngle(e, a);
+    this.core.rerouteIds(new Set([e.id])); // connectors bound to the text follow its turned ports
+    this.r.invalidate(true, true);
+  }
+
+  private finishRotate(): void {
+    const core = this.core, e = this.rotEl;
+    this.rotEl = null;
+    if (e && Math.abs((e.angle ?? 0) - (this.rotA0 ?? 0)) < 1e-9) { if (core.hist.active) { core.hist.abort(); core.emit("change"); } } // back where it started: no step, no trace
+    else if (e && core.hist.commit("rotate")) { core.emit("change"); core.emit("history"); }
+    this.r.invalidate(true, true);
+  }
+
   private applyResize(wx: number, wy: number): void {
     const b = this.rbox!, h = this.handle, core = this.core, scene = this.scene;
+    const fr = this.rframe;
+    if (fr) { toLocal(fr, wx, wy, this.rp); wx = this.rp[0]; wy = this.rp[1]; }
     let l = b.x, rr = b.x + b.w, t = b.y, bt = b.y + b.h;
     if (h === 0 || h === 6 || h === 7) l = wx;
     if (h === 2 || h === 3 || h === 4) rr = wx;
@@ -713,7 +778,17 @@ export class Controller {
     for (const [id, o] of this.rorig) {
       const e = scene.els.get(id);
       if (!e) continue;
-      scene.set(e, l + (o.x - b.x) * sx, t + (o.y - b.y) * sy, Math.max(4, o.w * sx), Math.max(4, o.h * sy));
+      let nx = l + (o.x - b.x) * sx, ny = t + (o.y - b.y) * sy, nw = Math.max(4, o.w * sx), nh = Math.max(4, o.h * sy);
+      if (fr) {
+        // the new box was worked out in the text's old frame: its centre goes back to the world, and the angle stays
+        toWorld(fr, nx + nw / 2, ny + nh / 2, this.rp); nx = this.rp[0] - nw / 2; ny = this.rp[1] - nh / 2;
+      } else if (e.angle) {
+        // one of several selected: the centre follows the selection box, each own axis scales by the length its unit vector gets
+        const c = Math.cos(e.angle), sn = Math.sin(e.angle);
+        nw = Math.max(4, o.w * Math.hypot(sx * c, sy * sn)); nh = Math.max(4, o.h * Math.hypot(sx * sn, sy * c));
+        nx = l + (o.x + o.w / 2 - b.x) * sx - nw / 2; ny = t + (o.y + o.h / 2 - b.y) * sy - nh / 2;
+      }
+      scene.set(e, nx, ny, nw, nh);
       // a shape cannot be squeezed below its label: the text would run out of it
       const need = minLabelHeight(e, () => (s) => textWidth(s, e.fs || 0));
       if (need > e.h) scene.set(e, e.x, e.y, e.w, need);
@@ -726,7 +801,7 @@ export class Controller {
 
   private endAnchor(wx: number, wy: number, exclude: string): Anchor {
     const a = this.anchorAt(wx, wy, exclude);
-    this.r.hoverRect = a.rect ? { x: a.rect.x, y: a.rect.y, w: a.rect.w, h: a.rect.h, kind: a.rect.kind, radius: a.rect.radius } : null; this.r.hoverPort = a.port;
+    this.r.hoverRect = a.rect ? { x: a.rect.x, y: a.rect.y, w: a.rect.w, h: a.rect.h, kind: a.rect.kind, radius: a.rect.radius, angle: a.rect.angle } : null; this.r.hoverPort = a.port;
     this.hoverHost(a.host);
     this.endTarget = a.id; this.endPort = a.port; this.endHost = a.host; this.endT = a.t;
     return a.rect ? { rect: a.rect, pt: [wx, wy], port: a.port as Port } : { rect: null, pt: a.host ? [this.bpt[0], this.bpt[1]] : [wx, wy], port: -1 };
@@ -801,8 +876,9 @@ export class Controller {
     const wasClick = !this.moved && Math.hypot(this.mx - this.sx, this.my - this.sy) < 4 && Math.hypot(wx - this.wx0, wy - this.wy0) * vp.zoom < 4;
     switch (this.mode) {
       case "move": this.finishMove(); break;
+      case "rotate": this.finishRotate(); break;
       case "resize":
-        core.hist.commit("resize"); this.rorig.clear(); this.rbox = null; this.handle = -1; core.emit("change"); core.emit("history");
+        core.hist.commit("resize"); this.rorig.clear(); this.rbox = null; this.rframe = null; this.handle = -1; core.emit("change"); core.emit("history");
         r.invalidate(true, true); break;
       case "marquee": this.finishMarquee(wx, wy); break;
       case "create": this.finishCreate(wx, wy, wasClick); break;
@@ -856,7 +932,8 @@ export class Controller {
       this.scene.query(m.x, m.y, m.x + m.w, m.y + m.h, this.scratch);
       const ids = new Set<string>(this.shift ? r.selected : []);
       for (const e of this.scratch) {
-        if (e.x >= m.x && e.y >= m.y && e.x + e.w <= m.x + m.w && e.y + e.h <= m.y + m.h) for (const id of core.unitIds(e)) ids.add(id);
+        const eb = e.angle ? aabbInto(e, this.bb) : e;
+        if (eb.x >= m.x && eb.y >= m.y && eb.x + eb.w <= m.x + m.w && eb.y + eb.h <= m.y + m.h) for (const id of core.unitIds(e)) ids.add(id);
       }
       core.setSel(ids);
     }

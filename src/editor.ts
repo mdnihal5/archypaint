@@ -1,3 +1,4 @@
+import { aabbInto, cleanAngle } from "./rotate";
 import { alignBoxes, distributeBoxes, matchSizes, unionOf, type AlignMode, type Box, type Delta } from "./align";
 import { MAX_LABEL_TEXT, MAX_LABELS, cleanSegs, arrowLabels, bboxOfPts, cleanLabels, computeArrowPts, isCurve, migrateArrowText, pointAtT, rerouteBound, sceneRectOf } from "./connectors";
 import { calcSize, ensureCalc, onCalcReady, SAMPLE as CALC_SAMPLE } from "./calc-view";
@@ -357,7 +358,8 @@ export function createEditor(d: EditorDeps): Editor {
     }
     if (blocks.size < min) return;
     const boxes: Box[] = [];
-    for (const [key, els] of blocks) { const u = unionOf(els.map((e) => ({ id: e.id, x: e.x, y: e.y, w: e.w, h: e.h })))!; boxes.push({ id: key, ...u }); }
+    // a turned text aligns by its turned bounds
+    for (const [key, els] of blocks) { const u = unionOf(els.map((e) => { const b = e.angle ? aabbInto(e, { x: 0, y: 0, w: 0, h: 0 }) : e; return { id: e.id, x: b.x, y: b.y, w: b.w, h: b.h }; }))!; boxes.push({ id: key, ...u }); }
     const deltas = plan(boxes);
     if (!deltas.size) return;
     run(label, () => {
@@ -833,6 +835,8 @@ function sanitize(j: ElJSON): ElJSON {
   if (fs >= 6 && fs <= 96) el.fs = Math.round(fs); else delete el.fs;
   const sg = cleanSegs(j.segs);
   if (sg) el.segs = sg; else delete el.segs;
+  const ang = el.kind === "text" ? cleanAngle(j.angle) : undefined; // only free text turns
+  if (ang !== undefined) el.angle = ang; else delete el.angle;
   const unit = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : undefined);
   const st = unit(j.st), dt = unit(j.dt);
   if (st !== undefined) el.st = st; else delete el.st;

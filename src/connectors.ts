@@ -1,7 +1,8 @@
 import { PORT_FRAC, extraPort, type ArrowLabel, type El, type EdgeStyle, type Port, type Route, type Scene } from "./scene";
+import { aabbInto, toLocal, toWorld, type Box } from "./rotate";
 import { cylLid, outlinePort, polygonOf, rayPoly } from "./shape-geom";
 
-export interface Rect { x: number; y: number; w: number; h: number; /** element kind, so ports of polygon shapes land on the real outline */ kind?: string; /** corner radius, so corner ports sit on the rounded outline */ radius?: number }
+export interface Rect { x: number; y: number; w: number; h: number; /** element kind, so ports of polygon shapes land on the real outline */ kind?: string; /** corner radius, so corner ports sit on the rounded outline */ radius?: number; /** rotation about the centre (radians, free text only): ports and sides turn with it */ angle?: number | undefined }
 /** one end of a connector: either glued to a shape's port (rect set) or a free point */
 export interface Anchor { rect: Rect | null; pt: readonly [number, number]; port: Port }
 
@@ -38,6 +39,9 @@ export function listPorts(r: Rect, z: number, out: number[]): number[] {
   return out;
 }
 const K45 = Math.SQRT1_2;
+const LP: P = [0, 0];
+/** the direction a connector leaves a turned box by: its own side `s`, turned by the angle and rounded to the nearest quarter */
+function turnSide(r: Rect, s: number): number { return r.angle ? (((s + Math.round(r.angle / (Math.PI / 2))) % 4) + 4) % 4 : s; }
 /** the two sides a corner port can leave through: [horizontal, vertical] */
 const CORNER_SIDES: readonly [number, number][] = [[3, 0], [1, 0], [1, 2], [3, 2]];
 
@@ -86,6 +90,12 @@ function fracPoint(r: Rect, side: number, f: number, out: P): void {
 
 /** the point of port `side` on `r`'s real outline, written into `out` (allocation-free for box-like shapes) */
 export function portInto(r: Rect, side: number, out: P): P {
+  portLocal(r, side, out);
+  if (r.angle) toWorld(r, out[0], out[1], out); // a turned box: the port is where it is on the box, turned with it
+  return out;
+}
+
+function portLocal(r: Rect, side: number, out: P): P {
   if (side >= 8) { fracPoint(r, (side - 8) >> 6, ((side - 8) & 63) / PORT_FRAC, out); return out; }
   if (r.kind !== undefined) { const o = outlinePort(r, side); if (o) { out[0] = o[0]; out[1] = o[1]; return out; } }
   if (side >= 4) { cornerPoint(r, side - 4, out); return out; }
@@ -102,6 +112,7 @@ export function portPoint(r: Rect, side: number): P { return portInto(r, side, [
 
 /** side of `r` facing the point (tx,ty) */
 export function nearestSide(r: Rect, tx: number, ty: number): 0 | 1 | 2 | 3 {
+  if (r.angle) { toLocal(r, tx, ty, LP); tx = LP[0]; ty = LP[1]; } // the box's own side that faces the point
   const dx = (tx - (r.x + r.w / 2)) / (r.w / 2 || 1), dy = (ty - (r.y + r.h / 2)) / (r.h / 2 || 1);
   if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? 1 : 3;
   return dy > 0 ? 2 : 0;
@@ -113,13 +124,14 @@ function resolve(a: Anchor, other: Anchor): Resolved {
   const tx = other.rect ? other.rect.x + other.rect.w / 2 : other.pt[0];
   const ty = other.rect ? other.rect.y + other.rect.h / 2 : other.pt[1];
   if (a.rect) {
-    if (a.port >= 8) return { p: portPoint(a.rect, a.port), side: (a.port - 8) >> 6, stub: STUB }; // an extra port leaves perpendicular to its own side
+    if (a.port >= 8) return { p: portPoint(a.rect, a.port), side: turnSide(a.rect, (a.port - 8) >> 6), stub: STUB }; // an extra port leaves perpendicular to its own side
     if (a.port >= 4) { // a corner leaves through whichever adjacent side faces the other end more
       const p = portPoint(a.rect, a.port), [h, v] = CORNER_SIDES[a.port - 4]!;
-      return { p, side: Math.abs(tx - p[0]) > Math.abs(ty - p[1]) ? h : v, stub: STUB };
+      const th = turnSide(a.rect, h), tv = turnSide(a.rect, v); // a turned box may swap which of its two sides is the horizontal one (odd = left / right)
+      return { p, side: (th & 1) === (Math.abs(tx - p[0]) > Math.abs(ty - p[1]) ? 1 : 0) ? th : tv, stub: STUB };
     }
     const side = a.port >= 0 ? a.port : nearestSide(a.rect, tx, ty);
-    return { p: portPoint(a.rect, side), side, stub: STUB };
+    return { p: portPoint(a.rect, side), side: turnSide(a.rect, side), stub: STUB };
   }
   const dx = tx - a.pt[0], dy = ty - a.pt[1];
   const side = Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 1 : 3) : dy >= 0 ? 2 : 0;
@@ -128,7 +140,9 @@ function resolve(a: Anchor, other: Anchor): Resolved {
 
 const EPS = 0.01;
 
-function segHitsRect(a: P, b: P, r: Rect): boolean {
+const SB: Box = { x: 0, y: 0, w: 0, h: 0 };
+function segHitsRect(a: P, b: P, rr: Rect): boolean {
+  const r = rr.angle ? aabbInto(rr, SB) : rr; // a turned box blocks its turned bounds
   // shrunk by 1 so touching the boundary (ports) does not count
   const x0 = r.x + 1, y0 = r.y + 1, x1 = r.x + r.w - 1, y1 = r.y + r.h - 1;
   if (x1 <= x0 || y1 <= y0) return false;
@@ -190,10 +204,11 @@ export function routeArrow(a: Anchor, b: Anchor, route: Route): number[] {
   const mx = (p1[0] + q1[0]) / 2, my = (p1[1] + q1[1]) / 2;
   const ra = a.rect, rb = b.rect;
   const cands: P[][] = [];
-  const top = Math.min(p1[1], q1[1], ra ? ra.y : Infinity, rb ? rb.y : Infinity) - 24;
-  const bot = Math.max(p1[1], q1[1], ra ? ra.y + ra.h : -Infinity, rb ? rb.y + rb.h : -Infinity) + 24;
-  const lft = Math.min(p1[0], q1[0], ra ? ra.x : Infinity, rb ? rb.x : Infinity) - 24;
-  const rgt = Math.max(p1[0], q1[0], ra ? ra.x + ra.w : -Infinity, rb ? rb.x + rb.w : -Infinity) + 24;
+  const ba = ra && (ra.angle ? aabbInto(ra, { x: 0, y: 0, w: 0, h: 0 }) : ra), bb = rb && (rb.angle ? aabbInto(rb, { x: 0, y: 0, w: 0, h: 0 }) : rb); // turned boxes detour around their turned bounds
+  const top = Math.min(p1[1], q1[1], ba ? ba.y : Infinity, bb ? bb.y : Infinity) - 24;
+  const bot = Math.max(p1[1], q1[1], ba ? ba.y + ba.h : -Infinity, bb ? bb.y + bb.h : -Infinity) + 24;
+  const lft = Math.min(p1[0], q1[0], ba ? ba.x : Infinity, bb ? bb.x : Infinity) - 24;
+  const rgt = Math.max(p1[0], q1[0], ba ? ba.x + ba.w : -Infinity, bb ? bb.x + bb.w : -Infinity) + 24;
   if (hs && he) {
     cands.push([p1, [mx, p1[1]], [mx, q1[1]], q1], [p1, [p1[0], top], [q1[0], top], q1], [p1, [p1[0], bot], [q1[0], bot], q1]);
   } else if (!hs && !he) {

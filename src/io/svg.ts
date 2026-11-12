@@ -1,5 +1,6 @@
 import type { ElLike } from "./format";
 import { arrowLabels, isCurve, pointAtT } from "../connectors";
+import { aabbInto } from "../rotate";
 import { iconStrip, isBareLogo, ROOT_ATTRS } from "../icons";
 import { logoBox } from "../icon-pack";
 import { isDarkPaper, themedLogoMarkup } from "../logos";
@@ -23,6 +24,7 @@ export function esc(s: string): string {
 const n = (v: number): string => String(Math.round(v * 100) / 100 + 0);
 
 export function elBounds(e: ElLike): Bounds {
+  if (e.kind === "text" && e.angle) return aabbInto(e, { x: 0, y: 0, w: 0, h: 0 });
   let x0 = e.x, y0 = e.y, x1 = e.x + e.w, y1 = e.y + e.h;
   if (e.kind === "arrow") for (let i = 0; i + 1 < e.pts.length; i += 2) { const px = e.pts[i]!, py = e.pts[i + 1]!; if (px < x0) x0 = px; if (px > x1) x1 = px; if (py < y0) y0 = py; if (py > y1) y1 = py; }
   return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
@@ -189,9 +191,11 @@ export function buildSvg(els: readonly ElLike[], th: Theme, o: SvgOpts): string 
       body.push(`<polygon ${geom} ${shapeFill(e, c)} ${stroke(e, c)}/>`);
       if (e.text) body.push(shapeLabel(e, cx, cy, labelFill, `<polygon ${geom}/>`));
     } else if (e.kind === "text") {
+      if (e.angle) body.push(`<g transform="rotate(${n((e.angle * 180) / Math.PI)} ${n(cx)} ${n(cy)})">`); // box and text turn together about the centre
       // same look as the canvas: an optional rounded box (tint / solid) behind the text, which is drawn in the text's own colour
       if (e.fill === 1 || e.fill === 2) body.push(`<rect x="${n(e.x - TEXT_BOX.padX)}" y="${n(e.y - TEXT_BOX.padY)}" width="${n(e.w + 2 * TEXT_BOX.padX)}" height="${n(e.h + 2 * TEXT_BOX.padY)}" rx="${TEXT_BOX.r}" fill="${c}"${e.fill === 1 ? ` fill-opacity="${th.tint}"` : ""}/>`);
       if (e.text) body.push(shapeLabel(e, cx, cy, e.fill === 2 ? onSolid(th, c) : textInk(th, e), ""));
+      if (e.angle) body.push("</g>");
     } else if (e.kind === "arrow") {
       body.push(`<path d="${arrowPathD(e)}" fill="none" ${stroke(e, c)}/>`);
       const hd = arrowHead(e);

@@ -119,3 +119,31 @@ describe("file names", () => {
     expect(basename("....hidden", "png")).toBe("hidden.png");
   });
 });
+
+describe("SVG export: rotated text", () => {
+  const t = el({ id: "t", kind: "text", x: 100, y: 100, w: 80, h: 20, text: "turned", z: 1, angle: Math.PI / 6 });
+  it("wraps the text in a rotate() about its centre; upright text has no transform", () => {
+    const svg = buildSvg([t, el({ id: "u", kind: "text", x: 300, y: 100, w: 80, h: 20, text: "flat", z: 2 })], LIGHT, opts);
+    expect(wellFormed(svg)).toBeNull();
+    expect(svg).toContain("<g transform=\"rotate(30 140 110)\">");
+    expect(svg.match(/<g transform="rotate\(/g)!.length).toBe(1);
+  });
+  it("a text with a filled box rotates box and text together (one group)", () => {
+    const svg = buildSvg([{ ...t, fill: 1 }], LIGHT, opts);
+    const i = svg.indexOf("<g transform=\"rotate("), j = svg.indexOf("</g>", i);
+    expect(svg.slice(i, j)).toContain("<rect");
+    expect(svg.slice(i, j)).toContain("turned");
+  });
+  it("bounds hold the turned box: a 90 degree text is tall, not wide", () => {
+    const b = elBounds({ ...t, angle: Math.PI / 2 });
+    expect(b.w).toBeCloseTo(20, 6); expect(b.h).toBeCloseTo(80, 6);
+    expect(b.x).toBeCloseTo(130, 6); expect(b.y).toBeCloseTo(70, 6);
+  });
+  it("the exported image is large enough for a turned text (not cropped at the unrotated box)", () => {
+    const svg = buildSvg([{ ...t, angle: Math.PI / 2, text: "v" }], LIGHT, { ...opts, padding: 10 });
+    const m = /viewBox="([^"]+)"/.exec(svg)!;
+    const [, , w, h] = m[1]!.split(" ").map(Number);
+    expect(h!).toBeGreaterThanOrEqual(80 + 20 - 1);
+    expect(w!).toBeLessThan(80 + 20);
+  });
+});

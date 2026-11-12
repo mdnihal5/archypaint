@@ -1,6 +1,10 @@
 import { arrowDist } from "./connectors";
 import { hitShape } from "./shape-geom";
+import { aabbInto, toLocal, type Box } from "./rotate";
 import type { TextAlign } from "./wrap";
+
+const BB: Box = { x: 0, y: 0, w: 0, h: 0 };
+const LP: [number, number] = [0, 0];
 
 export type Kind =
   | "rect" | "ellipse" | "diamond" | "text" | "arrow" | "icon"
@@ -69,6 +73,8 @@ export interface El {
   labels?: ArrowLabel[] | undefined;
   /** elbow arrows only: manual offsets of interior segments, flat pairs [2 * index + vertical, offset] (see connectors.ts applySegs). Absent = auto-routed */
   segs?: number[] | undefined;
+  /** free text only: rotation about the centre, radians clockwise (absent = not rotated). x/y/w/h stay the UNROTATED box; see rotate.ts */
+  angle?: number | undefined;
   /** arrows only: when `src` / `dst` names another arrow, the fraction (0..1, by length) of that arrow's path where this end sits */
   st?: number | undefined; dt?: number | undefined;
   /** spatial-index bookkeeping (cell range + query dedupe stamp) — never serialised */
@@ -101,8 +107,9 @@ class Grid {
   private stamp = 0;
 
   insert(e: El): void {
-    e.gx0 = Math.floor(e.x / CELL); e.gy0 = Math.floor(e.y / CELL);
-    e.gx1 = Math.floor((e.x + e.w) / CELL); e.gy1 = Math.floor((e.y + e.h) / CELL);
+    const b = aabbInto(e, BB); // a rotated element is indexed by its turned bounds
+    e.gx0 = Math.floor(b.x / CELL); e.gy0 = Math.floor(b.y / CELL);
+    e.gx1 = Math.floor((b.x + b.w) / CELL); e.gy1 = Math.floor((b.y + b.h) / CELL);
     for (let cx = e.gx0; cx <= e.gx1; cx++)
       for (let cy = e.gy0; cy <= e.gy1; cy++) {
         const k = key(cx, cy);
@@ -136,7 +143,8 @@ class Grid {
           const e = c[i]!;
           if (e.seen === s) continue;
           e.seen = s;
-          if (e.x <= x1 && e.x + e.w >= x0 && e.y <= y1 && e.y + e.h >= y0) out.push(e);
+          const b = e.angle ? aabbInto(e, BB) : e;
+          if (b.x <= x1 && b.x + b.w >= x0 && b.y <= y1 && b.y + b.h >= y0) out.push(e);
         }
       }
   }
@@ -176,8 +184,17 @@ export class Scene {
     this.nonce++;
   }
 
+  /** rotate a free text about its centre (radians; ~0 clears it); reindexes, because the turned bounds differ from the box */
+  setAngle(e: El, angle: number): void {
+    this.grid.remove(e);
+    e.angle = Math.abs(angle) < 1e-6 ? undefined : angle;
+    e.version++;
+    this.grid.insert(e);
+    this.nonce++;
+  }
+
   /** change non-geometric properties (style, text, ids); cheap — does not touch the spatial index */
-  patch(e: El, p: Partial<Omit<El, "id" | "x" | "y" | "w" | "h" | "gx0" | "gy0" | "gx1" | "gy1" | "seen">>): void {
+  patch(e: El, p: Partial<Omit<El, "id" | "x" | "y" | "w" | "h" | "angle" | "gx0" | "gy0" | "gx1" | "gy1" | "seen">>): void {
     Object.assign(e, p);
     e.version++;
     this.nonce++;
@@ -217,7 +234,7 @@ export class Scene {
   bounds(ids?: Iterable<string>): { x: number; y: number; w: number; h: number } | null {
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     const it = ids ? [...ids].map((i) => this.els.get(i)).filter((e): e is El => !!e) : this.els.values();
-    for (const e of it) { x0 = Math.min(x0, e.x); y0 = Math.min(y0, e.y); x1 = Math.max(x1, e.x + e.w); y1 = Math.max(y1, e.y + e.h); }
+    for (const e of it) { const b = e.angle ? aabbInto(e, BB) : e; x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); }
     return x0 === Infinity ? null : { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
   }
 
@@ -242,7 +259,7 @@ export class Scene {
   restoreEl(e: El, j: ElJSON): void {
     this.grid.remove(e);
     // optional fields are assigned explicitly: Object.assign alone would leave a stale value when the snapshot omits the key
-    Object.assign(e, j, { groupIds: [...j.groupIds], pts: [...j.pts], fs: j.fs, align: j.align, labels: j.labels?.map((l) => ({ ...l })), segs: j.segs ? [...j.segs] : undefined, st: j.st, dt: j.dt });
+    Object.assign(e, j, { groupIds: [...j.groupIds], pts: [...j.pts], fs: j.fs, align: j.align, angle: j.angle, labels: j.labels?.map((l) => ({ ...l })), segs: j.segs ? [...j.segs] : undefined, st: j.st, dt: j.dt });
     this.grid.insert(e);
     e.version++;
     this.nonce++;
@@ -288,6 +305,7 @@ export class Scene {
 
 function contains(e: El, px: number, py: number, slop: number): boolean {
   if (e.kind === "arrow") return arrowDist(e, px, py) <= Math.max(slop, 4);
+  if (e.angle) { toLocal(e, px, py, LP); px = LP[0]; py = LP[1]; } // test in the element's own frame
   if (px < e.x || px > e.x + e.w || py < e.y || py > e.y + e.h) return false;
   if (e.kind !== "rect" && e.kind !== "text" && e.kind !== "icon" && e.kind !== "ellipse" && e.kind !== "diamond") return hitShape(e, px, py, slop);
   if (e.kind === "ellipse") {

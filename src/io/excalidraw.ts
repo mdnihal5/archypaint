@@ -1,4 +1,5 @@
 import { arrowLabels, cleanLabels, cleanSegs, isCurve, pointAtT } from "../connectors";
+import { cleanAngle } from "../rotate";
 import { isPort, type ElJSON, type GroupInfo, type SceneJSON } from "../scene";
 import { LIGHT, TEXT_CAT, colourOf, normHex, onSolid, textInk, type Theme } from "../theme";
 import { exportGroups } from "../groups";
@@ -180,6 +181,7 @@ export function fromExcalidraw(input: unknown, th: Theme = LIGHT): ExResult {
     } else if (t === "text") {
       base.kind = "text"; base.text = str(e.text) || str(e.originalText); base.fill = 0; base.cat = TEXT_CAT; // Excalidraw's own text colour is not carried over: the default reads as ink
       if (e.textAlign === "left" || e.textAlign === "right") base.align = e.textAlign;
+      const ang = cleanAngle(e.angle); if (ang !== undefined) base.angle = ang;
       if (base.text.length > LIMITS.maxText) base.text = base.text.slice(0, LIMITS.maxText);
     } else {
       // arrow / line: Excalidraw points are relative to (x, y)
@@ -364,7 +366,7 @@ export function toExcalidraw(scene: SceneJSON, th: Theme = LIGHT, images?: Recor
     }
     if (e.kind === "text") {
       const el = common(e, "text");
-      Object.assign(el, { strokeColor: e.fill === 2 ? onSolid(th, colourOf(th, e)) : textInk(th, e), backgroundColor: e.fill === 1 ? mix(colourOf(th, e), 0.87) : e.fill === 2 ? colourOf(th, e) : "transparent", text: e.text, originalText: e.text, fontSize: e.fs ? Math.round((e.fs * 16) / 13) : 16, fontFamily: 3, textAlign: e.align ?? "center", verticalAlign: "middle", containerId: null, autoResize: true, lineHeight: 1.25, boundElements: null, customData: meta(e) });
+      Object.assign(el, { angle: e.angle ?? 0, strokeColor: e.fill === 2 ? onSolid(th, colourOf(th, e)) : textInk(th, e), backgroundColor: e.fill === 1 ? mix(colourOf(th, e), 0.87) : e.fill === 2 ? colourOf(th, e) : "transparent", text: e.text, originalText: e.text, fontSize: e.fs ? Math.round((e.fs * 16) / 13) : 16, fontFamily: 3, textAlign: e.align ?? "center", verticalAlign: "middle", containerId: null, autoResize: true, lineHeight: 1.25, boundElements: null, customData: meta(e) });
       out.push(el);
       continue;
     }

@@ -6,7 +6,6 @@ import { confirmDialog, modalOpen, openModal, shortcutsContent } from "./modal";
 import { Disposer, h, installInputTracker, updaterStats } from "./dom";
 import { mountBottom } from "./bottom";
 import { mountBrand } from "./brand";
-import { mountFlow } from "./flow";
 import { mountFooter } from "./footer";
 import { mountKeys } from "./keys";
 import { mountMinimap } from "./minimap";
@@ -75,7 +74,7 @@ export function mountUI(deps: UiDeps): UiHandle {
   };
   d.add(() => { closeShortcuts?.(); pendingConfirm?.close(); });
 
-  mountFlow(ctx, root);
+  void import("./flow").then((m) => { if (!d.isDisposed()) m.mountFlow(ctx, root); }, () => {}); // the dots are decoration: their code is not part of the first paint
   mountSheet(ctx, root);
   mountPanels(ctx, root);
   mountDock(ctx, root);

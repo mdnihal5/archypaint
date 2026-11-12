@@ -1,6 +1,8 @@
+import { aabbInto } from "./rotate";
 import type { El, Scene } from "./scene";
 
 export interface Box { x: number; y: number; w: number; h: number }
+const TB: Box = { x: 0, y: 0, w: 0, h: 0 };
 
 /**
  * Lazy group-membership index. Groups are a shared id in each member's groupIds
@@ -120,7 +122,7 @@ const TAG_CHAR_W = 7.9, TAG_H = 16;
 /** width of a monospace character per unit of font size: wrap.ts's MONO_ADVANCE, repeated so the startup chunk does not pull wrap.ts in */
 const MONO_ADVANCE = 0.6;
 
-type Member = Pick<El, "x" | "y" | "w" | "h" | "groupIds"> & Partial<Pick<El, "kind" | "text" | "fs">>;
+type Member = Pick<El, "x" | "y" | "w" | "h" | "groupIds"> & Partial<Pick<El, "kind" | "text" | "fs" | "angle">>;
 
 /** how far a member's text reaches past its box on each side: an icon's name is centred under the tile (drawIconLabel squeezes it to the same cap), free text is centred on its box. Shape labels wrap inside the shape. */
 function overhang(e: Member): number {
@@ -137,11 +139,11 @@ function overhang(e: Member): number {
  */
 export function groupBox(els: readonly Member[], gid: string, name = ""): Box | null {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, depth = 0;
-  for (const e of els) {
-    const o = overhang(e);
+  for (const m of els) {
+    const e = m.angle ? aabbInto(m, TB) : m, o = m.angle ? 0 : overhang(m);
     if (e.x - o < x0) x0 = e.x - o; if (e.y < y0) y0 = e.y;
     if (e.x + e.w + o > x1) x1 = e.x + e.w + o; if (e.y + e.h > y1) y1 = e.y + e.h;
-    depth = Math.max(depth, e.groupIds.indexOf(gid));
+    depth = Math.max(depth, m.groupIds.indexOf(gid));
   }
   if (x0 === Infinity) return null;
   const pad = 12 + 10 * depth;

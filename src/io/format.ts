@@ -1,5 +1,6 @@
 import { normHex } from "../theme";
 import { MAX_BRANCH_DEPTH, cleanLabels, cleanSegs, migrateArrowText } from "../connectors";
+import { cleanAngle } from "../rotate";
 import { isPort, type ElJSON, type GroupInfo, type Port, type SceneJSON } from "../scene";
 
 /** The `.archypaint` file format: versioned, validated, deterministic (one element per line, fixed key order). */
@@ -103,7 +104,7 @@ function plain(v: unknown, path: string): Record<string, unknown> {
 
 /* ---------------------------------------------------------------- element field tables */
 
-const EL_KNOWN = new Set(["id", "kind", "x", "y", "w", "h", "z", "version", "cat", "hex", "fill", "edge", "radius", "text", "groupIds", "iconId", "img", "locked", "n", "o", "src", "dst", "sp", "dp", "route", "dash", "head", "pts", "fs", "align", "labels", "segs", "st", "dt"]);
+const EL_KNOWN = new Set(["id", "kind", "x", "y", "w", "h", "z", "version", "cat", "hex", "fill", "edge", "radius", "text", "groupIds", "iconId", "img", "locked", "n", "o", "src", "dst", "sp", "dp", "route", "dash", "head", "pts", "fs", "align", "labels", "segs", "st", "dt", "angle"]);
 const ROOT_KNOWN = new Set(["app", "version", "meta", "view", "settings", "scene"]);
 
 function readEl(raw: unknown, i: number, extras: Record<string, Record<string, unknown>>): ElJSON {
@@ -151,6 +152,7 @@ function readEl(raw: unknown, i: number, extras: Record<string, Record<string, u
   };
   const hx = normHex(raw.hex); if (hx) el.hex = hx;
   if (raw.fs !== undefined) { const f = fnum(raw.fs, `${p}.fs`, 0, 200); if (f >= 1) el.fs = Math.round(f); }
+  if (kind === "text") { const ang = cleanAngle(raw.angle); if (ang !== undefined) el.angle = ang; } // only free text turns; junk, zero and non-finite read as upright
   if (raw.align === "left" || raw.align === "right") el.align = raw.align; // absent (or "center", or anything else) = centred
   if (kind === "arrow") {
     const ls = cleanLabels(raw.labels); if (ls.length) el.labels = ls; migrateArrowText(el);
@@ -318,6 +320,7 @@ export function orderEl(e: ElLike, extra?: Record<string, unknown>): string {
   if (e.hex) o.hex = e.hex;
   if (e.fs) o.fs = e.fs;
   if (e.align === "left" || e.align === "right") o.align = e.align;
+  if (e.kind === "text" && e.angle) o.angle = Math.round(e.angle * 1e6) / 1e6 + 0;
   if (e.kind === "arrow" && e.labels && e.labels.length) o.labels = e.labels.map((l) => ({ t: r3(l.t), text: l.text }));
   if (e.groupIds.length) o.groupIds = e.groupIds;
   if (e.kind === "icon") o.iconId = e.iconId;

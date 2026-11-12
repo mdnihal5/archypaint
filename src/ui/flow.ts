@@ -1,6 +1,7 @@
-import { bezierAt, effectiveRoute, roundedPolyline, sceneRectOf, type RectOf } from "../connectors";
+import { arrowLabels, bezierAt, effectiveRoute, isCurve, labelBlock, pointAtT, roundedPolyline, sceneRectOf, type RectOf } from "../connectors";
 import type { El } from "../scene";
 import type { Theme } from "../theme";
+import { textWidth } from "../text-edit";
 import type { Ctx } from "./ctx";
 
 /**
@@ -23,9 +24,39 @@ const DOT = 3.3; // screen px radius
 const BEZIER_STEPS = 18;
 
 interface Path { v: number; poly: number[]; cum: number[]; len: number }
+interface Plates { v: number; r: number[] }
 interface RendererLike { dragging?: ReadonlySet<string>; ghostArrow?: unknown; hidden?: ReadonlySet<string> | null; degraded?: boolean; theme?: Theme }
 
 const probe: [number, number] = [0, 0];
+const lpt: [number, number] = [0, 0];
+
+/**
+ * The plates the renderer paints behind an arrow's labels, as flat world-space rects [x, y, w, h, ...] (one per non-empty label; a
+ * multi-line label is ONE plate over the whole block, sized by `labelBlock` like the drawn one). `out` is reset and filled.
+ */
+export function plateRects(e: El, measure: (fs: number) => (t: string) => number, out: number[]): void {
+  out.length = 0;
+  const ls = arrowLabels(e);
+  if (ls.length === 0 || e.pts.length < 4) return;
+  const fs = e.fs || 13, m = measure(fs), curve = isCurve(e);
+  for (let i = 0; i < ls.length; i++) {
+    const l = ls[i]!;
+    if (!l.text) continue;
+    pointAtT(e.pts, curve, l.t, lpt);
+    const b = labelBlock(l.text, fs, m);
+    out.push(lpt[0] - b.w / 2, lpt[1] - b.h / 2, b.w, b.h);
+  }
+}
+
+/** clip `g` to the view rect minus every plate (even-odd), so a dot never paints over a label */
+export interface ClipTarget { beginPath(): void; rect(x: number, y: number, w: number, h: number): void; clip(rule: "evenodd"): void }
+export function clipOutPlates(g: ClipTarget, x: number, y: number, w: number, h: number, plates: readonly number[]): void {
+  g.beginPath();
+  g.rect(x, y, w, h);
+  for (let i = 0; i < plates.length; i += 4) g.rect(plates[i]!, plates[i + 1]!, plates[i + 2]!, plates[i + 3]!);
+  g.clip("evenodd");
+}
+
 /**
  * An end is connected when the router can resolve it, through the very same resolver connectors use (`sceneRectOf`): a shape of any
  * kind, a group with members, or another arrow (a branch end). Nothing here lists kinds.
@@ -58,6 +89,9 @@ export function mountFlow(ctx: Ctx, root: HTMLElement): void {
   let raf = 0, last = 0, lastInput = performance.now(), disposed = false, painted = false;
   let cache = new Map<string, Path>();
   let list: El[] = [];
+  /** every listed arrow's label plates, concatenated; rebuilt with the list (never per frame) */
+  let plates: number[] = [];
+  let plateCache = new Map<string, Plates>();
   let builtNonce = -1, builtVp = -1;
   const tmp: El[] = [];
   const pt: [number, number] = [0, 0];
@@ -112,6 +146,16 @@ export function mountFlow(ctx: Ctx, root: HTMLElement): void {
       const c = cache.get(e.id);
       if (c) keep.set(e.id, c);
     }
+    // label plates: the dots must not run over a label. Measured here, once per arrow version, never in the frame
+    plates = [];
+    const pkeep = new Map<string, Plates>();
+    for (const e of list) {
+      let pc = plateCache.get(e.id);
+      if (!pc || pc.v !== e.version) { pc = { v: e.version, r: [] }; plateRects(e, (fs) => (t) => textWidth(t, fs), pc.r); }
+      pkeep.set(e.id, pc);
+      for (let i = 0; i < pc.r.length; i++) plates.push(pc.r[i]!);
+    }
+    plateCache = pkeep;
     cache = keep; // entries for arrows that left the view are dropped: the cache tracks what is visible, not the whole sheet
   };
 
@@ -136,6 +180,12 @@ export function mountFlow(ctx: Ctx, root: HTMLElement): void {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, cw, ch);
     g.setTransform(s, 0, 0, s, -vp.x * s, -vp.y * s);
+    // keep label plates readable: clip the dots to everything EXCEPT the plates (even-odd: view rect minus plates)
+    const clipped = plates.length > 0 && vp.zoom >= 0.3; // the renderer draws no label plates below 0.3
+    if (clipped) {
+      g.save();
+      clipOutPlates(g, vp.x, vp.y, vp.w / z, vp.h / z, plates);
+    }
     const base = (t / 1000) * (SPEED / z); // world units travelled since t = 0
     const hidden = rd?.hidden;
     let colour = "";
@@ -165,6 +215,7 @@ export function mountFlow(ctx: Ctx, root: HTMLElement): void {
       }
     }
     g.globalAlpha = 1;
+    if (clipped) g.restore();
     painted = true;
   };
 
@@ -192,7 +243,7 @@ export function mountFlow(ctx: Ctx, root: HTMLElement): void {
     for (const off of offs) off();
     mq?.removeEventListener("change", onMotion);
     ro.disconnect();
-    cache.clear(); list = []; tmp.length = 0;
+    cache.clear(); plateCache.clear(); plates = []; list = []; tmp.length = 0;
     canvas.remove();
   });
 }
