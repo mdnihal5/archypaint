@@ -182,6 +182,24 @@ describe("groups, z-order, style, clipboard", () => {
     ed.setStyle({ edge: 0, route: 0 }); expect(ar.pts.length).toBe(4);
   });
 
+  it("setArrowText sets label + dash as ONE undo step; undo/redo restore both; locked and read-only untouched", () => {
+    twoBoxes();
+    ed.setTool("arrow"); drag(160, 140, 560, 340);
+    const ar = sh("arrow")[0]!;
+    ed.select([ar.id]);
+    const pre = (t: string) => (t ? `Kafka · ${t}` : "Kafka");
+    ed.setArrowText(pre, 1);
+    expect(ar.labels?.[0]?.text).toBe("Kafka"); expect(ar.dash).toBe(1);
+    ed.undo();
+    expect(ar.labels?.length ?? 0).toBe(0); expect(ar.dash).toBe(0); // one Ctrl+Z reverts both
+    ed.redo(); expect(ar.labels?.[0]?.text).toBe("Kafka"); expect(ar.dash).toBe(1);
+    ed.setArrowText((t) => t.replace(/^Kafka/, "").replace(/^ · /, ""), 0);
+    expect(ar.labels?.length ?? 0).toBe(0); expect(ar.dash).toBe(0);
+    ed.setArrowText(() => "x".repeat(500), 0); expect(ar.labels![0]!.text).toHaveLength(200);
+    ed.setReadOnly(true); ed.setArrowText(() => "nope", 1);
+    expect(ar.labels![0]!.text).toHaveLength(200); expect(ar.dash).toBe(0);
+  });
+
   it("duplicate, copy/paste (with sanitising) and cut", () => {
     const [a, b] = twoBoxes();
     ed.select([a.id, b.id]); ed.group("g");

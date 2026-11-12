@@ -22,6 +22,7 @@ export interface IOMessage { level: "info" | "warn" | "error"; text: string }
  * so an empty scene can never overwrite a saved document.
  */
 export interface IO {
+  /** File > New: creates a new empty board and switches to it (the current board is kept); no prompt */
   newDoc(): void;
   save(): Promise<void>;
   saveAs(): Promise<void>;
@@ -57,8 +58,6 @@ export interface IO {
 }
 
 export interface IOOptions {
-  /** replace window.confirm with a nicer dialog; resolve true to continue */
-  confirm?: (message: string) => boolean | Promise<boolean>;
   /** storage backend override (tests) */
   kv?: KV;
 }
@@ -73,7 +72,6 @@ const hasImages = (scene: { els: Map<string, { kind: string }> }): boolean => { 
 const IMAGES_FLAG = "archypaint.images.v1";
 const themeOf = (e: EditorAPI): Theme => (e as unknown as { theme?: Theme }).theme ?? LIGHT;
 
-const DISCARD = "You have changes that are not saved to a file. Continue and discard them?";
 const cleanName = (n: string): string => n.replace(/[\u0000-\u001f]/g, "").trim().slice(0, LIMITS.maxName) || "untitled";
 
 export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions = {}): IO {
@@ -117,11 +115,6 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
     editor.on("history", () => { meta.updated = Date.now(); autosave.schedule(); }),
     editor.on("viewport", () => autosave.scheduleView()),
   ];
-
-  const confirmDiscard = async (): Promise<boolean> => {
-    if (!editor.dirty() && !nameDirty) return true;
-    return opts.confirm ? await opts.confirm(DISCARD) : window.confirm(DISCARD);
-  };
 
   const buildFile = (): Pick<ArchFile, "meta" | "view" | "settings" | "scene" | "extra" | "elExtra"> => ({ meta, view: view(), settings, scene: editor.scene.toJSON(), extra, elExtra });
 
@@ -241,16 +234,9 @@ export function createIO(editor: EditorAPI, stage: HTMLElement, opts: IOOptions 
   const boards = (): Promise<BoardsApi> => (boardsApi ??= lazyBoards().then((m) => m.createBoards(host)));
 
   const io: IO = {
+    /** File > New: a new empty board, switched to. The current board is kept (it is saved and stays in the boards list), so nothing is asked */
     newDoc() {
-      void withBusy(async () => {
-        if (!(await confirmDiscard())) return;
-        meta = { name: "untitled", created: Date.now(), updated: Date.now() }; extra = {}; elExtra = {}; nameDirty = false; handle = null;
-        void autosave.saveHandle(null);
-        editor.load({ els: [], groups: [] });
-        editor.resetView();
-        editor.markSaved();
-        for (const f of [...loadSubs]) f(settings);
-      });
+      void withBusy(async () => { await (await boards()).create(); });
     },
 
     async save() { await doSave(false); },

@@ -28,11 +28,6 @@ export function mountMenu(ctx: Ctx, root: HTMLElement): Menu {
     for (const b of buttons()) b.setAttribute("aria-expanded", "false");
     if (refocus) buttons()[0]?.focus();
   };
-  const guarded = (fn: () => Promise<void> | void) => () => {
-    close(false);
-    if (editor.dirty()) void ctx.confirm("This sheet has unsaved changes. Discard them?").then((ok) => { if (ok) ctx.run(fn); });
-    else ctx.run(fn);
-  };
   const act = (fn: () => Promise<void> | void) => () => { close(false); ctx.run(fn); };
 
   const item = (icon: MoreGlyph, label: string, kbd: string, fn: () => void, disabled = false) =>
@@ -91,7 +86,7 @@ export function mountMenu(ctx: Ctx, root: HTMLElement): Menu {
 
     sheet = h("div", { class: "ap-menu ap-card ap-hit", attrs: { role: "menu", "aria-label": "Main menu" } },
       ...group("File",
-        item("file", "New", "", guarded(() => io.newDoc())), item("folder", "Open…", "⌘O", act(() => io.open())),
+        item("file", "New", "", act(() => io.newDoc())), item("folder", "Open…", "⌘O", act(() => io.open())),
         item("save", "Save", "⌘S", act(() => io.save())), item("save", "Save as…", "⇧⌘S", act(() => io.saveAs()))),
       ...group("Export",
         item("download", "PNG", "⇧⌘E", act(() => io.exportPng({ scale: 2, background: true }))),

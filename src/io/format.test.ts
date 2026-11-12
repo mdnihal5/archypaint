@@ -155,3 +155,36 @@ describe("format: repair, preservation and migration", () => {
     if (!newer.ok) { expect(newer.error.code).toBe("unsupported_version"); expect(newer.error.message).toMatch(/update/i); }
   });
 });
+
+describe("format: text rotation (angle)", () => {
+  const rot = (extra = {}) => el({ id: "t", kind: "text", text: "hi", angle: 0.5236, ...extra });
+  it("a rotated text round-trips; the field is optional and absent for everything else", () => {
+    const text = serializeArch(base([rot(), el({ id: "r", z: 2 })]));
+    expect(text).toContain("\"angle\":0.5236");
+    const lines = text.split("\n").filter((l) => l.startsWith("{\"id\""));
+    expect(lines[1]).not.toContain("angle");
+    const p = parseArch(text);
+    expect(p.ok).toBe(true);
+    if (!p.ok) return;
+    expect(p.value.scene.els.find((e) => e.id === "t")!.angle).toBeCloseTo(0.5236, 3);
+    expect(p.value.scene.els.find((e) => e.id === "r")!.angle).toBeUndefined();
+  });
+  it("an old file (no angle anywhere) serialises exactly as before", () => {
+    expect(serializeArch(base())).not.toContain("angle");
+    expect(FORMAT_VERSION).toBe(2); // unchanged: no version bump: the field is additive
+  });
+  it("ignores angle on anything but text, drops zero, junk and non-finite values, folds big angles", () => {
+    const f = (e: object) => { const p = parseArch(serializeArch(base([el({ id: "x", ...e })]))); return p.ok ? p.value.scene.els[0]!.angle : "bad"; };
+    expect(f({ kind: "rect", angle: 1 })).toBeUndefined();
+    expect(f({ kind: "text", angle: 0 })).toBeUndefined();
+    expect(f({ kind: "text", angle: 7 })).toBeCloseTo(7 - 2 * Math.PI, 3);
+    const raw = JSON.parse(serializeArch(base([el({ id: "x", kind: "text", angle: 1 })])));
+    raw.scene.els[0].angle = "sideways";
+    expect(validateFile(raw).ok).toBe(true);
+    const v = validateFile(raw);
+    if (v.ok) expect(v.value.scene.els[0]!.angle).toBeUndefined();
+    raw.scene.els[0].angle = null;
+    const w = validateFile(raw);
+    if (w.ok) expect(w.value.scene.els[0]!.angle).toBeUndefined();
+  });
+});

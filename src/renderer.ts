@@ -2,6 +2,7 @@ import { SEG_MIN_PX, labelBlock, portInto, listPorts, arrowLabels, eachElbowSeg,
 import { groupTint, type GroupIndex } from "./groups";
 import { drawCalcEl } from "./calc-view";
 import { drawIconEl } from "./icons";
+import { ROT_HANDLE_PX, aabbInto, type Box } from "./rotate";
 import { handlePoints, type ArrowLabel, type El, type Kind, type Scene } from "./scene";
 import { CONTAINER_KINDS, FRAME_HEADER, LANE_COL_HEADER, LANE_HEADER, LEGEND_PAD, LEGEND_ROW_H, LEGEND_TITLE_H, PATH_KINDS, labelPoint, laneCells, legendRows, shapeParts } from "./shape-geom";
 import { TEXT_BOX, colourOf, onSolid, textInk, type Theme } from "./theme";
@@ -264,7 +265,8 @@ export class Renderer {
         const cur = id === this.hiCur, pad = 4 / z;
         ctx.globalAlpha = cur ? 1 : 0.85; ctx.strokeStyle = cur ? th.red : th.cats[1]!; ctx.lineWidth = (cur ? 3 : 2) / z;
         ctx.setLineDash(cur ? [] : [6 / z, 4 / z]);
-        ctx.strokeRect(e.x - pad, e.y - pad, e.w + 2 * pad, e.h + 2 * pad);
+        const b = e.angle ? aabbInto(e, this.sb) : e; // a turned text: its turned bounds
+        ctx.strokeRect(b.x - pad, b.y - pad, b.w + 2 * pad, b.h + 2 * pad);
       }
       ctx.setLineDash([]); ctx.globalAlpha = 1;
     }
@@ -305,6 +307,24 @@ export class Renderer {
     ctx.fillStyle = this.theme.paper; ctx.beginPath(); ctx.roundRect(mx - w / 2, my - h / 2, w, h, 2.5 / z); ctx.fill(); ctx.stroke();
   };
 
+  private sb: Box = { x: 0, y: 0, w: 0, h: 0 };
+
+  /** the box, 8 resize handles and (unless locked) the rotate handle of ONE selected text, drawn in its own turned frame */
+  private drawTextSelection(ctx: CanvasRenderingContext2D, e: El, z: number): void {
+    const th = this.theme, hs = 8 / z, moved = this.dragging.has(e.id);
+    const cx = e.x + e.w / 2 + (moved ? this.dragDx : 0), cy = e.y + e.h / 2 + (moved ? this.dragDy : 0), x = -e.w / 2, y = -e.h / 2;
+    ctx.save(); ctx.translate(cx, cy); if (e.angle) ctx.rotate(e.angle);
+    ctx.strokeStyle = th.red; ctx.lineWidth = 1.4 / z; ctx.fillStyle = th.paper;
+    ctx.strokeRect(x, y, e.w, e.h);
+    for (const [hx, hy] of handlePoints({ x, y, w: e.w, h: e.h })) { ctx.fillRect(hx - hs / 2, hy - hs / 2, hs, hs); ctx.strokeRect(hx - hs / 2, hy - hs / 2, hs, hs); }
+    if (!this.scene.isLocked(e)) {
+      const ry = y - ROT_HANDLE_PX / z;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(0, ry); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, ry, 5 / z, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   private drawSelection(ctx: CanvasRenderingContext2D, z: number): void {
     if (!this.selected.size) return;
     const th = this.theme, hs = 8 / z;
@@ -317,10 +337,14 @@ export class Renderer {
       const dx = moved ? this.dragDx : 0, dy = moved ? this.dragDy : 0;
       const lp = moved && e.kind === "arrow" ? this.livePts.get(id) : undefined;
       let ex = e.x + dx, ey = e.y + dy, ew = e.w, eh = e.h;
+      if (e.angle) { const b = aabbInto(e, this.sb); ex = b.x + dx; ey = b.y + dy; ew = b.w; eh = b.h; } // a turned text counts by its turned bounds
       if (lp) { let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity; for (let i = 0; i + 1 < lp.length; i += 2) { a = Math.min(a, lp[i]!); c = Math.max(c, lp[i]!); b = Math.min(b, lp[i + 1]!); d = Math.max(d, lp[i + 1]!); } ex = a; ey = b; ew = c - a; eh = d - b; }
       if (e.kind !== "arrow") nonArrow++;
       if (ex < x0) x0 = ex; if (ey < y0) y0 = ey; if (ex + ew > x1) x1 = ex + ew; if (ey + eh > y1) y1 = ey + eh;
-      if (this.selected.size > 1 && e.kind !== "arrow") ctx.strokeRect(ex, ey, ew, eh);
+      if (this.selected.size > 1 && e.kind !== "arrow") {
+        if (e.angle) { const cx = e.x + e.w / 2 + dx, cy = e.y + e.h / 2 + dy; ctx.save(); ctx.translate(cx, cy); ctx.rotate(e.angle); ctx.strokeRect(-e.w / 2, -e.h / 2, e.w, e.h); ctx.restore(); }
+        else ctx.strokeRect(ex, ey, ew, eh);
+      }
     }
     if (x0 === Infinity) return;
     if (single && single.kind === "arrow") {
@@ -338,6 +362,7 @@ export class Renderer {
       }
       return;
     }
+    if (single && single.kind === "text") { this.drawTextSelection(ctx, single, z); return; }
     const box = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
     ctx.strokeStyle = th.red; ctx.lineWidth = 1.4 / z; ctx.fillStyle = th.paper;
     ctx.strokeRect(box.x, box.y, box.w, box.h);
@@ -567,7 +592,19 @@ function ensureImageChunk(): void {
   import("./images").then(() => imageRepaint?.()).catch(() => {}).finally(() => { imageChunkLoading = false; });
 }
 
+/** a free text with an angle is drawn in its own turned frame (save / translate / rotate / restore: nothing allocated, and not at all when it is upright) */
 export function drawEl(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number, lod: boolean, hideText: boolean, hideIcons = false): void {
+  if (e.angle && e.kind === "text") {
+    const cx = e.x + e.w / 2, cy = e.y + e.h / 2, c = Math.cos(e.angle), s = Math.sin(e.angle);
+    ctx.save(); ctx.transform(c, s, -s, c, cx - cx * c + cy * s, cy - cx * s - cy * c); // rotation about (cx, cy) as ONE matrix call
+    drawEl0(ctx, e, th, z, lod, hideText, hideIcons);
+    ctx.restore();
+    return;
+  }
+  drawEl0(ctx, e, th, z, lod, hideText, hideIcons);
+}
+
+function drawEl0(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number, lod: boolean, hideText: boolean, hideIcons: boolean): void {
   if (e.kind === "calc") { drawCalcEl(ctx, e, th, z, lod, hideText); ctx.globalAlpha = 1; return; }
   if (e.kind === "arrow") { drawArrow(ctx, e, th, z, e.pts, lod); return; }
   if (PATH_KINDS.has(e.kind)) { drawPathKind(ctx, e, th, z, lod, hideText); ctx.globalAlpha = 1; return; }

@@ -30,7 +30,7 @@ export function measureText(text: string, fs = 0): { w: number; h: number } {
 }
 
 /** what the overlay edits: any element, or a stand-in for something that is not one (a group's name tag, a connector label) */
-export type EditTarget = Pick<El, "x" | "y" | "w" | "h" | "kind" | "text" | "fs" | "align">;
+export type EditTarget = Pick<El, "x" | "y" | "w" | "h" | "kind" | "text" | "fs" | "align" | "angle">;
 
 /** where the editor overlay sits (world units, centre) and how it looks; a function so it follows the thing while panning/zooming */
 export interface EditAnchor { cx: number; cy: number; /** minimum / fixed overlay width */ w: number; fs: number; /** grow to fit the text (free text, labels) instead of filling `w` */ fit: boolean; /** Enter commits instead of adding a line (names, connector labels); Shift+Enter still adds one */ single?: boolean }
@@ -101,7 +101,10 @@ export class TextEditor {
     ta.style.font = `${a.fs || FONT_PX}px ${FACE}`; ta.style.lineHeight = `${lineHeightOf(a.fs)}px`;
     ta.style.width = `${w}px`; ta.style.height = `${h}px`;
     if (wraps && ta.scrollHeight > h) { h = ta.scrollHeight; ta.style.height = `${h}px`; } // the browser wrapped a line we did not: never hide text
-    ta.style.transform = `translate(${cx - (w * z) / 2}px, ${cy - (h * z) / 2}px) scale(${z})`;
+    // a turned free text is edited turned: the overlay sits exactly over the glyphs, so nothing jumps when editing starts or ends
+    ta.style.transform = e.angle
+      ? `translate(${cx}px, ${cy}px) rotate(${e.angle}rad) scale(${z}) translate(${-w / 2}px, ${-h / 2}px)`
+      : `translate(${cx - (w * z) / 2}px, ${cy - (h * z) / 2}px) scale(${z})`;
     ta.style.left = "0"; ta.style.top = "0";
   }
 

@@ -1,9 +1,11 @@
+import { aabbInto } from "../rotate";
 import { fitMini, toMiniX, toMiniY, toWorldX, toWorldY, type MiniMap } from "../minimap-model";
 import type { Theme } from "../theme";
 import type { Ctx } from "./ctx";
 import { h, setHidden } from "./dom";
 
 const W = 148, H = 96;
+const TB = { x: 0, y: 0, w: 0, h: 0 };
 const REBUILD_MS = 120;
 
 /**
@@ -31,9 +33,10 @@ export function mountMinimap(ctx: Ctx, root: HTMLElement): void {
     bx0 = by0 = Infinity; bx1 = by1 = -Infinity;
     for (const e of editor.scene.els.values()) {
       if (e.kind === "arrow" && e.w < 1 && e.h < 1) continue;
-      cats[e.cat % n]!.push(e.x, e.y, e.w, e.h);
-      if (e.x < bx0) bx0 = e.x; if (e.y < by0) by0 = e.y;
-      if (e.x + e.w > bx1) bx1 = e.x + e.w; if (e.y + e.h > by1) by1 = e.y + e.h;
+      const b = e.angle ? aabbInto(e, TB) : e; // a turned text by its turned bounds
+      cats[e.cat % n]!.push(b.x, b.y, b.w, b.h);
+      if (b.x < bx0) bx0 = b.x; if (b.y < by0) by0 = b.y;
+      if (b.x + b.w > bx1) bx1 = b.x + b.w; if (b.y + b.h > by1) by1 = b.y + b.h;
     }
     built = editor.scene.nonce; lastBuild = performance.now();
   };

@@ -108,3 +108,25 @@ describe("size-scaled connection ports", () => {
     expect(JSON.stringify(bad)).toContain("\"sp\":" + Q(1, 16));
   });
 });
+
+describe("ports of a rotated text turn with it", () => {
+  const T = (deg: number): Rect => ({ x: 0, y: 0, w: 100, h: 20, kind: "text", angle: (deg * Math.PI) / 180 }); // centre (50, 10)
+  it("side midpoints are rotated about the centre", () => {
+    const r = T(90);
+    const right = portPoint(r, 1), top = portPoint(r, 0);
+    expect(right[0]).toBeCloseTo(50, 9); expect(right[1]).toBeCloseTo(60, 9); // local east now points down
+    expect(top[0]).toBeCloseTo(60, 9); expect(top[1]).toBeCloseTo(10, 9);    // local north now points right
+  });
+  it("corner and extra ports rotate too; an unrotated rect is untouched", () => {
+    const a = portPoint(T(180), 4), b = portPoint(T(0), 4);
+    expect(b[0]).toBeCloseTo(0, 9); expect(b[1]).toBeCloseTo(0, 9);
+    expect(a[0]).toBeCloseTo(100, 9); expect(a[1]).toBeCloseTo(20, 9); // top-left turned half way round -> bottom-right
+    const e = portPoint(T(90), extraPort(1, 16)); // a quarter of the way down the local east side
+    expect(e[0]).toBeCloseTo(55, 6); expect(e[1]).toBeCloseTo(60, 6); // local (100, 5): 50 right of the centre, 5 above it
+  });
+  it("an automatic port faces the other end, and the connector leaves in the rotated direction", () => {
+    const pts = routeArrow({ rect: T(90), pt: [50, 10], port: -1 }, { rect: null, pt: [50, 500], port: -1 }, 1);
+    expect(pts[0]).toBeCloseTo(50, 6); expect(pts[1]).toBeCloseTo(60, 6); // starts on the (turned) east port at the bottom of the box
+    expect(pts[2]).toBeCloseTo(50, 6); expect(pts[3]!).toBeGreaterThan(60); // and leaves downwards
+  });
+});

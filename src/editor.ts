@@ -1,3 +1,4 @@
+import { aabbInto, cleanAngle } from "./rotate";
 import { alignBoxes, distributeBoxes, matchSizes, unionOf, type AlignMode, type Box, type Delta } from "./align";
 import { MAX_LABEL_TEXT, MAX_LABELS, cleanSegs, arrowLabels, bboxOfPts, cleanLabels, computeArrowPts, isCurve, migrateArrowText, pointAtT, rerouteBound, sceneRectOf } from "./connectors";
 import { calcSize, ensureCalc, onCalcReady, SAMPLE as CALC_SAMPLE } from "./calc-view";
@@ -269,11 +270,12 @@ export function createEditor(d: EditorDeps): Editor {
         v = v.replace(/\s*\n\s*/g, " ");
         if ((el.text !== "") !== (v !== "")) scene.set(el, el.x, el.y, el.w, iconBoxH(el, el.fs, el.fs, v !== ""));
         scene.patch(el, { text: v });
-        rerouteIds(new Set([el.id])); // a bound connector follows the new box
+        rerouteIds(new Set([el.id, ...el.groupIds])); // a bound connector follows the new box, and the group outline the name may have widened
         return;
       }
       scene.patch(el, { text: v });
       growToFit(el);
+      if (el.groupIds.length) rerouteIds(new Set(el.groupIds));
     });
   };
 
@@ -356,7 +358,8 @@ export function createEditor(d: EditorDeps): Editor {
     }
     if (blocks.size < min) return;
     const boxes: Box[] = [];
-    for (const [key, els] of blocks) { const u = unionOf(els.map((e) => ({ id: e.id, x: e.x, y: e.y, w: e.w, h: e.h })))!; boxes.push({ id: key, ...u }); }
+    // a turned text aligns by its turned bounds
+    for (const [key, els] of blocks) { const u = unionOf(els.map((e) => { const b = e.angle ? aabbInto(e, { x: 0, y: 0, w: 0, h: 0 }) : e; return { id: e.id, x: b.x, y: b.y, w: b.w, h: b.h }; }))!; boxes.push({ id: key, ...u }); }
     const deltas = plan(boxes);
     if (!deltas.size) return;
     run(label, () => {
@@ -482,10 +485,22 @@ export function createEditor(d: EditorDeps): Editor {
     renameGroup(id, name) {
       const g = scene.groups.get(id);
       if (!g || g.name === name || g.locked) return;
-      run("rename group", () => { hist.touchGroup(id); g.name = name; scene.nonce++; });
+      run("rename group", () => { hist.touchGroup(id); g.name = name; scene.nonce++; rerouteIds(new Set([id])); }); // a long name can widen the outline
     },
     bringToFront() { reorder("front"); }, bringForward() { reorder("forward"); },
     sendBackward() { reorder("backward"); }, sendToBack() { reorder("back"); },
+    setArrowText(f, dash) {
+      run("protocol", () => {
+        for (const id of sel()) {
+          const a = scene.els.get(id);
+          if (!a || a.kind !== "arrow" || scene.isLocked(a)) continue;
+          const ls = labelsOf(a), v = f(ls[0]?.text ?? "").slice(0, MAX_LABEL_TEXT);
+          if (ls[0]) { if (v) ls[0].text = v; else ls.shift(); } else if (v) ls.push({ t: 0.5, text: v });
+          if ((ls[0]?.text ?? "") === (arrowLabels(a)[0]?.text ?? "") && a.dash === dash && ls.length === arrowLabels(a).length) continue;
+          hist.touch(a); scene.patch(a, { labels: ls.length ? ls : undefined, text: "", dash });
+        }
+      });
+    },
     setStyle(p) {
       if (!sel().size) return;
       run("style", () => {
@@ -832,6 +847,8 @@ function sanitize(j: ElJSON): ElJSON {
   if (fs >= 6 && fs <= 96) el.fs = Math.round(fs); else delete el.fs;
   const sg = cleanSegs(j.segs);
   if (sg) el.segs = sg; else delete el.segs;
+  const ang = el.kind === "text" ? cleanAngle(j.angle) : undefined; // only free text turns
+  if (ang !== undefined) el.angle = ang; else delete el.angle;
   const unit = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : undefined);
   const st = unit(j.st), dt = unit(j.dt);
   if (st !== undefined) el.st = st; else delete el.st;

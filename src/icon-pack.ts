@@ -11,7 +11,6 @@
  */
 
 import { ICON_ALIASES } from "./logos";
-import { loadStoredUserPacks } from "./user-packs"; // circular with user-packs by design: both only call each other inside functions
 
 export type Tier = "detail" | "glyph";
 
@@ -231,7 +230,7 @@ function ensureIndex(force: boolean): Promise<void> {
     }
     if (!userLoaded) {
       userLoaded = true; // set first: a failing store must not be retried on every frame
-      try { await loadStoredUserPacks(); } catch { /* user packs are best effort */ }
+      try { await (await import("./user-packs")).loadStoredUserPacks(); } catch { /* user packs are best effort */ }
     }
     const packsNeeded = new Set<string>();
     for (const id of wanted) { const m = byId.get(id); if (m && m.vendor !== "user" && !packsLoaded.has(m.pack)) packsNeeded.add(m.pack); }

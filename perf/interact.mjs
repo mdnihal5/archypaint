@@ -272,6 +272,59 @@ try {
     console.log(`      memory: ${Math.round((m1 - m0) / 1024)} KB over the first 100 switches, ${Math.round((m2 - m1) / 1024)} KB over the next 100`);
   }
 
+  // rotate a free text with REAL mouse input: the handle above the selection box, 15-degree snapping, Shift = free, one undo step per drag
+  {
+    await ed((e) => e.clearSelection());
+    const info = await ed((e) => {
+      const vp = e.vp, w = 120, h = 30, x = vp.x + vp.w / vp.zoom / 2 - w / 2, y = vp.y + vp.h / vp.zoom / 2 - h / 2;
+      const t = e.scene.add({ kind: "text", text: "rotate me", x, y, w, h, fill: 0, cat: 6 });
+      e.select([t.id]);
+      return { id: t.id, cx: x + w / 2, cy: y + h / 2, h, zoom: vp.zoom, vx: vp.x, vy: vp.y };
+    });
+    await sleep(120);
+    const sc = (wx, wy) => [stageBox.x + (wx - info.vx) * info.zoom, stageBox.y + (wy - info.vy) * info.zoom];
+    const angleOf = () => ed((e, id) => e.scene.els.get(id)?.angle ?? 0, info.id);
+    const handle = sc(info.cx, info.cy - info.h / 2 - 26 / info.zoom), r = 140 * info.zoom;
+    const around = (deg) => [sc(info.cx, info.cy)[0] + r * Math.sin((deg * Math.PI) / 180), sc(info.cx, info.cy)[1] - r * Math.cos((deg * Math.PI) / 180)];
+    await p.mouse.move(handle[0], handle[1]); await sleep(80);
+    const onHandle = await p.evaluate(() => document.getElementById("stage").style.cursor);
+    check("rotate: hovering the handle shows the grab cursor", onHandle === "grab", `cursor "${onHandle}"`);
+    await drag(handle[0], handle[1], ...around(40));
+    const a1 = await angleOf();
+    check("rotate: dragging the handle with the real mouse snaps to 15 degrees (40 -> 45)", Math.abs(a1 - Math.PI / 4) < 1e-6, `${(a1 * 180 / Math.PI).toFixed(3)} deg`);
+    await p.keyboard.down("Control"); await p.keyboard.press("z"); await p.keyboard.up("Control"); await sleep(80);
+    check("rotate: one Ctrl+Z undoes the whole drag", (await angleOf()) === 0);
+    await p.keyboard.down("Control"); await p.keyboard.down("Shift"); await p.keyboard.press("z"); await p.keyboard.up("Shift"); await p.keyboard.up("Control"); await sleep(80);
+    check("rotate: redo brings the angle back", Math.abs((await angleOf()) - Math.PI / 4) < 1e-6);
+    const h2 = [sc(info.cx, info.cy)[0] + (info.h / 2 + 26 / info.zoom) * info.zoom * Math.sin(Math.PI / 4), sc(info.cx, info.cy)[1] - (info.h / 2 + 26 / info.zoom) * info.zoom * Math.cos(Math.PI / 4)];
+    await p.keyboard.down("Shift"); await drag(h2[0], h2[1], ...around(100)); await p.keyboard.up("Shift");
+    const a2 = await angleOf();
+    check("rotate: Shift = free rotation (100 degrees, not snapped to 90 or 105)", Math.abs((a2 * 180) / Math.PI - 100) < 1, `${(a2 * 180 / Math.PI).toFixed(2)} deg`);
+    const hit = await ed((e, id) => { const t = e.scene.els.get(id); return e.scene.hit(t.x + t.w / 2, t.y + t.h / 2) === t; }, info.id);
+    check("rotate: the rotated text still hit-tests at its centre", hit);
+    await sleep(500);
+    const quiet = await p.evaluate(async () => { const r = window.__ap.renderer, t = r.lastFrameAt; await new Promise((x) => setTimeout(x, 1500)); return r.lastFrameAt === t; });
+    check("rotate: no frame is scheduled while idle afterwards", quiet);
+    await ed((e, id) => { const t = e.scene.els.get(id); if (t) { e.select([id]); e.deleteSelection(); } }, info.id);
+  }
+
+  // File > New with real clicks: a NEW board is created and opened, the one that was open is kept, nothing is asked
+  {
+    const boardsNow = () => p.evaluate(async () => (await window.__ap.io.boards()).list().then((l) => l.map((r) => r.id)));
+    const beforeIds = await boardsNow(), openId = await p.evaluate(() => window.__ap.io.boardId());
+    const shapes = await ed((e) => e.scene.els.size);
+    await p.click('button[aria-label="Menu"]'); await p.waitForSelector(".ap-menu", { visible: true }); await sleep(150);
+    const item = await p.evaluateHandle(() => [...document.querySelectorAll(".ap-mi")].find((x) => x.textContent.startsWith("New")));
+    await item.click(); await sleep(700);
+    const afterIds = await boardsNow();
+    check("File > New: no confirm prompt is shown", !(await q(".ap-modal")));
+    check("File > New: a new empty board is open", (await ed((e) => e.scene.els.size)) === 0 && (await p.evaluate(() => window.__ap.io.boardId())) !== openId && afterIds.length === beforeIds.length + 1, `${beforeIds.length} -> ${afterIds.length} boards`);
+    check("File > New: the board that was open is still in the list", afterIds.includes(openId));
+    await p.evaluate(async (id) => { await (await window.__ap.io.boards()).switchTo(id); }, openId); await sleep(400);
+    check("File > New: switching back finds the old board's shapes intact", (await ed((e) => e.scene.els.size)) === shapes, `${shapes} shapes`);
+    await p.keyboard.press("Escape");
+  }
+
   check("no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
 } catch (e) { failed = true; console.error(e); } finally { await b.close(); srv.kill(); }
 const bad = results.filter((r) => !r.ok).length;

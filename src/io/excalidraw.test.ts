@@ -167,3 +167,33 @@ describe("Excalidraw export and round trip", () => {
     expect(icon.groupIds).toEqual([r.scene.groups[0]!.id]);
   });
 });
+
+describe("Excalidraw: text angle", () => {
+  const scene = (angle?: number) => ({ els: [el({ id: "t", kind: "text", x: 10, y: 20, w: 80, h: 20, text: "hi", z: 1, ...(angle !== undefined ? { angle } : {}) })], groups: [] });
+  it("export writes angle on the text (Excalidraw rotates about the centre, as we do); upright stays 0", () => {
+    const out = toExcalidraw(scene(0.7), LIGHT) as { elements: O[] };
+    expect(out.elements.find((e) => e.id === "t")!.angle).toBeCloseTo(0.7, 9);
+    const flat = toExcalidraw(scene(), LIGHT) as { elements: O[] };
+    expect(flat.elements.find((e) => e.id === "t")!.angle).toBe(0);
+  });
+  it("round trips through export -> import", () => {
+    const r = fromExcalidraw(toExcalidraw(scene(-1.1), LIGHT));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const t = r.scene.els.find((e) => e.kind === "text")!;
+    expect(t.angle).toBeCloseTo(-1.1, 9);
+    expect([t.x, t.y, t.w, t.h]).toEqual([10, 20, 80, 20]);
+  });
+  it("imports a text authored in Excalidraw, folding a >2pi angle; other shapes ignore angle", () => {
+    const r = fromExcalidraw(file([ex("text", "x", { text: "hey", originalText: "hey", angle: 7 }), ex("rectangle", "y", { angle: 1 })]));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.scene.els.find((e) => e.kind === "text")!.angle).toBeCloseTo(7 - 2 * Math.PI, 9);
+    expect(r.scene.els.find((e) => e.kind === "rect")!.angle).toBeUndefined();
+  });
+  it("junk angles are dropped", () => {
+    const r = fromExcalidraw(file([ex("text", "x", { text: "a", angle: "up" }), ex("text", "z", { text: "b", angle: 0 })]));
+    expect(r.ok).toBe(true);
+    if (r.ok) for (const e of r.scene.els) expect(e.angle).toBeUndefined();
+  });
+});
