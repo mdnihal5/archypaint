@@ -10,6 +10,8 @@ import { iconMeta } from "../icon-pack";
 import { isLogoId } from "../logos";
 import { TEXT_SIZES } from "../text-edit";
 import type { TextAlign } from "../wrap";
+import { PROTOCOLS, dashFor, protocolOf, withProtocol, type Protocol } from "../protocol";
+import { arrowLabels } from "../connectors";
 import { clampPos, loadPrefs, savePrefs, type PropsPlace } from "./props-pos";
 
 /** "none" (no tile) is offered only while every selected element is a brand logo */
@@ -62,7 +64,11 @@ export function mountRibbon(ctx: Ctx, parent: HTMLElement): Ribbon {
   let dashNow: 0 | 1 | undefined;
   const dash = h("button", { class: "ap-btn", text: "dashed", attrs: { type: "button", "aria-pressed": "false" }, on: { click: () => set({ dash: dashNow === 1 ? 0 : 1 }) } });
   const fillField = field("Fill", fill.el), edgeField = field("Edge", edge.el);
-  const rowA = h("div", { class: "rr" }, grip, kind, name, colourField, fillField, edgeField, dash);
+  /* arrow protocol: label prefix + dash, no stored field (see protocol.ts) */
+  const protoOpts: ReadonlyArray<Protocol | null> = [...PROTOCOLS, null];
+  const protoBtns = protoOpts.map((p) => h("button", { class: "ap-btn", text: p ?? "none", attrs: { type: "button", "aria-pressed": "false", title: p ? `Protocol: ${p}` : "Remove the protocol" }, on: { click: () => { editor.setArrowText((t) => withProtocol(t, p), dashFor(p)); ctx.refresh(); } } }));
+  const protoField = field("Protocol", h("div", { class: "ap-iconrow", style: { gap: "4px" }, attrs: { role: "group", "aria-label": "Arrow protocol" } }, ...protoBtns));
+  const rowA = h("div", { class: "rr" }, grip, kind, name, colourField, fillField, edgeField, dash, protoField);
 
   /* ---------- row B: route, text, arrange, group, lock, style, delete ---------- */
   const route = segEl("Route", ROUTE.map(([g, n]) => radioBtn(glyphMore(g, 18), `Route: ${n}`, () => set({ route: ROUTE.findIndex((r) => r[1] === n) as 0 | 1 | 2 }), true)));
@@ -243,6 +249,9 @@ export function mountRibbon(ctx: Ctx, parent: HTMLElement): Ribbon {
     setPressed(lockBtn, grp !== null ? grpLocked : els.length > 0 && els.every((e) => scene.isLocked(e)));
     setAttr(lockBtn, "aria-label", grp !== null ? "Lock group" : "Lock");
     setDisabled(deleteBtn, els.length === 0 || els.every((e) => scene.isLocked(e)));
+    const arrowsOnly = els.length > 0 && els.every((e) => e.kind === "arrow");
+    setHidden(protoField, !arrowsOnly);
+    if (arrowsOnly) { const pr = commonValue(els, (e) => protocolOf(arrowLabels(e)[0]?.text ?? "")); protoBtns.forEach((b, i) => setPressed(b, pr !== undefined && protoOpts[i] === pr)); }
     dashNow = commonValue(els, (e) => e.dash);
     setPressed(dash, dashNow === 1);
     setDisabled(groupBtn, !editor.canGroup());

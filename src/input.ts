@@ -8,6 +8,7 @@ import type { AlignMode } from "./align";
 import { frameChildren, isContainer, nextBadgeNumber } from "./edit-ops";
 import { textWidth } from "./text-edit";
 import { minLabelHeight } from "./wrap";
+import { Snap } from "./snap";
 import { ROT_HANDLE_PX, aabbInto, normAngle, snapAngle, toLocal, toWorld, type Box } from "./rotate";
 import type { Viewport } from "./viewport";
 
@@ -102,6 +103,9 @@ export class Controller {
   private rbox: Rect | null = null;
   private rorig = new Map<string, Rect>();
   private rlock = false;
+  /** false when a rotated element is being resized: its box edges are not what the guides would show */
+  private rsnap = true;
+  private snX = new Snap(); private snY = new Snap();
   /** resize of ONE rotated text: the pointer is taken into the text's own frame (its unrotated box + angle at the start of the drag) */
   private rframe: Box & { angle: number } | null = null;
   // rotate state
@@ -171,6 +175,7 @@ export class Controller {
     if (t === "legend") { this.core.insertLegend(); return; }
     if (t === "renumber") { this.core.renumberBadges(); return; }
     if (this.tool === t) return;
+    this.r.guideX.length = 0; this.r.guideY.length = 0;
     this.toolLocked = false; // choosing a different tool always drops the lock: single click = one use, as before
     this.tool = t; this.r.hoverRect = null; this.r.hoverPort = -1;
     this.onTool(t); this.r.invalidate(false, true);
@@ -335,13 +340,14 @@ export class Controller {
     const pts = this.handlePts(box, lone);
     for (let i = 0; i < 8; i++) {
       if (Math.abs(wx - pts[i]![0]) <= hs && Math.abs(wy - pts[i]![1]) <= hs) {
-        this.handle = i; this.rbox = box; this.rorig.clear(); this.rlock = false;
+        this.handle = i; this.rbox = box; this.rorig.clear(); this.rlock = false; this.rsnap = true;
         this.rframe = lone?.angle ? { x: lone.x, y: lone.y, w: lone.w, h: lone.h, angle: lone.angle } : null;
         this.core.hist.begin();
         for (const id of r.selected) {
           const e = this.scene.els.get(id);
           if (!e || e.kind === "arrow" || this.scene.isLocked(e)) continue;
           this.core.hist.touch(e); this.rorig.set(id, { x: e.x, y: e.y, w: e.w, h: e.h });
+          if (e.angle) this.rsnap = false;
         }
         if (r.selected.size === 1) { const k1 = this.scene.els.get([...r.selected][0]!)?.kind; if (k1 === "icon" || k1 === "badge" || k1 === "image") this.rlock = true; }
         this.mode = "resize";
@@ -582,9 +588,18 @@ export class Controller {
         r.invalidate(false, true); break;
       case "create": {
         if (!isShapeTool(this.tool)) break;
-        let w = Math.abs(wx - this.wx0), h = Math.abs(wy - this.wy0);
+        let px = wx, py = wy;
+        r.guideX.length = 0; r.guideY.length = 0;
+        if (core.snap && !this.shift && this.tool !== "badge" && this.tool !== "brace") { // the moving corner snaps; square/brace boxes are derived, so their corner is not
+          const z = this.vp.zoom, X = this.snX, Y = this.snY;
+          this.snapScan(Math.min(this.wx0, wx) - 80 / z, Math.min(this.wy0, wy) - 80 / z, Math.max(this.wx0, wx) + 80 / z, Math.max(this.wy0, wy) + 80 / z, wx, NaN, NaN, wy, NaN, NaN, 6 / z);
+          px += X.d; py += Y.d;
+          if (!Number.isNaN(X.g)) r.guideX.push(X.g);
+          if (!Number.isNaN(Y.g)) r.guideY.push(Y.g);
+        }
+        let w = Math.abs(px - this.wx0), h = Math.abs(py - this.wy0);
         if (this.shift || this.tool === "badge") { w = h = Math.max(w, h); }
-        let x = wx < this.wx0 ? this.wx0 - w : this.wx0, y = wy < this.wy0 ? this.wy0 - h : this.wy0;
+        let x = px < this.wx0 ? this.wx0 - w : this.wx0, y = py < this.wy0 ? this.wy0 - h : this.wy0;
         let o: 0 | 1 | 2 | 3 = 0;
         if (this.tool === "brace") ({ x, y, w, h, o } = braceBox(this.wx0, this.wy0, wx, wy));
         r.ghost = { kind: this.tool, x, y, w, h, o, radius: core.edgeRadius(core.defaults.edge) };
@@ -674,27 +689,33 @@ export class Controller {
     r.invalidate(false, true);
   }
 
-  private snapDelta(dx: number, dy: number): [number, number] {
-    const r = this.r, b = this.moveBox!, z = this.vp.zoom, thr = 6 / z;
-    const mine = (o: number, s: number) => [o, o + s / 2, o + s];
-    this.scene.query(b.x + dx - 80 / z, b.y + dy - 80 / z, b.x + dx + b.w + 80 / z, b.y + dy + b.h + 80 / z, this.scratch);
-    let bx = thr, by = thr, ax = 0, ay = 0, gx = NaN, gy = NaN;
+  /**
+   * One neighbour search for move, resize and create: finds the nearest edge/centre of any non-arrow neighbour (not being dragged) to each of my three x and three y
+   * coordinates (NaN = not snapping that one) within `thr`, into snX / snY. Allocation-free.
+   */
+  private snapScan(x0: number, y0: number, x1: number, y1: number, ax0: number, ax1: number, ax2: number, ay0: number, ay1: number, ay2: number, thr: number): void {
+    const r = this.r, X = this.snX, Y = this.snY;
+    X.reset(thr); Y.reset(thr);
+    this.scene.query(x0, y0, x1, y1, this.scratch);
     let n = 0;
     for (const c of this.scratch) {
-      if (c.kind === "arrow" || r.dragging.has(c.id)) continue;
+      if (c.kind === "arrow" || r.dragging.has(c.id) || this.rorig.has(c.id)) continue;
       if (++n > 64) break;
       const cb = c.angle ? aabbInto(c, this.bb) : c;
-      const cx = [cb.x, cb.x + cb.w / 2, cb.x + cb.w], cy = [cb.y, cb.y + cb.h / 2, cb.y + cb.h];
-      const mxs = mine(b.x + dx, b.w), mys = mine(b.y + dy, b.h);
-      for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
-        const ddx = cx[i]! - mxs[j]!; if (Math.abs(ddx) < bx) { bx = Math.abs(ddx); ax = ddx; gx = cx[i]!; }
-        const ddy = cy[i]! - mys[j]!; if (Math.abs(ddy) < by) { by = Math.abs(ddy); ay = ddy; gy = cy[i]!; }
-      }
+      const mx = cb.x + cb.w / 2, my = cb.y + cb.h / 2, rx = cb.x + cb.w, ry = cb.y + cb.h;
+      X.try3(ax0, cb.x, mx, rx); X.try3(ax1, cb.x, mx, rx); X.try3(ax2, cb.x, mx, rx);
+      Y.try3(ay0, cb.y, my, ry); Y.try3(ay1, cb.y, my, ry); Y.try3(ay2, cb.y, my, ry);
     }
-    if (!Number.isNaN(gx)) { dx += ax; r.guideX.push(gx); }
-    else if (z >= 0.4) dx = Math.round((b.x + dx) / GRID) * GRID - b.x;
-    if (!Number.isNaN(gy)) { dy += ay; r.guideY.push(gy); }
-    else if (z >= 0.4) dy = Math.round((b.y + dy) / GRID) * GRID - b.y;
+  }
+
+  private snapDelta(dx: number, dy: number): [number, number] {
+    const r = this.r, b = this.moveBox!, z = this.vp.zoom, X = this.snX, Y = this.snY;
+    const bx = b.x + dx, by = b.y + dy;
+    this.snapScan(bx - 80 / z, by - 80 / z, bx + b.w + 80 / z, by + b.h + 80 / z, bx, bx + b.w / 2, bx + b.w, by, by + b.h / 2, by + b.h, 6 / z);
+    if (!Number.isNaN(X.g)) { dx += X.d; r.guideX.push(X.g); }
+    else if (z >= 0.4) dx = Math.round(bx / GRID) * GRID - b.x;
+    if (!Number.isNaN(Y.g)) { dy += Y.d; r.guideY.push(Y.g); }
+    else if (z >= 0.4) dy = Math.round(by / GRID) * GRID - b.y;
     return [dx, dy];
   }
 
@@ -756,6 +777,15 @@ export class Controller {
     const b = this.rbox!, h = this.handle, core = this.core, scene = this.scene;
     const fr = this.rframe;
     if (fr) { toLocal(fr, wx, wy, this.rp); wx = this.rp[0]; wy = this.rp[1]; }
+    const r = this.r;
+    r.guideX.length = 0; r.guideY.length = 0;
+    const snap = core.snap && this.rsnap && !fr && !this.shift && !this.rlock; // aspect-locked edges are derived, rotated ones are not their box
+    const sl = h === 0 || h === 6 || h === 7, sr = h === 2 || h === 3 || h === 4, st = h === 0 || h === 1 || h === 2, sb = h === 4 || h === 5 || h === 6;
+    if (snap) {
+      const z = this.vp.zoom;
+      this.snapScan(Math.min(b.x, wx) - 80 / z, Math.min(b.y, wy) - 80 / z, Math.max(b.x + b.w, wx) + 80 / z, Math.max(b.y + b.h, wy) + 80 / z, sl || sr ? wx : NaN, NaN, NaN, st || sb ? wy : NaN, NaN, NaN, 6 / z);
+      wx += this.snX.d; wy += this.snY.d;
+    }
     let l = b.x, rr = b.x + b.w, t = b.y, bt = b.y + b.h;
     if (h === 0 || h === 6 || h === 7) l = wx;
     if (h === 2 || h === 3 || h === 4) rr = wx;
@@ -763,6 +793,11 @@ export class Controller {
     if (h === 4 || h === 5 || h === 6) bt = wy;
     if (rr - l < MIN_SIZE) { if (h === 0 || h === 6 || h === 7) l = rr - MIN_SIZE; else rr = l + MIN_SIZE; }
     if (bt - t < MIN_SIZE) { if (h === 0 || h === 1 || h === 2) t = bt - MIN_SIZE; else bt = t + MIN_SIZE; }
+    if (snap) { // a guide is shown only where the clamp above left the dragged edge
+      const X = this.snX, Y = this.snY;
+      if (!Number.isNaN(X.g) && Math.abs((sl ? l : rr) - X.g) < 1e-6) r.guideX.push(X.g);
+      if (!Number.isNaN(Y.g) && Math.abs((st ? t : bt) - Y.g) < 1e-6) r.guideY.push(Y.g);
+    }
     if (this.shift || this.rlock) {
       const ratio = b.w / (b.h || 1);
       let w = rr - l, hh = bt - t;
@@ -879,6 +914,7 @@ export class Controller {
       case "rotate": this.finishRotate(); break;
       case "resize":
         core.hist.commit("resize"); this.rorig.clear(); this.rbox = null; this.rframe = null; this.handle = -1; core.emit("change"); core.emit("history");
+        r.guideX.length = 0; r.guideY.length = 0;
         r.invalidate(true, true); break;
       case "marquee": this.finishMarquee(wx, wy); break;
       case "create": this.finishCreate(wx, wy, wasClick); break;
@@ -899,7 +935,7 @@ export class Controller {
 
   private finishCreate(wx: number, wy: number, click: boolean): void {
     const core = this.core, r = this.r;
-    const g = r.ghost; r.ghost = null;
+    const g = r.ghost; r.ghost = null; r.guideX.length = 0; r.guideY.length = 0;
     const tool = this.tool;
     if (!isShapeTool(tool)) { r.invalidate(false, true); return; }
     const kind: Kind = tool;

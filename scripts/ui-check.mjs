@@ -477,6 +477,32 @@ for (const w of [390, 820, 1024]) {
   await cx.close();
 }
 
+/* ================= 8. arrow protocol buttons in the ribbon: label + dash, one undo step, no overflow ================= */
+for (const w of [1280, 390]) {
+  const { p, cx } = await open(URL0 + "?theme=light", w, 800);
+  await p.evaluate(() => {
+    const { scene, editor } = window.__ap;
+    const a = scene.add({ kind: "rect", x: 100, y: 200, w: 100, h: 60 }), c = scene.add({ kind: "rect", x: 400, y: 200, w: 100, h: 60 });
+    const ar = scene.add({ kind: "arrow", src: a.id, dst: c.id, head: 1, x: 200, y: 230, w: 200, h: 0, pts: [200, 230, 400, 230], route: 0 });
+    window.__arrow = ar.id; editor.renderer.invalidate(true, true); editor.select([ar.id]);
+  }); await sleep(500);
+  await click(p, 'button[aria-label="Properties"]'); await until(p, ".ap-ribbon");
+  const st = () => p.evaluate(() => { const a = window.__ap.editor.scene.els.get(window.__arrow); return { t: a.labels?.[0]?.text ?? "", d: a.dash ?? 0, on: [...document.querySelectorAll('.ap-ribbon [aria-label="Arrow protocol"] button')].filter((x) => x.getAttribute("aria-pressed") === "true").map((x) => x.textContent) }; });
+  const pick = async (n) => { await p.evaluate((n) => [...document.querySelectorAll('.ap-ribbon [aria-label="Arrow protocol"] button')].find((x) => x.textContent === n).click(), n); await sleep(150); };
+  check(`protocol ${w}px: visible for an arrow, none highlighted`, (await vis(p, '.ap-ribbon [aria-label="Arrow protocol"]')) && JSON.stringify((await st()).on) === '["none"]');
+  await pick("Kafka"); let r = await st();
+  check(`protocol ${w}px: Kafka -> label "Kafka", dashed, highlighted`, r.t === "Kafka" && r.d === 1 && r.on[0] === "Kafka", JSON.stringify(r));
+  await pick("HTTP"); r = await st();
+  check(`protocol ${w}px: HTTP -> solid, replaces the prefix`, r.t === "HTTP" && r.d === 0 && r.on[0] === "HTTP", JSON.stringify(r));
+  await p.evaluate(() => window.__ap.editor.undo()); await sleep(150); r = await st();
+  check(`protocol ${w}px: one Ctrl+Z restores label and dash`, r.t === "Kafka" && r.d === 1, JSON.stringify(r));
+  await pick("none"); r = await st();
+  check(`protocol ${w}px: none removes the label and the dash`, r.t === "" && r.d === 0 && r.on[0] === "none", JSON.stringify(r));
+  const ov = await p.evaluate(() => { const rb = document.querySelector(".ap-ribbon"), b = rb.getBoundingClientRect(); return { sw: rb.scrollWidth, cw: rb.clientWidth, l: b.left, r: b.right, iw: innerWidth, dsw: document.documentElement.scrollWidth }; });
+  check(`protocol ${w}px: ribbon has no horizontal overflow`, ov.sw <= ov.cw + 1 && ov.l >= 0 && ov.r <= ov.iw + 0.5 && ov.dsw <= ov.iw, JSON.stringify(ov));
+  await cx.close();
+}
+
 await b.close(); srv.kill();
 console.log(results.join("\n"));
 console.log(`\n${results.length - failed}/${results.length} passed`);

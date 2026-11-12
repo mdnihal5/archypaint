@@ -489,6 +489,18 @@ export function createEditor(d: EditorDeps): Editor {
     },
     bringToFront() { reorder("front"); }, bringForward() { reorder("forward"); },
     sendBackward() { reorder("backward"); }, sendToBack() { reorder("back"); },
+    setArrowText(f, dash) {
+      run("protocol", () => {
+        for (const id of sel()) {
+          const a = scene.els.get(id);
+          if (!a || a.kind !== "arrow" || scene.isLocked(a)) continue;
+          const ls = labelsOf(a), v = f(ls[0]?.text ?? "").slice(0, MAX_LABEL_TEXT);
+          if (ls[0]) { if (v) ls[0].text = v; else ls.shift(); } else if (v) ls.push({ t: 0.5, text: v });
+          if ((ls[0]?.text ?? "") === (arrowLabels(a)[0]?.text ?? "") && a.dash === dash && ls.length === arrowLabels(a).length) continue;
+          hist.touch(a); scene.patch(a, { labels: ls.length ? ls : undefined, text: "", dash });
+        }
+      });
+    },
     setStyle(p) {
       if (!sel().size) return;
       run("style", () => {

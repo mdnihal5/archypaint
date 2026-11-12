@@ -56,6 +56,8 @@ export interface EditorAPI {
   renameGroup(id: string, name: string): void;
   bringToFront(): void; bringForward(): void; sendBackward(): void; sendToBack(): void;
   setStyle(patch: Partial<StyleProps>): void;
+  /** the selected arrows' first label becomes `f(current text)` and their line dash `dash`, as one undo step */
+  setArrowText(f: (cur: string) => string, dash: 0 | 1): void;
   /** style defaults used for newly created shapes */
   readonly defaults: StyleProps;
   setDefaults(patch: Partial<StyleProps>): void;
