@@ -75,6 +75,14 @@ export function mountUI(deps: UiDeps): UiHandle {
   d.add(() => { closeShortcuts?.(); pendingConfirm?.close(); });
 
   void import("./flow").then((m) => { if (!d.isDisposed()) m.mountFlow(ctx, root); }, () => {}); // the dots are decoration: their code is not part of the first paint
+  // Load view: its code (engine + drawing) is a lazy chunk that loads only when the setting is on; it unmounts itself when it goes off
+  const loadSync = () => {
+    if (!settings.get().load || ctx.loadView) return;
+    void import("./load-view").then((m) => { if (!d.isDisposed() && settings.get().load && !ctx.loadView) m.mountLoadView(ctx, root); }, () => {});
+  };
+  d.add(settings.subscribe((_s, changed) => { if (changed.includes("load")) loadSync(); }));
+  d.add(() => ctx.loadView?.stop());
+  loadSync();
   mountSheet(ctx, root);
   mountPanels(ctx, root);
   mountDock(ctx, root);

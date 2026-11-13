@@ -1,6 +1,7 @@
 import { normHex } from "../theme";
 import { MAX_BRANCH_DEPTH, cleanLabels, cleanSegs, migrateArrowText } from "../connectors";
 import { cleanAngle } from "../rotate";
+import type { Algo, LoadSpec, Role } from "../load/types";
 import { isPort, type ElJSON, type GroupInfo, type Port, type SceneJSON } from "../scene";
 
 /** The `.archypaint` file format: versioned, validated, deterministic (one element per line, fixed key order). */
@@ -104,8 +105,32 @@ function plain(v: unknown, path: string): Record<string, unknown> {
 
 /* ---------------------------------------------------------------- element field tables */
 
-const EL_KNOWN = new Set(["id", "kind", "x", "y", "w", "h", "z", "version", "cat", "hex", "fill", "edge", "radius", "text", "groupIds", "iconId", "img", "locked", "n", "o", "src", "dst", "sp", "dp", "route", "dash", "head", "pts", "fs", "align", "labels", "segs", "st", "dt", "angle"]);
+const EL_KNOWN = new Set(["id", "kind", "x", "y", "w", "h", "z", "version", "cat", "hex", "fill", "edge", "radius", "text", "groupIds", "iconId", "img", "locked", "n", "o", "src", "dst", "sp", "dp", "route", "dash", "head", "pts", "fs", "align", "labels", "segs", "st", "dt", "angle", "load"]);
 const ROOT_KNOWN = new Set(["app", "version", "meta", "view", "settings", "scene"]);
+
+/* ---------------------------------------------------------------- load model (El.load) */
+
+const ROLES: readonly string[] = ["entry", "service", "lb", "limiter", "cache", "queue", "db"] satisfies Role[];
+const ALGOS: readonly string[] = ["token", "leaky", "fixed", "sliding"] satisfies Algo[];
+/** numeric keys: [min, max, integer?]; node keys first, arrow keys (w, x) last */
+const LOAD_NUM: Record<string, [number, number, boolean?]> = { cap: [0, 1e9], rep: [1, 1000, true], ms: [0, 6e4], rate: [0, 1e9], retries: [0, 5, true], hit: [0, 100], depth: [0, 1e9], limit: [0, 1e9], burst: [0, 1e9], w: [0, 1000], x: [0, 100] };
+const cl = (v: number, lo: number, hi: number, int?: boolean): number => { const n = Math.min(hi, Math.max(lo, v)); return int ? Math.round(n) : n; };
+
+/** a persisted/pasted `load` from outside: known keys only, enums from their sets, numbers finite and clamped; anything else is dropped. Empty = undefined */
+export function cleanLoad(v: unknown, isArrow: boolean): LoadSpec | undefined {
+  if (!isObj(v)) return undefined;
+  const o: Record<string, unknown> = {};
+  for (const k of Object.keys(v)) {
+    const x = v[k], num = LOAD_NUM[k];
+    if (num) { if ((k === "w" || k === "x") === isArrow && typeof x === "number" && Number.isFinite(x)) o[k] = cl(x, num[0], num[1], num[2]); }
+    else if (isArrow) continue;
+    else if (k === "role") { if (typeof x === "string" && ROLES.includes(x)) o[k] = x; }
+    else if (k === "algo") { if (typeof x === "string" && ALGOS.includes(x)) o[k] = x; }
+    else if (k === "backoff") { if (x === 0 || x === 1) o[k] = x; }
+    else if (k === "spike") { if (Array.isArray(x) && x.length === 3 && x.every((n) => typeof n === "number" && Number.isFinite(n))) o[k] = [cl(x[0], 1, 100), cl(x[1], 0, 600), cl(x[2], 1, 600)]; }
+  }
+  return Object.keys(o).length ? (o as LoadSpec) : undefined;
+}
 
 function readEl(raw: unknown, i: number, extras: Record<string, Record<string, unknown>>): ElJSON {
   const p = `scene.els[${i}]`;
@@ -160,6 +185,7 @@ function readEl(raw: unknown, i: number, extras: Record<string, Record<string, u
     if (raw.st !== undefined) el.st = fnum(raw.st, `${p}.st`, 0, 1);
     if (raw.dt !== undefined) el.dt = fnum(raw.dt, `${p}.dt`, 0, 1);
   }
+  const ld = cleanLoad(raw.load, kind === "arrow"); if (ld) el.load = ld;
   let ex: Record<string, unknown> | null = null;
   for (const k of Object.keys(raw)) if (!EL_KNOWN.has(k)) (ex ??= {})[k] = plain({ v: raw[k] }, `${p}.${k}`).v;
   if (ex) extras[id] = ex;
@@ -322,6 +348,7 @@ export function orderEl(e: ElLike, extra?: Record<string, unknown>): string {
   if (e.align === "left" || e.align === "right") o.align = e.align;
   if (e.kind === "text" && e.angle) o.angle = Math.round(e.angle * 1e6) / 1e6 + 0;
   if (e.kind === "arrow" && e.labels && e.labels.length) o.labels = e.labels.map((l) => ({ t: r3(l.t), text: l.text }));
+  if (e.load) o.load = e.load;
   if (e.groupIds.length) o.groupIds = e.groupIds;
   if (e.kind === "icon") o.iconId = e.iconId;
   if (e.kind === "image") o.img = e.img;

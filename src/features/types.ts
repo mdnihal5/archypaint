@@ -23,6 +23,8 @@ export interface Action {
   section: ActionSection;
   /** shown in the menu */
   hint?: string;
+  /** false = hidden from the menu (the shortcut still works) */
+  menu?: false;
   /** global shortcut; matched on e.key.toLowerCase() with exactly these modifiers */
   key?: { key: string; mod?: boolean; shift?: boolean; alt?: boolean };
   /** false hides/disables the entry (e.g. needs a selection) */

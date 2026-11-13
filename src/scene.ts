@@ -1,3 +1,4 @@
+import type { LoadSpec } from "./load/types";
 import { arrowDist } from "./connectors";
 import { hitShape } from "./shape-geom";
 import { aabbInto, toLocal, type Box } from "./rotate";
@@ -77,6 +78,8 @@ export interface El {
   angle?: number | undefined;
   /** arrows only: when `src` / `dst` names another arrow, the fraction (0..1, by length) of that arrow's path where this end sits */
   st?: number | undefined; dt?: number | undefined;
+  /** load model settings (role, capacity, rate...); absent = none. Validated by cleanLoad (io/format.ts); `spike` is a tuple, so copies must be deep */
+  load?: LoadSpec | undefined;
   /** spatial-index bookkeeping (cell range + query dedupe stamp) — never serialised */
   gx0: number; gy0: number; gx1: number; gy1: number; seen: number;
 }
@@ -90,11 +93,14 @@ export interface GroupInfo { id: string; name: string; cat: number; collapsed: b
 export type ElJSON = Omit<El, "gx0" | "gy0" | "gx1" | "gy1" | "seen">;
 export interface SceneJSON { els: ElJSON[]; groups: GroupInfo[] }
 
+export const copyLoad = (l: LoadSpec): LoadSpec => (l.spike ? { ...l, spike: [...l.spike] } : { ...l });
+
 /** deep-enough copy of a persisted element: the arrays (and label objects) are not shared with the original */
 function copyEl(j: ElJSON): ElJSON {
   const c: ElJSON = { ...j, groupIds: [...j.groupIds], pts: [...j.pts] };
   if (j.labels) c.labels = j.labels.map((l) => ({ ...l }));
   if (j.segs) c.segs = [...j.segs];
+  if (j.load) c.load = copyLoad(j.load);
   return c;
 }
 
@@ -259,7 +265,7 @@ export class Scene {
   restoreEl(e: El, j: ElJSON): void {
     this.grid.remove(e);
     // optional fields are assigned explicitly: Object.assign alone would leave a stale value when the snapshot omits the key
-    Object.assign(e, j, { groupIds: [...j.groupIds], pts: [...j.pts], fs: j.fs, align: j.align, angle: j.angle, labels: j.labels?.map((l) => ({ ...l })), segs: j.segs ? [...j.segs] : undefined, st: j.st, dt: j.dt });
+    Object.assign(e, j, { groupIds: [...j.groupIds], pts: [...j.pts], fs: j.fs, align: j.align, angle: j.angle, labels: j.labels?.map((l) => ({ ...l })), segs: j.segs ? [...j.segs] : undefined, load: j.load ? copyLoad(j.load) : undefined, st: j.st, dt: j.dt });
     this.grid.insert(e);
     e.version++;
     this.nonce++;

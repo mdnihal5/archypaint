@@ -13,6 +13,8 @@ export interface Settings {
   minimap: boolean;
   /** small dots travelling along pointed arrows (rests when idle, off for reduced motion) */
   flow: boolean;
+  /** the opt-in "Load view": rate chips on arrows, utilisation bars under services (lazy chunk; off by default) */
+  load: boolean;
   /** the "Hide icons" view: icon elements skip their picture (canvas and exports; a viewer setting, never part of the document) */
   hideIcons: boolean;
   /** title-block fields (per-browser, not per-document: the scene format has no metadata slot) */
@@ -21,7 +23,7 @@ export interface Settings {
 }
 
 /** what a fresh browser gets: quiet canvas (no frame, layers or footer), minimap on, system theme, grid background */
-export const DEFAULTS: Settings = { bg: "grid", theme: "system", frame: false, hud: false, layers: false, minimap: true, flow: true, hideIcons: false, scale: "1:1", rev: "0" };
+export const DEFAULTS: Settings = { bg: "grid", theme: "system", frame: false, hud: false, layers: false, minimap: true, flow: true, load: false, hideIcons: false, scale: "1:1", rev: "0" };
 const KEY = "archypaint.settings.v1";
 
 const oneOf = <T extends string>(v: unknown, all: readonly T[], d: T): T => (typeof v === "string" && (all as readonly string[]).includes(v) ? (v as T) : d);
@@ -40,6 +42,7 @@ export function parseSettings(raw: string | null): Settings {
     layers: bool(j.layers, DEFAULTS.layers),
     minimap: bool(j.minimap, DEFAULTS.minimap),
     flow: bool(j.flow, DEFAULTS.flow),
+    load: bool(j.load, DEFAULTS.load),
     hideIcons: bool(j.hideIcons, DEFAULTS.hideIcons),
     scale: str(j.scale, DEFAULTS.scale),
     rev: str(j.rev, DEFAULTS.rev),
@@ -65,10 +68,11 @@ export function createSettings(): SettingsStore {
   let cur = parseSettings(readStore());
   // URL overrides are session-only (used by scripts/tests): they never overwrite the stored preference
   const q = typeof location !== "undefined" ? new URLSearchParams(location.search) : null;
-  const ut = q?.get("theme"), ub = q?.get("bg"), uf = q?.get("flow");
+  const ut = q?.get("theme"), ub = q?.get("bg"), uf = q?.get("flow"), ul = q?.get("load");
   if (ut === "light" || ut === "dark") cur = { ...cur, theme: ut };
   if (ub === "grid" || ub === "plain") cur = { ...cur, bg: ub };
   if (uf === "on" || uf === "off") cur = { ...cur, flow: uf === "on" };
+  if (ul === "on" || ul === "off") cur = { ...cur, load: ul === "on" };
 
   const subs = new Set<(s: Readonly<Settings>, c: ReadonlyArray<keyof Settings>) => void>();
   let notifying = false;

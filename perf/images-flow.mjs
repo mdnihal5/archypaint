@@ -11,7 +11,7 @@ const puppeteer = require("puppeteer-core");
 const DIR = mkdtempSync(join(tmpdir(), "archypaint-images-"));
 const OUT = DIR + "/";
 const PORT = 4197;
-const srv = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], { stdio: "ignore" });
+const srv = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], { stdio: "ignore", detached: true }); // own process group: kill(-pid) also ends the vite child npx starts
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 for (let i = 0; i < 50; i++) { try { if ((await fetch(`http://localhost:${PORT}/`)).ok) break; } catch {} await sleep(200); }
 const b = await puppeteer.launch({ executablePath: "/usr/bin/google-chrome", args: ["--no-sandbox", "--enable-precise-memory-info", "--js-flags=--expose-gc"] });
@@ -161,6 +161,6 @@ try {
   check("100 insert/undo cycles: scene unchanged and heap growth small", n1b === n0 && h1 - h0 < 1.5 * 1024 * 1024, `elements ${n0}->${n1b}, heap +${Math.round((h1 - h0) / 1024)} KB`);
   check("no page errors", errs.length === 0, JSON.stringify(errs.slice(0, 3)));
 } catch (e) { failed++; console.log("FLOW ERROR", e); }
-finally { await b.close(); srv.kill(); if (process.env.KEEP) console.log("kept", DIR); else rmSync(DIR, { recursive: true, force: true }); }
+finally { await b.close(); process.kill(-srv.pid); if (process.env.KEEP) console.log("kept", DIR); else rmSync(DIR, { recursive: true, force: true }); }
 console.log(failed ? `\n${failed} FAILED` : "\nall passed");
 process.exit(failed ? 1 : 0);

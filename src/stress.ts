@@ -53,6 +53,13 @@ export function stressMixed(scene: Scene, n: number, route: (id: string) => void
       arrows++;
     }
   }
+  // ?loadspecs=1: give the grid a load model (a rate at the left edge of every 4th row, a capacity everywhere else) for the Load view benchmark
+  if (typeof location !== "undefined" && new URLSearchParams(location.search).has("loadspecs")) {
+    for (let i = 0; i < nodes; i++) {
+      const e = scene.els.get(ids[i]!);
+      if (e) scene.patch(e, { load: i % cols === 0 && Math.floor(i / cols) % 4 === 0 ? { role: "entry", rate: 4000 } : { cap: 1500 } });
+    }
+  }
   for (let g = 0; g * 8 < nodes; g++) {
     const gid = `g${g}`;
     scene.groups.set(gid, { id: gid, name: `tier-${g}`, cat: g % 8, collapsed: false, locked: false });

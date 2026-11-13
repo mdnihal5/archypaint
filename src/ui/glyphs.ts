@@ -36,6 +36,7 @@ export const G = {
   chevron: `<path d="M9 6l6 6-6 6"/>`,
   sun: `<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/>`,
   moon: `<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/>`,
+  gauge: `<path d="M4.5 17a8.5 8.5 0 1 1 15 0"/><path d="M12 14.5l4-5"/><circle cx="12" cy="14.5" r="1" fill="currentColor"/>`,
   flow: `<path d="M3 17c3.5 0 4-10 9-10s5.5 10 9 10" stroke-dasharray="0.1 4.2" stroke-width="2.6"/>`,
 } as const;
 

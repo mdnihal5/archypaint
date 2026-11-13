@@ -7,7 +7,7 @@ const require = createRequire((process.env.PUPPETEER_DIR ?? "/home/sys2026/Perso
 const puppeteer = require("puppeteer-core");
 const PORT = 4183, URL0 = `http://localhost:${PORT}/`;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const srv = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], { stdio: "ignore" });
+const srv = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], { stdio: "ignore", detached: true }); // own process group: kill(-pid) also ends the vite child npx starts
 for (let i = 0; i < 50; i++) { try { if ((await fetch(URL0)).ok) break; } catch { /* starting */ } await sleep(200); }
 
 const results = []; let failed = 0;
@@ -143,6 +143,12 @@ const vis = (p, sel) => p.evaluate((s) => { const e = document.querySelector(s);
   await p.evaluate(() => [...document.querySelectorAll(".ap-mi")].find((x) => x.textContent.startsWith("Save"))?.click()); await sleep(150);
   check("menu: Save -> io.save", await has(p, "save"));
   check("menu: closes after an action", !(await vis(p, ".ap-menu")));
+  await menuOpen(p);
+  check("menu: no Capacity note entry (the C shortcut stays)", await p.evaluate(() => ![...document.querySelectorAll(".ap-mi")].some((x) => x.textContent.includes("Capacity note"))));
+  await p.keyboard.press("Escape"); await sleep(100);
+  await p.evaluate(() => { document.activeElement?.blur?.(); }); await p.keyboard.press("c"); await until(p, ".ap-cpick");
+  check("keys: C opens the capacity note starters", await vis(p, ".ap-cpick"));
+  await p.keyboard.press("Escape"); await sleep(150);
 
   const seg = async (group, label) => { await menuOpen(p); await p.evaluate((g, l) => [...document.querySelectorAll(`.ap-menu .ap-seg[aria-label="${g}"] button`)].find((x) => x.getAttribute("aria-label") === l).click(), group, label); await sleep(150); };
   const chipSet = async (label, on) => { await menuOpen(p); await p.evaluate((l, o) => { const b = [...document.querySelectorAll(".ap-menu .ap-tg")].find((x) => x.textContent === l); if ((b.getAttribute("aria-pressed") === "true") !== o) b.click(); }, label, on); await sleep(150); };
@@ -503,7 +509,264 @@ for (const w of [1280, 390]) {
   await cx.close();
 }
 
-await b.close(); srv.kill();
+/* ================= 9. Load view: toggle, numbers, colours, LOD, flow, teardown, phone, too-large ================= */
+{
+  const { p, cx, errs } = await open(URL0 + "?theme=light");
+  await p.evaluate(() => {
+    const { editor, scene } = window.__ap;
+    let active = 0; const on = editor.on.bind(editor);
+    editor.on = (ev, cb) => { active++; const un = on(ev, cb); let done = false; return () => { if (!done) { done = true; active--; } un(); }; };
+    window.__subs = () => active;
+    // what the Load view draws: every string and every flow-dot fill colour, by canvas class
+    window.__txt = []; window.__flowCols = new Set();
+    const ft = CanvasRenderingContext2D.prototype.fillText; CanvasRenderingContext2D.prototype.fillText = function (t, ...a) { if (this.canvas.className === "ap-load") window.__txt.push(String(t)); return ft.call(this, t, ...a); };
+    const fl = CanvasRenderingContext2D.prototype.fill; CanvasRenderingContext2D.prototype.fill = function (...a) { if (this.canvas.className === "ap-flow") window.__flowCols.add(String(this.fillStyle)); return fl.apply(this, a); };
+    const R = (x, y, text) => scene.add({ kind: "rect", x, y, w: 110, h: 60, text });
+    const c = R(100, 200, "clients"), g = R(330, 200, "gateway"), a = R(560, 200, "app"), ca = R(790, 100, "cache"), d = R(1020, 200, "db"), q = R(790, 330, "events");
+    const ar = (s, t, pts) => scene.add({ kind: "arrow", src: s.id, dst: t.id, head: 1, route: 0, x: Math.min(pts[0], pts[2]), y: Math.min(pts[1], pts[3]), w: Math.abs(pts[2] - pts[0]) || 1, h: Math.abs(pts[3] - pts[1]) || 1, pts });
+    ar(c, g, [210, 230, 330, 230]); ar(g, a, [440, 230, 560, 230]); ar(a, ca, [670, 215, 790, 130]); ar(a, q, [670, 245, 790, 360]); ar(ca, d, [900, 130, 1020, 215]); ar(q, d, [900, 360, 1020, 245]);
+    editor.setLoad([c.id], { role: "entry", rate: 6000 }); editor.setLoad([g.id], { role: "limiter", limit: 5000 }); editor.setLoad([a.id], { cap: 1000, rep: 3 });
+    editor.setLoad([ca.id], { role: "cache", cap: 20000, hit: 80 }); editor.setLoad([d.id], { cap: 1600 }); editor.setLoad([q.id], { role: "queue", cap: 1000 });
+    window.__shop = { c: c.id, g: g.id, a: a.id, ca: ca.id, d: d.id, q: q.id };
+    editor.zoomToFit();
+  });
+  await sleep(500);
+  const BTN = 'button[aria-label="Load view"]';
+  const pressed = () => p.evaluate((s) => document.querySelector(s).getAttribute("aria-pressed"), BTN);
+  const inst = () => p.evaluate(() => ({ l: window.__inst.listeners(), o: window.__inst.observers(), subs: window.__subs(), canv: document.querySelectorAll("canvas.ap-load").length }));
+  const colourPx = (rgb) => p.evaluate((c) => { const cv = document.querySelector("canvas.ap-load"); if (!cv) return 0; const d = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - c[0]) < 6 && Math.abs(d[i + 1] - c[1]) < 6 && Math.abs(d[i + 2] - c[2]) < 6 && d[i + 3] > 250) n++; return n; }, rgb);
+  const base = await inst();
+  check("load: button in the cluster, off by default (aria-pressed false), no overlay canvas, setting persisted off", (await pressed()) === "false" && base.canv === 0 && (await p.evaluate(() => JSON.parse(localStorage.getItem("archypaint.settings.v1")).load !== true)));
+  check("load: not a startup cost: the overlay code is not loaded while off", await p.evaluate(() => !performance.getEntriesByType("resource").some((r) => /load-view/.test(r.name))));
+  const bar0 = await p.evaluate(() => window.__inst.raf());
+  await click(p, BTN); await until(p, "canvas.ap-load", 4000); await sleep(400);
+  check("load: clicking the gauge turns it on (aria-pressed, overlay canvas, setting persisted)", (await pressed()) === "true" && (await inst()).canv === 1 && (await p.evaluate(() => JSON.parse(localStorage.getItem("archypaint.settings.v1")).load === true)));
+  const txt = await p.evaluate(() => [...new Set(window.__txt)]);
+  const want = ["6.0k/s", "5.0k/s", "1.5k/s", "300/s", "1.0k/s", "6.0k of 5.0k · 120%", "rejected 1.0k/s", "5.0k of 3.0k · 167%", "dropped 2.0k/s", "1.5k of 20.0k · 8%", "1.3k of 1.6k · 81%", "1.5k of 1.0k · 150%", "backlog +500/s"];
+  check("load: chips and node numbers are right for the shop diagram", want.every((w) => txt.includes(w)), "missing: " + want.filter((w) => !txt.includes(w)).join(" | ") + "  drawn: " + txt.join(" | "));
+  check("load: a node without a capacity (clients) and no zero-rate arrow draw nothing extra", !txt.some((t) => /^0\/s$|^0 of/.test(t)));
+  const [R, G, A] = [[197, 48, 48], [15, 122, 90], [154, 99, 20]];
+  check("load: colours: red (over), green (<70%) and amber (<100%) all present, light theme tokens", (await colourPx(R)) > 100 && (await colourPx(G)) > 5 && (await colourPx(A)) > 20, `${await colourPx(R)}/${await colourPx(G)}/${await colourPx(A)}`);
+  const idle = await p.evaluate(async () => { const a = window.__inst.raf(); await new Promise((r) => setTimeout(r, 1800)); return window.__inst.raf() - a; });
+  check("load: idle with the view on schedules no frames", idle === 0, `${idle} rAF calls in 1.8 s`);
+  // an edit recomputes
+  await p.evaluate(() => { window.__txt.length = 0; window.__ap.editor.setLoad([window.__shop.a], { cap: 1000, rep: 5 }); }); await sleep(300);
+  check("load: editing a capacity updates the numbers (once, no loop)", await p.evaluate(() => window.__txt.includes("5.0k of 5.0k · 100%")));
+  // level of detail
+  await p.evaluate(() => { window.__txt.length = 0; const v = window.__ap.vp; v.zoomAt(v.w / 2, v.h / 2, 0.3); window.__ap.editor.zoomBy(1); }); await sleep(400);
+  const z = await p.evaluate(() => window.__ap.vp.zoom);
+  check("load: zoomed out, text is hidden but the bars stay", z < 0.6 && (await p.evaluate(() => window.__txt.filter((t) => /of|\/s/.test(t)).length)) === 0 && (await colourPx(R)) > 20, `zoom ${z.toFixed(2)}`);
+  await p.evaluate(() => window.__ap.editor.zoomToFit()); await sleep(300);
+  // flow follows the load: dots on saturated arrows are red, others keep the theme pencil; zero-traffic arrows get none
+  await p.evaluate(() => { window.__flowCols.clear(); window.__ap.settings.set({ flow: true }); }); await sleep(900);
+  const cols = await p.evaluate(() => [...window.__flowCols]);
+  check("load+flow: dots into a saturated service are red, the rest keep the accent", cols.includes("#c53030") && cols.includes("#5b57d1"), JSON.stringify(cols));
+  await p.evaluate(() => window.__ap.settings.set({ flow: false })); await sleep(200);
+  // read-only (shared view) still draws
+  await p.evaluate(() => { window.__txt.length = 0; window.__ap.editor.setReadOnly(true); window.__ap.vp.zoomAt(100, 100, 1.01); window.__ap.editor.zoomBy(1); }); await sleep(300);
+  check("load: draws in a read-only view too", await p.evaluate(() => window.__txt.length > 5));
+  await p.evaluate(() => window.__ap.editor.setReadOnly(false));
+  // toggle off
+  await click(p, BTN); await sleep(300);
+  const off1 = await inst();
+  check("load: off: overlay gone, pressed false, listeners/observers/subscriptions back to baseline", (await pressed()) === "false" && off1.canv === 0 && off1.l === base.l && off1.o === base.o && off1.subs === base.subs, JSON.stringify([base, off1]));
+  // flow with the view off behaves as before: accent only
+  await p.evaluate(() => { window.__flowCols.clear(); window.__ap.settings.set({ flow: true }); }); await sleep(900);
+  check("load off + flow: only the accent colour (as today)", JSON.stringify(await p.evaluate(() => [...window.__flowCols])) === '["#5b57d1"]');
+  await p.evaluate(() => window.__ap.settings.set({ flow: false })); await sleep(100);
+  // 40 on/off cycles: no leak
+  const gc = () => p.evaluate(async () => { window.gc?.(); await new Promise((r) => setTimeout(r, 60)); window.gc?.(); return performance.memory.usedJSHeapSize; });
+  await p.evaluate(async () => { for (let i = 0; i < 5; i++) { window.__ap.settings.set({ load: true }); await new Promise((r) => setTimeout(r, 60)); window.__ap.settings.set({ load: false }); } });
+  const h0 = await gc();
+  await p.evaluate(async () => { for (let i = 0; i < 40; i++) { window.__ap.settings.set({ load: true }); await new Promise((r) => setTimeout(r, 70)); window.__ap.settings.set({ load: false }); await new Promise((r) => setTimeout(r, 10)); } });
+  await sleep(200); const h1 = await gc(); const end = await inst();
+  check("load: 40 on/off cycles: listeners, observers, subscriptions, canvases return to baseline", end.l === base.l && end.o === base.o && end.subs === base.subs && end.canv === 0, JSON.stringify([base, end]));
+  check("load: 40 on/off cycles: heap growth is small (< 300 KB)", h1 - h0 < 300 * 1024, `${Math.round((h1 - h0) / 1024)} KB`);
+  // too large: one toast, nothing drawn
+  await p.evaluate(() => {
+    const { scene, editor } = window.__ap; editor.selectAll(); editor.deleteSelection();
+    const ids = []; for (let i = 0; i < 3100; i++) ids.push(scene.add({ kind: "rect", x: (i % 60) * 130, y: Math.floor(i / 60) * 90, w: 100, h: 60 }).id);
+    for (let i = 0; i < 3099; i++) scene.add({ kind: "arrow", src: ids[i], dst: ids[i + 1], head: 1, route: 0, x: 0, y: 0, w: 1, h: 1, pts: [0, 0, 1, 1] });
+    window.__txt.length = 0; editor.zoomToFit(); window.__ap.settings.set({ load: true });
+  });
+  await sleep(1200);
+  const tl = await p.evaluate(() => ({ toasts: [...document.querySelectorAll(".ap-toast")].filter((t) => t.textContent.startsWith("Load view skipped")).length, drawn: window.__txt.length }));
+  check("load: a graph that is too large shows one toast and draws nothing", tl.toasts === 1 && tl.drawn === 0, JSON.stringify(tl));
+  await p.evaluate(() => { window.__ap.settings.set({ load: false }); });
+  check("load: no page errors on desktop", errs.length === 0, errs.slice(0, 2).join(" | "));
+  await cx.close();
+}
+{
+  // phone: the cluster button gives way (like theme and flow); the menu entry works
+  const { p, cx, errs } = await open(URL0 + "?theme=light", 390, 760);
+  await p.evaluate(() => { const { scene, editor } = window.__ap; const a = scene.add({ kind: "rect", x: 60, y: 200, w: 110, h: 60, text: "a" }), b2 = scene.add({ kind: "rect", x: 60, y: 400, w: 110, h: 60, text: "b" }); scene.add({ kind: "arrow", src: a.id, dst: b2.id, head: 1, route: 0, x: 115, y: 260, w: 1, h: 140, pts: [115, 260, 115, 400] }); editor.setLoad([a.id], { role: "entry", rate: 2000 }); editor.setLoad([b2.id], { cap: 1000 }); editor.zoomToFit(); });
+  check("load 390px: the cluster button is hidden like theme and flow", !(await vis(p, 'button[aria-label="Load view"]')));
+  await menuOpen(p);
+  const entry = await p.evaluateHandle(() => [...document.querySelectorAll(".ap-menu button")].find((b) => b.textContent.includes("Load view")));
+  check("load 390px: the menu has a Load view entry, not pressed", !!entry.asElement() && (await entry.evaluate((b) => b.getAttribute("aria-pressed") ?? b.getAttribute("aria-checked"))) === "false");
+  await entry.asElement().click(); await until(p, "canvas.ap-load", 4000); await sleep(300);
+  check("load 390px: the menu entry turns it on", await p.evaluate(() => !!document.querySelector("canvas.ap-load") && JSON.parse(localStorage.getItem("archypaint.settings.v1")).load === true));
+  const ov = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: innerWidth, cw: document.querySelector("canvas.ap-load").getBoundingClientRect().width }));
+  check("load 390px: no horizontal overflow, overlay covers the stage only", ov.sw <= ov.iw && ov.cw <= ov.iw, JSON.stringify(ov));
+  check("load 390px: no page errors", errs.length === 0, errs.slice(0, 2).join(" | "));
+  await cx.close();
+}
+
+/* ================= 10. Load card, scenario bar, chart: the mock's steps 3-7 with real clicks and typing ================= */
+{
+  const { p, cx, errs } = await open(URL0 + "?theme=light&load=on&flow=off");
+  await p.evaluate(() => {
+    const { editor, scene } = window.__ap;
+    const R = (x, y, text) => scene.add({ kind: "rect", x, y, w: 110, h: 60, text });
+    const c = R(100, 250, "Clients"), g = R(330, 250, "API gateway"), a = R(560, 250, "App servers"), ca = R(790, 120, "Redis"), d = R(1020, 250, "Postgres"), q = R(790, 380, "Kafka");
+    const ar = (s, t, pts) => scene.add({ kind: "arrow", src: s.id, dst: t.id, head: 1, route: 0, x: Math.min(pts[0], pts[2]), y: Math.min(pts[1], pts[3]), w: Math.abs(pts[2] - pts[0]) || 1, h: Math.abs(pts[3] - pts[1]) || 1, pts });
+    const arr = [ar(c, g, [210, 280, 330, 280]), ar(g, a, [440, 280, 560, 280]), ar(a, ca, [670, 265, 790, 150]), ar(a, q, [670, 295, 790, 410]), ar(ca, d, [900, 150, 1020, 265]), ar(q, d, [900, 410, 1020, 295])];
+    editor.setLoad([c.id], { role: "entry", rate: 6000 }); editor.setLoad([g.id], { role: "limiter", limit: 20000, burst: 30000 });
+    editor.setLoad([a.id], { cap: 3000, rep: 3 }); editor.setLoad([ca.id], { role: "cache", cap: 50000, hit: 90 }); editor.setLoad([d.id], { cap: 2000 }); editor.setLoad([q.id], { role: "queue", cap: 1000, depth: 50000 });
+    window.__shop = { c: c.id, g: g.id, a: a.id, ca: ca.id, d: d.id, q: q.id, e0: arr[0].id };
+    editor.zoomToFit();
+    window.__txt = []; const ft = CanvasRenderingContext2D.prototype.fillText; CanvasRenderingContext2D.prototype.fillText = function (t, ...a2) { if (this.canvas.className === "ap-load") window.__txt.push(String(t)); return ft.call(this, t, ...a2); };
+    window.__fr = 0; const o = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = (f) => { window.__fr++; return o(f); };
+  });
+  await sleep(900);
+  const load = (k) => p.evaluate((k) => JSON.parse(JSON.stringify(window.__ap.scene.els.get(window.__shop[k]).load ?? null)), k);
+  const sel = (k) => p.evaluate((k) => window.__ap.editor.select([window.__shop[k]]), k);
+  const txt = () => p.evaluate(() => [...new Set(window.__txt)]);
+  const cardOpen = () => p.evaluate(() => { const c = document.querySelector(".ap-lcard"); return !!c && !c.hidden && c.getBoundingClientRect().width > 0; });
+  const typeInto = async (id, text) => { await p.click(id); await p.keyboard.down("Control"); await p.keyboard.press("a"); await p.keyboard.up("Control"); await p.keyboard.type(text); await p.keyboard.press("Enter"); await sleep(350); };
+  const segBtn = (label) => p.evaluateHandle((l) => [...document.querySelectorAll(".ap-lcard button")].find((x) => x.textContent === l), label);
+  const idle = (ms) => p.evaluate(async (ms) => { const a = window.__fr; await new Promise((r) => setTimeout(r, ms)); return window.__fr - a; }, ms);
+  const undoDepth = () => p.evaluate(() => window.__ap.editor.hist.undoS.length); // read-only count: undo + redo would drop the selection and the card
+
+  check("card: closed when nothing is selected, and Load view never opens it by itself", !(await cardOpen()));
+  const pt = await p.evaluate(() => { const e = window.__ap.scene.els.get(window.__shop.a), v = window.__ap.vp; return { x: (e.x + e.w / 2 - v.x) * v.zoom, y: (e.y + e.h / 2 - v.y) * v.zoom }; });
+  await p.mouse.click(pt.x, pt.y); await sleep(350);
+  check("step 3: clicking a service on the canvas opens its card beside it (service fields)", (await cardOpen()) && (await vis(p, "#lc-cap")) && (await vis(p, "#lc-rep")) && !(await vis(p, "#lc-hit")));
+  const geo = await p.evaluate(() => { const c = document.querySelector(".ap-lcard").getBoundingClientRect(), cl = document.querySelector(".ap-cluster").getBoundingClientRect(), dk = document.querySelector(".ap-dock").getBoundingClientRect(); return { l: c.left, r: c.right, t: c.top, b: c.bottom, iw: innerWidth, cb: cl.bottom, dt: dk.top }; });
+  check("step 3: the card sits inside the stage, under the cluster and above the dock", geo.l >= 0 && geo.r <= geo.iw && geo.t >= geo.cb && geo.b <= geo.dt, JSON.stringify(geo));
+  const u0 = await undoDepth();
+  await typeInto("#lc-cap", "2k");
+  check("step 3: typing 2k + Enter commits capacity 2000 (one setLoad) and the numbers update", (await load("a")).cap === 2000 && (await txt()).includes("6.0k of 6.0k · 100%"));
+  check("step 3: that was exactly one undo step", (await undoDepth()) === u0 + 1);
+  await p.evaluate(() => window.__ap.editor.undo()); await sleep(300);
+  check("step 3: undo restores 3000 and the field shows it", (await load("a")).cap === 3000 && (await p.$eval("#lc-cap", (i) => i.value)) === "3k");
+  // invalid text is flagged, not committed; Escape reverts
+  await p.click("#lc-cap"); await p.keyboard.down("Control"); await p.keyboard.press("a"); await p.keyboard.up("Control"); await p.keyboard.type("abc"); await sleep(100);
+  check("card: invalid text sets aria-invalid and shows a message, nothing is committed", (await p.$eval("#lc-cap", (i) => i.getAttribute("aria-invalid"))) === "true" && (await load("a")).cap === 3000 && (await p.$eval("#lc-cap-e", (e) => e.textContent.length)) > 0);
+  await p.keyboard.press("Escape"); await sleep(150);
+  check("card: Escape reverts the field and keeps the selection", (await p.$eval("#lc-cap", (i) => i.value)) === "3k" && (await p.evaluate(() => window.__ap.editor.selection().size)) === 1);
+  // typing "k" in a field must not trigger editor shortcuts / edits
+  check("card: inputs have visible labels (for= / id=)", await p.evaluate(() => [...document.querySelectorAll(".ap-lcard input")].every((i) => !!document.querySelector(`label[for="${i.id}"]`))));
+  // step 4: limiter
+  await sel("g"); await sleep(300);
+  check("step 4: limiter card: algorithm segmented control, limit and burst", (await vis(p, ".lc-seg")) && (await vis(p, "#lc-limit")) && (await vis(p, "#lc-burst")));
+  await (await segBtn("Fixed window")).click(); await sleep(300);
+  check("step 4: switching to fixed window commits it, burst goes away, the one-line effect changes", (await load("g")).algo === "fixed" && !(await vis(p, "#lc-burst")) && /window edge/.test(await p.$eval(".lc-gtxt", (e) => e.textContent)));
+  await (await segBtn("Token bucket")).click(); await sleep(300);
+  // step 5: entry overload
+  await sel("c"); await sleep(300);
+  check("step 5: entry card: requests/s, retries; no spike fields yet", (await vis(p, "#lc-rate")) && (await vis(p, "#lc-retries")) && !(await vis(p, "#lc-sp0")));
+  await typeInto("#lc-rate", "30k");
+  const t5 = await txt();
+  check("step 5: entry at 30k overloads: rejected / dropped lines in red, chips and bars update", t5.some((t) => /^rejected/.test(t)) && t5.some((t) => /^dropped/.test(t)));
+  check("step 5: the entry card shows an end-to-end estimate and the amplification", /end-to-end/.test(await p.$eval(".lc-res", (e) => e.textContent)) && /amplification/.test(await p.$eval(".lc-res", (e) => e.textContent)));
+  await typeInto("#lc-rate", "6k");
+  // step 6: spike
+  const link = await p.evaluateHandle(() => [...document.querySelectorAll(".ap-lcard .lc-link")].find((x) => /spike/.test(x.textContent)));
+  check("step 6: no scenario bar or chart before a spike exists", !(await vis(p, ".ap-scn")) && !(await vis(p, ".ap-lchart")));
+  await link.asElement().click(); await sleep(500);
+  check("step 6: + add traffic spike stores [5,5,20] and shows the spike fields", JSON.stringify((await load("c")).spike) === "[5,5,20]" && (await vis(p, "#lc-sp0")));
+  check("step 6: the scenario bar and the chart appear", (await vis(p, ".ap-scn")) && (await vis(p, ".ap-lchart")));
+  check("step 6: the bar reads 'Spike ×5 for 20 s' and has play, scrubber and time", /Spike ×5 for 20 s/.test(await p.$eval(".scn-label", (e) => e.textContent)) && (await vis(p, ".scn-range")) && (await vis(p, ".scn-time")));
+  const cg = await p.evaluate(() => { const b = document.querySelector(".ap-scn").getBoundingClientRect(), c = document.querySelector(".ap-lchart").getBoundingClientRect(), cl = document.querySelector(".ap-cluster").getBoundingClientRect(); return { bc: (b.left + b.right) / 2, iw: innerWidth, ct: c.top, cr: c.right, cb: cl.bottom }; });
+  check("step 6: the bar is top-centre, the chart is top-right under the cluster", Math.abs(cg.bc - cg.iw / 2) < 3 && cg.ct >= cg.cb && cg.cr <= cg.iw, JSON.stringify(cg));
+  check("step 6: idle with the bar open and nothing playing schedules no frames", (await idle(1200)) === 0);
+  await p.evaluate(() => { window.__txt.length = 0; });
+  await p.click(".ap-scn button[aria-label='Play scenario']");
+  await p.click(".ap-scn .scn-spd"); await sleep(1500);
+  const playing = await p.evaluate(() => ({ t: document.querySelector(".scn-time").textContent, pause: !!document.querySelector(".ap-scn button[aria-label='Pause scenario']") }));
+  check("step 6: play runs: time advances and the button becomes pause", playing.pause && parseFloat(playing.t) > 1, JSON.stringify(playing));
+  await p.evaluate(() => { const r = document.querySelector(".scn-range"); r.value = 150; r.dispatchEvent(new Event("input", { bubbles: true })); }); await sleep(500);
+  const spiked = await txt();
+  check("step 6: while scrubbed inside the spike the overlay shows the spike's values (30k/s at the gateway, app dropping)", spiked.includes("30.0k/s") && spiked.some((t) => /^dropped/.test(t)), spiked.filter((t) => /\/s/.test(t)).join(" "));
+  await p.click(".ap-scn button[aria-label='Pause scenario']"); await sleep(300);
+  const tAfter = await p.$eval(".scn-time", (e) => e.textContent); await sleep(700);
+  check("step 6: pause stops the clock and then schedules zero frames", (await p.$eval(".scn-time", (e) => e.textContent)) === tAfter && (await idle(1500)) === 0, tAfter);
+  check("step 6: the chart has a line text for the Kafka backlog", /Kafka backlog/.test(await p.$eval(".lch-line", (e) => e.textContent)));
+  const lit = await p.evaluate(() => { const c = document.querySelector(".ap-lchart canvas"), d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i]) n++; return n; });
+  check("step 6: the chart canvas is drawn", lit > 500, String(lit));
+  const u1 = await undoDepth();
+  await p.click(".ap-scn button[aria-label='Remove the traffic spike']"); await sleep(400);
+  check("step 6: ✕ removes the spike (bar and chart go, numbers back to steady) in one undo step", !(await vis(p, ".ap-scn")) && !(await vis(p, ".ap-lchart")) && (await load("c")).spike === undefined && (await undoDepth()) === u1 + 1);
+  await p.evaluate(() => window.__ap.editor.undo()); await sleep(450);
+  check("step 6: undo brings the spike, the bar and the chart back", (await vis(p, ".ap-scn")) && JSON.stringify((await load("c")).spike) === "[5,5,20]");
+  // step 7: retries
+  await sel("c"); await sleep(300);
+  await typeInto("#lc-retries", "3");
+  check("step 7: retries 3 reveals the backoff toggle", await vis(p, ".lc-tgl"));
+  await p.evaluate(() => { const r = document.querySelector(".scn-range"); r.value = 150; r.dispatchEvent(new Event("input", { bubbles: true })); }); await sleep(500);
+  const warn1 = await p.evaluate(() => { const w = document.querySelector(".lc-warn"); return w && !w.hidden ? w.textContent : ""; });
+  const amp1 = await p.evaluate(() => { const m = /amplification ×([\d.]+)/.exec(document.querySelector(".lc-res").textContent); return m ? +m[1] : 0; });
+  check("step 7: retries 3 inside the spike show the red retry-amplification warning with the backoff hint", /Retry amplification/.test(warn1) && /backoff/.test(warn1) && amp1 > 1.5, warn1 + " amp " + amp1);
+  await (await segBtn("Turn on backoff + jitter")).click(); await sleep(500);
+  const amp2 = await p.evaluate(() => { const m = /amplification ×([\d.]+)/.exec(document.querySelector(".lc-res").textContent); return m ? +m[1] : 0; });
+  check("step 7: backoff + jitter lowers the amplification", (await load("c")).backoff === 1 && amp2 < amp1, `${amp1} -> ${amp2}`);
+  // coexistence: two selected = no card; the ribbon, text editing and boards still work around it
+  await p.evaluate(() => window.__ap.editor.select([window.__shop.a, window.__shop.g])); await sleep(300);
+  check("card: closed for a multi-selection", !(await cardOpen()));
+  await sel("a"); await sleep(250);
+  await p.evaluate(() => window.__ap.ui && 0); await p.keyboard.press("i"); await sleep(400);
+  check("coexist: the properties ribbon still opens with the card around (I key)", (await vis(p, ".ap-ribbon")) && (await cardOpen()));
+  await p.keyboard.press("i"); await sleep(250);
+  await p.keyboard.press("Enter"); await sleep(300);
+  check("coexist: text editing hides the card while typing", !(await cardOpen()));
+  await p.keyboard.press("Escape"); await sleep(300);
+  check("coexist: the card comes back after editing", await cardOpen());
+  // drag stays where dragged for the session
+  const g0 = await p.$eval(".ap-lcard .ap-grip", (e) => { const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+  await p.mouse.move(g0[0], g0[1]); await p.mouse.down(); await p.mouse.move(g0[0] - 60, g0[1] + 80, { steps: 4 }); await p.mouse.up(); await sleep(200);
+  const moved = await p.$eval(".ap-lcard", (e) => e.style.transform);
+  await sel("d"); await sleep(300);
+  check("card: dragged by the grip, it then stays where it was dragged for the session", (await p.$eval(".ap-lcard", (e) => e.style.transform)) === moved && moved !== "", moved);
+  await p.evaluate(() => window.__ap.editor.select([])); await sleep(300);
+  // arrow card
+  await p.evaluate(() => window.__ap.editor.select([window.__shop.e0])); await sleep(300);
+  check("arrow: card has share weight and calls per request with an explanation", (await vis(p, "#lc-w")) && (await vis(p, "#lc-x")) && /divided/.test(await p.$eval(".lc-why", (e) => e.textContent)));
+  await typeInto("#lc-x", "2");
+  check("arrow: calls per request 2 commits on the arrow", await p.evaluate(() => window.__ap.scene.els.get(window.__shop.e0).load?.x === 2));
+  await p.evaluate(() => window.__ap.editor.undo());
+  // role override
+  await sel("a"); await sleep(250);
+  await p.select("#lc-role", "cache"); await sleep(300);
+  check("acts as: choosing Cache stores the role and the card switches to hit rate + capacity", (await load("a")).role === "cache" && (await vis(p, "#lc-hit")) && !(await vis(p, "#lc-rep")));
+  await p.evaluate(() => window.__ap.editor.undo()); await sleep(250);
+  // read-only view: values, no inputs
+  await p.evaluate(() => { window.__ap.editor.setReadOnly(true); window.__ap.editor.select([window.__shop.a]); }); await sleep(350); // a shared view cannot select by click, so select through the API
+  check("read-only: the card shows values and has no inputs, selects or buttons that edit", (await cardOpen()) && (await p.evaluate(() => document.querySelectorAll(".ap-lcard input").length)) === 0 && (await p.evaluate(() => document.querySelector(".ap-lcard select")?.disabled !== false)));
+  await p.evaluate(() => window.__ap.editor.setReadOnly(false)); await sleep(300);
+  // turning Load view off frees everything
+  await p.evaluate(() => { window.__ap.editor.select([window.__shop.a]); }); await sleep(250);
+  await click(p, 'button[aria-label="Load view"]'); await sleep(500);
+  check("off: card, bar, chart and the overlay are all gone", !(await p.evaluate(() => !!document.querySelector(".ap-lcard, .ap-scn, .ap-lchart, canvas.ap-load"))));
+  check("off: the numbers return to steady state (nothing drawn, no frames)", (await idle(1000)) === 0);
+  check("no page errors in the load card flow", errs.length === 0, errs.slice(0, 3).join(" | "));
+  await cx.close();
+}
+{
+  // phone: the card is a bottom sheet, nothing overflows
+  const { p, cx, errs } = await open(URL0 + "?theme=light&load=on&flow=off", 390, 760);
+  await p.evaluate(() => { const { scene, editor } = window.__ap; const a = scene.add({ kind: "rect", x: 60, y: 200, w: 110, h: 60, text: "a" }), b2 = scene.add({ kind: "rect", x: 60, y: 400, w: 110, h: 60, text: "b" }); scene.add({ kind: "arrow", src: a.id, dst: b2.id, head: 1, route: 0, x: 115, y: 260, w: 1, h: 140, pts: [115, 260, 115, 400] }); editor.setLoad([a.id], { role: "entry", rate: 2000, spike: [5, 5, 20], retries: 3 }); editor.setLoad([b2.id], { cap: 1000 }); editor.zoomToFit(); window.__ids = [a.id, b2.id]; });
+  await sleep(800);
+  await p.evaluate(() => window.__ap.editor.select([window.__ids[0]])); await sleep(500);
+  const m = await p.evaluate(() => { const c = document.querySelector(".ap-lcard"), r = c.getBoundingClientRect(), dk = document.querySelector(".ap-dock").getBoundingClientRect(); return { l: r.left, r: r.right, b: r.bottom, dt: dk.top, iw: innerWidth, sw: document.documentElement.scrollWidth, csw: c.scrollWidth, ccw: c.clientWidth, grip: getComputedStyle(c.querySelector(".ap-grip")).display }; });
+  check("load card 390px: bottom sheet inside the screen, above the dock, no overflow, no grip", m.l >= 0 && m.r <= m.iw && m.b <= m.dt && m.sw <= m.iw && m.csw <= m.ccw + 1 && m.grip === "none", JSON.stringify(m));
+  const bc = await p.evaluate(() => [...document.querySelectorAll(".ap-scn,.ap-lchart")].map((e) => { const r = e.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }));
+  check("load card 390px: the scenario bar and chart fit the width", bc.length === 2 && bc.every(Boolean), JSON.stringify(bc));
+  check("load card 390px: no page errors", errs.length === 0, errs.slice(0, 2).join(" | "));
+  await cx.close();
+}
+
+await b.close(); process.kill(-srv.pid);
 console.log(results.join("\n"));
 console.log(`\n${results.length - failed}/${results.length} passed`);
 process.exit(failed ? 1 : 0);
