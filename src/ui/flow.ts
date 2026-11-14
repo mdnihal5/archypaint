@@ -2,7 +2,7 @@ import { arrowLabels, bezierAt, effectiveRoute, isCurve, labelBlock, pointAtT, r
 import type { El } from "../scene";
 import type { Theme } from "../theme";
 import { textWidth } from "../text-edit";
-import type { Ctx } from "./ctx";
+import type { Ctx, LoadEdge } from "./ctx";
 
 /**
  * Flow animation: small red-pencil dots travelling along POINTED arrows (head arrow / dot), start -> pointer, that are connected at
@@ -23,9 +23,18 @@ const SPEED = 55; // screen px / s
 const DOT = 3.3; // screen px radius
 const BEZIER_STEPS = 18;
 
-interface Path { v: number; poly: number[]; cum: number[]; len: number }
+interface Path { v: number; poly: number[]; cum: number[]; len: number; /** Load view only: distance travelled so far (world units), so a rate-driven speed can change without the dots jumping */ ph: number }
 interface Plates { v: number; r: number[] }
 interface RendererLike { dragging?: ReadonlySet<string>; ghostArrow?: unknown; hidden?: ReadonlySet<string> | null; degraded?: boolean; theme?: Theme }
+
+/**
+ * Load view: dot speed and density follow the arrow's rate (log scale, clamped), and arrows into a saturated service slow down
+ * and bunch up near it. Pure and allocation-free; only used while the Load view is on and the model carries traffic.
+ */
+export const loadSpeed = (rate: number, bad: boolean): number => (bad ? 0.3 : 1) * (0.5 + 0.9 * Math.min(1, Math.log10(rate + 1) / 4));
+export const loadCount = (rate: number): number => Math.max(1, Math.min(6, Math.round(Math.log10(rate + 1) * 1.4)));
+/** squeeze a distance d in [0, len) towards the destination (dots pile up before a saturated service) */
+export const bunch = (d: number, len: number): number => len * Math.pow(d / len, 1.6);
 
 const probe: [number, number] = [0, 0];
 const lpt: [number, number] = [0, 0];
@@ -95,6 +104,7 @@ export function mountFlow(ctx: Ctx, root: HTMLElement): void {
   let builtNonce = -1, builtVp = -1;
   const tmp: El[] = [];
   const pt: [number, number] = [0, 0];
+  const lin: LoadEdge = { rate: 0, bad: false };
 
   const resize = () => {
     const w = stage.clientWidth, h = stage.clientHeight, d = Math.min(2, window.devicePixelRatio || 1);
@@ -125,7 +135,7 @@ export function mountFlow(ctx: Ctx, root: HTMLElement): void {
     let len = 0;
     for (let i = 2; i < poly.length; i += 2) { len += Math.hypot(poly[i]! - poly[i - 2]!, poly[i + 1]! - poly[i - 1]!); cum.push(len); }
     if (!(len > 0)) return null;
-    const out = { v: e.version, poly, cum, len };
+    const out = { v: e.version, poly, cum, len, ph: hit?.ph ?? 0 };
     cache.set(e.id, out);
     return out;
   };
@@ -175,7 +185,9 @@ export function mountFlow(ctx: Ctx, root: HTMLElement): void {
     if (!canRun()) { clear(); return; } // not scheduling again: the loop is OFF until an event kicks it
     raf = requestAnimationFrame(frame);
     if (t - last < FRAME_MS - 2) return;
+    const dtw = Math.min(0.1, (t - last) / 1000);
     last = t;
+    const lv = ctx.loadView, byLoad = !!lv && lv.active();
     const vp = editor.vp, z = vp.zoom, s = dpr * z, r = DOT / z;
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, cw, ch);
@@ -187,6 +199,7 @@ export function mountFlow(ctx: Ctx, root: HTMLElement): void {
       clipOutPlates(g, vp.x, vp.y, vp.w / z, vp.h / z, plates);
     }
     const base = (t / 1000) * (SPEED / z); // world units travelled since t = 0
+    const step0 = dtw * (SPEED / z);
     const hidden = rd?.hidden;
     let colour = "";
     for (const e of list) {
@@ -194,13 +207,21 @@ export function mountFlow(ctx: Ctx, root: HTMLElement): void {
       const p = pathOf(e);
       if (!p) continue;
       // red pencil = "what is happening": the dots stay visible on a line of any category colour
-      const col = theme.red;
+      let col = theme.red, sp = 1, bad = false, cap = 6;
+      if (byLoad && lv!.edge(e.id, lin)) {
+        if (!(lin.rate >= 0.5)) continue; // Load view: an arrow that carries nothing shows no dots
+        bad = lin.bad; sp = loadSpeed(lin.rate, bad); cap = loadCount(lin.rate);
+        if (bad) col = lv!.colour();
+      }
       if (col !== colour) { g.fillStyle = col; g.strokeStyle = col; colour = col; }
-      const gap = Math.max(70 / z, p.len / 6), count = Math.max(1, Math.floor(p.len / gap));
-      const step = p.len / count, off = base % step;
+      const gap = Math.max(70 / z, p.len / 6), count = Math.max(1, Math.min(cap, Math.floor(p.len / gap)));
+      let off: number;
+      const step = p.len / count;
+      if (byLoad) { p.ph += step0 * sp; off = p.ph % step; } else off = base % step;
       g.lineWidth = 1.4 / z;
       for (let k = 0; k < count; k++) {
-        const d = off + k * step;
+        let d = off + k * step;
+        if (bad) d = bunch(d, p.len);
         // walk to the segment holding arc length d
         let i = 1;
         while (i < p.cum.length - 1 && p.cum[i]! < d) i++;
@@ -234,9 +255,11 @@ export function mountFlow(ctx: Ctx, root: HTMLElement): void {
   ctx.d.on(window, "wheel", onInput, { passive: true, capture: true });
   ctx.d.on(document, "visibilitychange", onVis);
   mq?.addEventListener("change", onMotion);
+  ctx.flowKick = kick;
   kick();
 
   ctx.d.add(() => {
+    ctx.flowKick = undefined;
     disposed = true;
     if (raf) cancelAnimationFrame(raf);
     raf = 0;

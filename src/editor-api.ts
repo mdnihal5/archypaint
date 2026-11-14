@@ -1,3 +1,4 @@
+import type { LoadSpec } from "./load/types";
 import type { AlignMode } from "./align";
 import type { El, Scene, EdgeStyle, FillStyle } from "./scene";
 import type { Tool } from "./input";
@@ -76,6 +77,8 @@ export interface EditorAPI {
   distribute(axis: "h" | "v"): void;
   /** make the selected (ungrouped) shapes as wide / tall as the largest */
   matchSize(dim: "w" | "h" | "both"): void;
+  /** merge `patch` into each element's load model settings (a key set to undefined removes it; null clears all), validated; locked elements skipped; one undo step */
+  setLoad(ids: Iterable<string>, patch: Partial<LoadSpec> | null): void;
   /** lock or unlock the selection (locked shapes cannot be moved, resized, edited or deleted) */
   setLocked(locked: boolean): void;
   toggleLock(): void;

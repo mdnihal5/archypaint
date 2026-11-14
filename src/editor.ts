@@ -8,7 +8,8 @@ import { GroupIndex } from "./groups";
 import { History, type HistState } from "./history";
 import { Controller, type Core, type Tool } from "./input";
 import { Renderer } from "./renderer";
-import { Scene, isPort, type ArrowLabel, type El, type ElInit, type ElJSON, type GroupInfo, type Port, type SceneJSON } from "./scene";
+import { cleanLoad } from "./io/format";
+import { Scene, copyLoad, isPort, type ArrowLabel, type El, type ElInit, type ElJSON, type GroupInfo, type Port, type SceneJSON } from "./scene";
 import { braceVertical, NEW_KINDS } from "./shape-geom";
 import { COLOUR_NAMES, normHex, type Theme } from "./theme";
 import { installImageInput } from "./images-input";
@@ -127,7 +128,7 @@ export function createEditor(d: EditorDeps): Editor {
         ...rest, x: j.x + dx, y: j.y + dy, groupIds: j.groupIds.map((g) => gMap.get(g)!),
         pts: j.pts.map((v, i) => (i % 2 ? v + dy : v + dx)),
         src: idMap.get(j.src) ?? gMap.get(j.src) ?? "", dst: idMap.get(j.dst) ?? gMap.get(j.dst) ?? "", // an end bound to a duplicated group follows the copy
-        labels: j.labels?.map((l) => ({ ...l })), segs: j.segs ? [...j.segs] : undefined,
+        labels: j.labels?.map((l) => ({ ...l })), segs: j.segs ? [...j.segs] : undefined, load: j.load ? copyLoad(j.load) : undefined,
       } as ElInit);
       // scene.add assigned its own id; re-key to the pre-allocated one so bindings match
       scene.els.delete(e.id);
@@ -501,6 +502,19 @@ export function createEditor(d: EditorDeps): Editor {
         }
       });
     },
+    setLoad(ids, patch) {
+      run("load", () => {
+        for (const id of ids) {
+          const e = scene.els.get(id);
+          if (!e || scene.isLocked(e)) continue;
+          const m: Record<string, unknown> = patch ? { ...e.load, ...patch } : {};
+          for (const k in m) if (m[k] === undefined) delete m[k];
+          const next = cleanLoad(m, e.kind === "arrow");
+          if (JSON.stringify(next) === JSON.stringify(e.load)) continue;
+          hist.touch(e); scene.patch(e, { load: next });
+        }
+      });
+    },
     setStyle(p) {
       if (!sel().size) return;
       run("style", () => {
@@ -849,6 +863,8 @@ function sanitize(j: ElJSON): ElJSON {
   if (sg) el.segs = sg; else delete el.segs;
   const ang = el.kind === "text" ? cleanAngle(j.angle) : undefined; // only free text turns
   if (ang !== undefined) el.angle = ang; else delete el.angle;
+  const ld = cleanLoad(j.load, el.kind === "arrow");
+  if (ld) el.load = ld; else delete el.load;
   const unit = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : undefined);
   const st = unit(j.st), dt = unit(j.dt);
   if (st !== undefined) el.st = st; else delete el.st;

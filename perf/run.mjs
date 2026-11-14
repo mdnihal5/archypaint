@@ -4,11 +4,12 @@ import { spawn } from "node:child_process";
 const require = createRequire((process.env.PUPPETEER_DIR ?? "/home/sys2026/Personal/blog-visuals/node_modules") + "/");
 const puppeteer = require("puppeteer-core");
 const N = Number(process.argv[2] ?? 5000);
+// --load: Load view ON over a scene with load specs (use with --mixed: the plain stress scene has no arrows)
 // --mixed: a realistic diagram (icons from every pack, routed + labelled arrows, groups, path shapes) instead of plain rectangles
 const MODE = process.argv.includes("--mixed") ? "mixed" : "stress";
 const PORT = 4179;
 
-const srv = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], { stdio: "ignore" });
+const srv = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], { stdio: "ignore", detached: true }); // own process group: kill(-pid) also ends the vite child npx starts
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 for (let i = 0; i < 50; i++) { try { if ((await fetch(`http://localhost:${PORT}/`)).ok) break; } catch { /* not up yet */ } await sleep(200); }
 
@@ -19,7 +20,7 @@ try {
   await p.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
   const errors = [];
   p.on("pageerror", (e) => errors.push(String(e)));
-  await p.goto(`http://localhost:${PORT}/?${MODE}=${N}${process.argv.includes("--noflow") ? "&flow=off" : ""}`);
+  await p.goto(`http://localhost:${PORT}/?${MODE}=${N}${process.argv.includes("--noflow") ? "&flow=off" : ""}${process.argv.includes("--load") ? "&loadspecs=1&load=on" : ""}`);
   out.mode = MODE;
   await p.waitForFunction(() => window.__ap && window.__ap.renderer.lastFrameAt > 0);
   if (MODE === "mixed") { // icon packs load lazily on first draw: wait for them so the measurement includes real icon drawing
@@ -67,5 +68,5 @@ try {
   out.heapMB = { before: +(h0 / 1048576).toFixed(2), after: +(h1 / 1048576).toFixed(2), growthKB: Math.round((h1 - h0) / 1024) };
   out.shapesAfterChurn = await p.evaluate(() => window.__ap.scene.els.size);
   out.pageErrors = errors;
-} finally { await b.close(); srv.kill(); }
+} finally { await b.close(); process.kill(-srv.pid); }
 console.log(JSON.stringify(out, null, 2));

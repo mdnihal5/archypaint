@@ -9,7 +9,7 @@ import { TEXT_BOX, colourOf, onSolid, textInk, type Theme } from "./theme";
 import type { Viewport } from "./viewport";
 import { alignX, labelLineHeight, wrapCached, wrapWidth } from "./wrap";
 
-const FACE = "'JetBrains Mono','DejaVu Sans Mono',monospace";
+export const FACE = "'JetBrains Mono','DejaVu Sans Mono',monospace";
 const FONT = `13px ${FACE}`;
 
 export interface GhostShape { kind: Kind; x: number; y: number; w: number; h: number; radius?: number; o?: 0 | 1 | 2 | 3 }

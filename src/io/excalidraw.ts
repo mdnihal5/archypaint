@@ -4,7 +4,7 @@ import { isPort, type ElJSON, type GroupInfo, type SceneJSON } from "../scene";
 import { LIGHT, TEXT_CAT, colourOf, normHex, onSolid, textInk, type Theme } from "../theme";
 import { exportGroups } from "../groups";
 import { NEW_KINDS, legendRows } from "../shape-geom";
-import { APP, FORMAT_VERSION, LIMITS, validateFile } from "./format";
+import { APP, FORMAT_VERSION, LIMITS, cleanLoad, validateFile } from "./format";
 
 const ELLIPSE_LIKE: ReadonlySet<string> = new Set(["ellipse", "cloud", "badge"]);
 const DIAMOND_LIKE: ReadonlySet<string> = new Set(["diamond", "hexagon", "parallelogram", "triangle", "star"]);
@@ -217,6 +217,7 @@ export function fromExcalidraw(input: unknown, th: Theme = LIGHT): ExResult {
       const cfs = num(cd.fs); if (cfs !== null && cfs >= 6 && cfs <= 96) base.fs = Math.round(cfs);
       if (cd.align === "left" || cd.align === "right") base.align = cd.align; else if (cd.align === "center") delete base.align;
       if (base.kind === "arrow") { const ls = cleanLabels(cd.labels); if (ls.length) { base.labels = ls; base.text = ""; } const sg = cleanSegs(cd.segs); if (sg) base.segs = sg; }
+      const ld = cleanLoad(cd.load, base.kind === "arrow"); if (ld) base.load = ld;
       if (base.kind === "legend" && typeof cd.rawText === "string") base.text = cd.rawText.slice(0, LIMITS.maxText);
       if (base.kind === "badge") base.text = "";
       if (base.kind === "icon" && base.text === base.iconId) base.text = ""; // the export labels an icon with its id; that label is not user text
@@ -286,7 +287,7 @@ export function toExcalidraw(scene: SceneJSON, th: Theme = LIGHT, images?: Recor
       boundElements: [], updated: 1, link: null, locked: e.locked,
     };
   };
-  const meta = (e: ElJSON): Obj => ({ [APP]: { kind: e.kind, cat: e.cat, ...(e.hex ? { hex: e.hex } : {}), fill: e.fill, edge: e.edge, radius: e.radius, iconId: e.iconId, route: e.route, dash: e.dash, head: e.head, sp: e.sp, dp: e.dp, n: e.n, o: e.o, ...(e.fs ? { fs: e.fs } : {}), ...(e.align ? { align: e.align } : {}), ...(e.kind === "arrow" && e.labels?.length ? { labels: e.labels } : {}), ...(e.kind === "arrow" && e.segs?.length ? { segs: e.segs } : {}), ...(e.kind === "legend" ? { rawText: e.text } : {}), ...(e.kind === "image" ? { img: e.img } : {}) } });
+  const meta = (e: ElJSON): Obj => ({ [APP]: { kind: e.kind, cat: e.cat, ...(e.hex ? { hex: e.hex } : {}), fill: e.fill, edge: e.edge, radius: e.radius, iconId: e.iconId, route: e.route, dash: e.dash, head: e.head, sp: e.sp, dp: e.dp, n: e.n, o: e.o, ...(e.fs ? { fs: e.fs } : {}), ...(e.align ? { align: e.align } : {}), ...(e.kind === "arrow" && e.labels?.length ? { labels: e.labels } : {}), ...(e.kind === "arrow" && e.segs?.length ? { segs: e.segs } : {}), ...(e.load ? { load: e.load } : {}), ...(e.kind === "legend" ? { rawText: e.text } : {}), ...(e.kind === "image" ? { img: e.img } : {}) } });
 
   const labels: Obj[] = [];
   const label = (containerId: string, text: string, cx: number, cy: number, boxW: number, fs = 0, free = "", align: "left" | "center" | "right" = "center"): void => {

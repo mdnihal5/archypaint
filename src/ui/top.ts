@@ -30,17 +30,19 @@ export function mountTop(ctx: Ctx, root: HTMLElement): Top {
   const dark = () => { const t = settings.get().theme; return t === "system" ? matchMedia("(prefers-color-scheme: dark)").matches : t === "dark"; };
   const themeBtn = h("button", { class: "ap-ib ap-wide", attrs: { type: "button", title: "Theme", "aria-label": "Switch theme" }, on: { click: () => settings.set({ theme: dark() ? "light" : "dark" }) } });
   const flowBtn = h("button", { class: "ap-ib ap-wide", attrs: { type: "button", title: "Flow animation", "aria-label": "Flow animation", "aria-pressed": "false" }, on: { click: () => settings.set({ flow: !settings.get().flow }) } }, glyph("flow", 18));
-  const cluster = h("div", { class: "ap-cluster ap-hit", attrs: { role: "toolbar", "aria-label": "Panels" } }, find, layersBtn, propsBtn, flowBtn, themeBtn);
+  const loadBtn = h("button", { class: "ap-ib ap-wide", attrs: { type: "button", title: "Load view", "aria-label": "Load view", "aria-pressed": "false" }, on: { click: () => settings.set({ load: !settings.get().load }) } }, glyph("gauge", 18));
+  const cluster = h("div", { class: "ap-cluster ap-hit", attrs: { role: "toolbar", "aria-label": "Panels" } }, find, layersBtn, propsBtn, loadBtn, flowBtn, themeBtn);
   root.append(cluster);
   const syncPanels = ctx.update("panel-btns", () => {
     setAttr(propsBtn, "aria-pressed", ctx.propsOpen?.() ? "true" : "false");
     setAttr(layersBtn, "aria-pressed", settings.get().layers ? "true" : "false");
     setAttr(flowBtn, "aria-pressed", settings.get().flow ? "true" : "false");
+    setAttr(loadBtn, "aria-pressed", settings.get().load ? "true" : "false");
     const d = dark();
     setAttr(themeBtn, "title", d ? "Light theme" : "Dark theme");
     themeBtn.replaceChildren(glyph(d ? "sun" : "moon", 18));
   });
-  ctx.d.add(settings.subscribe((_s, changed) => { if (changed.includes("layers") || changed.includes("flow") || changed.includes("theme")) syncPanels.schedule(); }));
+  ctx.d.add(settings.subscribe((_s, changed) => { if (changed.includes("layers") || changed.includes("flow") || changed.includes("load") || changed.includes("theme")) syncPanels.schedule(); }));
   ctx.d.on(matchMedia("(prefers-color-scheme: dark)"), "change", () => syncPanels.schedule());
   syncPanels.schedule();
 

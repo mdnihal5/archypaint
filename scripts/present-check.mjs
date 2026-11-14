@@ -120,6 +120,6 @@ try {
   await r.keyboard.press("p"); await sleep(300); await r.keyboard.press("ArrowRight"); await sleep(200); await r.keyboard.press("ArrowRight"); await sleep(300);
   await r.screenshot({ path: OUT + "present-dark.png" });
   check("no page errors", errs.length === 0, errs.join(" | "));
-} finally { await b.close(); srv.kill(); }
+} finally { await b.close(); process.kill(-srv.pid); }
 console.log(fails ? `${fails} FAILED` : "all passed");
 process.exit(fails ? 1 : 0);

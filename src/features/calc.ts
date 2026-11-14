@@ -7,6 +7,7 @@ export const actions: Action[] = [
     label: "Capacity note (QPS, storage…)",
     hint: "C",
     section: "insert",
+    menu: false, // not listed in the menu; the C shortcut inserts it
     key: { key: "c" },
     async run(c) {
       const { pickCalcTemplate } = await import("../calc-picker"); // the starters live in the lazy chunk with the picker

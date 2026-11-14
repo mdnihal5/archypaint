@@ -9,7 +9,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const results = [];
 const check = (name, ok, extra = "") => { results.push({ name, ok: !!ok, extra }); console.log(`${ok ? "PASS" : "FAIL"}  ${name}${extra ? "  " + extra : ""}`); };
 
-const srv = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], { stdio: "ignore" });
+const srv = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], { stdio: "ignore", detached: true }); // own process group: kill(-pid) also ends the vite child npx starts
 for (let i = 0; i < 50; i++) { try { if ((await fetch(`http://localhost:${PORT}/`)).ok) break; } catch { /* not up yet */ } await sleep(200); }
 const b = await puppeteer.launch({ executablePath: "/usr/bin/google-chrome", args: ["--no-sandbox", "--enable-precise-memory-info", "--js-flags=--expose-gc"] });
 let failed = false;
@@ -74,6 +74,60 @@ try {
   });
   check("200 undo/redo cycles keep the document identical", cyc.same);
   check("heap flat after 200 undo/redo cycles (< 300 KB growth)", cyc.growthKB < 300, `${cyc.growthKB} KB`);
+
+  // Load view on/off cycles over the drawing: the lazy chunk, canvas, listeners and caches must all go away each time
+  const lv = await p.evaluate(async () => {
+    const s = window.__ap.settings, sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
+    const heap = async () => { window.gc?.(); await sleepMs(40); window.gc?.(); return performance.memory.usedJSHeapSize; };
+    for (let i = 0; i < 3; i++) { s.set({ load: true }); await sleepMs(60); s.set({ load: false }); }
+    const h0 = await heap();
+    for (let c = 0; c < 100; c++) { s.set({ load: true }); await sleepMs(30); s.set({ load: false }); await sleepMs(5); }
+    await sleepMs(100);
+    const h1 = await heap();
+    return { growthKB: Math.round((h1 - h0) / 1024), canvases: document.querySelectorAll("canvas.ap-load").length };
+  });
+  check("heap flat after 100 Load view on/off cycles (< 300 KB growth), no overlay canvas left", lv.growthKB < 300 && lv.canvases === 0, `${lv.growthKB} KB, ${lv.canvases} canvases`);
+
+  // Load card + scenario cycles: open the card (select a service), play the spike, pause, close, turn the view off. Heap flat, nothing left
+  // behind (DOM, listeners, timers, canvases) and no frame scheduled while idle.
+  const lc = await p.evaluate(async () => {
+    const { editor, scene, settings: s } = window.__ap, sleepMs = (ms) => new Promise((r) => setTimeout(r, ms));
+    const heap = async () => { window.gc?.(); await sleepMs(40); window.gc?.(); return performance.memory.usedJSHeapSize; };
+    const R = (x, y, text) => scene.add({ kind: "rect", x: x + 4000, y: y + 4000, w: 110, h: 60, text });
+    const c = R(0, 0, "Clients"), a = R(250, 0, "App"), d = R(500, 0, "DB");
+    const ar = (s1, t, x0, x1) => scene.add({ kind: "arrow", src: s1.id, dst: t.id, head: 1, route: 0, x: x0 + 4000, y: 4030, w: x1 - x0, h: 1, pts: [x0 + 4000, 4030, x1 + 4000, 4030] });
+    const arrows = [ar(c, a, 110, 250), ar(a, d, 360, 500)];
+    editor.setLoad([c.id], { role: "entry", rate: 2000, spike: [5, 1, 4], retries: 2 }); editor.setLoad([a.id], { cap: 900 }); editor.setLoad([d.id], { cap: 700 });
+    editor.focusOn([c.id, a.id, d.id]);
+    const flow0 = s.get().flow; s.set({ flow: false }); // the flow dots of other arrows would count as frames
+    let net = 0;
+    const add0 = EventTarget.prototype.addEventListener, rem0 = EventTarget.prototype.removeEventListener, live = new Map();
+    const key = (t, type, fn) => (t === window || t === document ? `${t === window ? "w" : "d"}|${type}` : null);
+    EventTarget.prototype.addEventListener = function (type, fn, o) { const k = key(this, type); if (k && fn) { const set = live.get(k) ?? live.set(k, new Set()).get(k); if (!set.has(fn)) { set.add(fn); net++; } } return add0.call(this, type, fn, o); };
+    EventTarget.prototype.removeEventListener = function (type, fn, o) { const k = key(this, type); if (k && fn && live.get(k)?.delete(fn)) net--; return rem0.call(this, type, fn, o); };
+    let raf = 0; const rq = window.requestAnimationFrame.bind(window); window.requestAnimationFrame = (f) => { raf++; return rq(f); };
+    const cycle = async () => {
+      s.set({ load: true }); await sleepMs(50);
+      editor.select([a.id]); await sleepMs(30); editor.select([c.id]); await sleepMs(30);
+      document.querySelector(".ap-scn button[aria-label='Play scenario']")?.click(); await sleepMs(90);
+      document.querySelector(".ap-scn button[aria-label='Pause scenario']")?.click(); await sleepMs(20);
+      editor.select([]); await sleepMs(20);
+      s.set({ load: false }); await sleepMs(10);
+    };
+    for (let i = 0; i < 4; i++) await cycle();
+    const net0 = net, h0 = await heap();
+    for (let i = 0; i < 60; i++) await cycle();
+    await sleepMs(100);
+    const h1 = await heap(), r0 = raf; await sleepMs(1200);
+    const left = document.querySelectorAll(".ap-lcard,.ap-scn,.ap-lchart,canvas.ap-load").length;
+    EventTarget.prototype.addEventListener = add0; EventTarget.prototype.removeEventListener = rem0; window.requestAnimationFrame = rq;
+    editor.select([c.id, a.id, d.id, ...arrows.map((x) => x.id)]); editor.deleteSelection(); s.set({ flow: flow0 });
+    return { growthKB: Math.round((h1 - h0) / 1024), left, netDelta: net - net0, idleRaf: raf - r0 };
+  });
+  check("heap flat after 60 card open/close + play/pause cycles (< 300 KB growth)", lc.growthKB < 300, `${lc.growthKB} KB`);
+  check("card cycles leave no card, bar, chart or overlay canvas behind", lc.left === 0, String(lc.left));
+  check("card cycles leak no window/document listeners", lc.netDelta === 0, String(lc.netDelta));
+  check("card cycles: zero animation frames once everything is closed", lc.idleRaf === 0, String(lc.idleRaf));
 
   // ---- editing features: flyout, badges, frames, align, find, minimap (real mouse + keyboard) ----
   await ed((e) => { e.load({ els: [], groups: [] }); e.resetView(); });
@@ -326,7 +380,7 @@ try {
   }
 
   check("no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
-} catch (e) { failed = true; console.error(e); } finally { await b.close(); srv.kill(); }
+} catch (e) { failed = true; console.error(e); } finally { await b.close(); process.kill(-srv.pid); }
 const bad = results.filter((r) => !r.ok).length;
 console.log(`\n${results.length - bad}/${results.length} passed`);
 process.exit(failed || bad ? 1 : 0);

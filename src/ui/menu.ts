@@ -38,7 +38,7 @@ export function mountMenu(ctx: Ctx, root: HTMLElement): Menu {
   const open = () => {
     ctx.closeBoards();
     const fctx: FeatureCtx = { editor, io, toast: ctx.toast, confirm: ctx.confirm, stage: document.getElementById("stage") ?? document.body };
-    const actions = (pred: (a: Action) => boolean) => ACTIONS.filter((a) => pred(a) && (a.enabled?.(fctx) ?? true))
+    const actions = (pred: (a: Action) => boolean) => ACTIONS.filter((a) => a.menu !== false && pred(a) && (a.enabled?.(fctx) ?? true))
       .map((a) => item(ACTION_ICON[a.id] ?? "file", a.label, a.hint && a.hint.length <= 3 ? a.hint : "", act(() => a.run(fctx))));
     const hasSel = editor.selection().size > 0;
     const unsync: Array<() => void> = [];
@@ -74,6 +74,7 @@ export function mountMenu(ctx: Ctx, root: HTMLElement): Menu {
         chip("Sheet frame", "", () => settings.get().frame, (v) => settings.set({ frame: v })),
         chip("Layers", "", () => settings.get().layers, (v) => settings.set({ layers: v })),
         chip("Minimap", "M · shown when the diagram is larger than the window", () => settings.get().minimap, (v) => settings.set({ minimap: v })),
+        chip("Load view", "rates on arrows, utilisation under services", () => settings.get().load, (v) => settings.set({ load: v })),
         chip("Flow animation", "", () => settings.get().flow, (v) => settings.set({ flow: v })),
         chip("Status footer", "", () => settings.get().hud, (v) => settings.set({ hud: v })),
         chip("Hide icons", "⌥H · view only, exports follow it", () => settings.get().hideIcons, (v) => settings.set({ hideIcons: v }))),

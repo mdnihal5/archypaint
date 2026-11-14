@@ -8,7 +8,7 @@ const require = createRequire((process.env.PUPPETEER_DIR ?? "/home/sys2026/Perso
 const puppeteer = require("puppeteer-core");
 const SHOTS = process.argv.includes("--shots") ? process.argv[process.argv.indexOf("--shots") + 1] : null;
 const PORT = 4197;
-const srv = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], { stdio: "ignore" });
+const srv = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], { stdio: "ignore", detached: true }); // own process group: kill(-pid) also ends the vite child npx starts
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 for (let i = 0; i < 50; i++) { try { if ((await fetch(`http://localhost:${PORT}/`)).ok) break; } catch { /* not up yet */ } await sleep(200); }
 const b = await puppeteer.launch({ executablePath: "/usr/bin/google-chrome", args: ["--no-sandbox", "--enable-precise-memory-info", "--js-flags=--expose-gc"] });
@@ -159,6 +159,6 @@ try {
     check(`[${theme}] no page errors (calc)`, errs.length === 0, errs.slice(0, 2).join(" | "));
     await p.browserContext().close();
   }
-} finally { await b.close(); srv.kill(); }
+} finally { await b.close(); process.kill(-srv.pid); }
 console.log(`\n${pass}/${pass + fail} passed`);
 process.exit(fail ? 1 : 0);

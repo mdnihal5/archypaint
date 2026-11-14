@@ -7,14 +7,14 @@ const puppeteer = require("puppeteer-core");
 const N = Number(process.argv[2] ?? 5000);
 const MODE = process.argv.includes("--mixed") ? "mixed" : "stress";
 const PORT = 4181;
-const srv = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], { stdio: "ignore" });
+const srv = spawn("npx", ["vite", "preview", "--port", String(PORT), "--strictPort"], { stdio: "ignore", detached: true }); // own process group: kill(-pid) also ends the vite child npx starts
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 for (let i = 0; i < 50; i++) { try { if ((await fetch(`http://localhost:${PORT}/`)).ok) break; } catch { /* not up yet */ } await sleep(200); }
 const b = await puppeteer.launch({ executablePath: "/usr/bin/google-chrome", args: ["--no-sandbox"] });
 try {
   const p = await b.newPage();
   await p.setViewport({ width: 1440, height: 900 });
-  await p.goto(`http://localhost:${PORT}/?${MODE}=${N}`);
+  await p.goto(`http://localhost:${PORT}/?${MODE}=${N}${process.argv.includes("--load") ? "&loadspecs=1&load=on" : ""}`);
   await p.waitForFunction(() => window.__ap && window.__ap.renderer.lastFrameAt > 0);
   await sleep(1500);
   const cdp = await p.createCDPSession();
@@ -47,4 +47,4 @@ try {
   const top = [...self].filter(([k]) => !/^\(idle\)|^\(program\)/.test(k)).sort((a, b) => b[1] - a[1]).slice(0, 22);
   console.log(`total sampled ${(total / 1000).toFixed(0)} ms; idle ${(((self.get("(idle) :0") ?? 0)) / 1000).toFixed(0)} ms`);
   for (const [k, v] of top) console.log(`${(v / 1000).toFixed(1).padStart(8)} ms  ${k}`);
-} finally { await b.close(); srv.kill(); }
+} finally { await b.close(); process.kill(-srv.pid); }
