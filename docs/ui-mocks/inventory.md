@@ -84,7 +84,8 @@ Duplicate entry points found: theme (M14 + sun/moon), minimap (M18 + key M), bac
 | R4 | Edge: sharp / round / soft | selection non-empty |
 | R5 | Dashed toggle | selection non-empty |
 | R6 | Text size: S / M / L / XL | any selected element with free text (not brace, badge, calc, legend, image, lane) |
-| R7 | Text align: left / centre / right | selected elements that have alignable text (not connectors, icons, brace, badge, calc, legend, image, lane) |
+| R7 | Text align: left / centre / right | selected elements that have alignable text (not connectors, icons, brace, badge, calc, legend, image, lane); hidden when every selected free text has markdown on (markdown is drawn left-aligned) |
+| R7b | Markdown toggle (aria-pressed, no shortcut): draws a free text formatted after editing (`#`/`##`/`###`, `-`/`*` bullets, `1.` lines, `**bold**`, `` `code` ``, fenced code with a highlighter); the text stays raw while editing and in find / layers / Excalidraw export | a free text is selected (free text only); mock in docs/ui-mocks/markdown/ |
 | R8 | Route: straight / elbow / curve | a connector is selected |
 | R9 | Brace points: left / right / up / down | only braces selected |
 | R10 | Lanes run as: rows / columns | only swimlanes selected |

@@ -6,6 +6,7 @@ import { LIGHT, colourOf, onSolid, type Theme } from "../theme";
 import * as Icons from "../icons";
 import { arrowLabels, isCurve, pointAtT } from "../connectors";
 import { exportGroups, groupTint, type GroupOutline } from "../groups";
+import { loadMd } from "../md-hook";
 import { textWidth } from "../text-edit";
 import { arrowHead, arrowPathD, boundsWithGroups, buildSvg, planExport, unionBounds } from "./svg";
 import type { ExportOpts } from "./index";
@@ -99,6 +100,7 @@ function drawArrow(ctx: CanvasRenderingContext2D, e: El, th: Theme): void {
   }
 }
 
+const isMd = (e: El): boolean => e.kind === "text" && e.md === 1;
 export const imageKeys = (els: readonly El[]): string[] => [...new Set(els.filter((e) => e.kind === "image" && e.img).map((e) => e.img))];
 async function preloadImages(els: readonly El[]): Promise<void> {
   const keys = imageKeys(els);
@@ -117,6 +119,7 @@ export async function renderPng(editor: EditorAPI, o: ExportOpts = {}): Promise<
   if (!plan.ok) throw new ExportError(plan.message);
   await ensureIcons();
   if (els.some((e) => e.kind === "calc")) await ensureCalc().catch(() => {}); // results are cached per element once the evaluator is loaded
+  if (els.some(isMd)) await loadMd().catch(() => undefined); // markdown texts are drawn formatted, never plain by accident
   await preloadImages(els); // image elements: decode their bitmaps before drawing (same cache and drawer as the canvas)
   const th = themeOf(editor), hideIcons = iconsHidden(editor);
   const oc = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(plan.width, plan.height) : Object.assign(document.createElement("canvas"), { width: plan.width, height: plan.height });
@@ -148,6 +151,7 @@ export async function renderSvg(editor: EditorAPI, o: ExportOpts = {}): Promise<
   if (!els.length) throw new ExportError("Nothing to export — the canvas is empty.");
   await ensureIcons();
   const calc = els.some((e) => e.kind === "calc") ? await ensureCalc().catch(() => null) : null;
+  const md = els.some(isMd) ? await loadMd().catch(() => null) : null;
   const keys = imageKeys(els);
   let images: Record<string, string> | undefined;
   if (keys.length) {
@@ -155,5 +159,5 @@ export async function renderSvg(editor: EditorAPI, o: ExportOpts = {}): Promise<
     if (r.tooBig) throw new ExportError("The images in this drawing are too large to embed in an SVG (20 MB limit). Export as PNG, or remove some images.");
     images = r.images;
   }
-  return { text: buildSvg(els, themeOf(editor), { background: o.background ?? true, padding: PAD, icons: Icons.iconSvg, ...(iconsHidden(editor) ? { hideIcons: true } : {}), groups: groupsFor(editor, els), measure: textWidth, ...(calc ? { calc: calc.evalCalc } : {}), ...(images ? { images } : {}) }), usedSelection };
+  return { text: buildSvg(els, themeOf(editor), { background: o.background ?? true, padding: PAD, icons: Icons.iconSvg, ...(iconsHidden(editor) ? { hideIcons: true } : {}), groups: groupsFor(editor, els), measure: textWidth, ...(calc ? { calc: calc.evalCalc } : {}), ...(md ? { md: md.svg } : {}), ...(images ? { images } : {}) }), usedSelection };
 }
