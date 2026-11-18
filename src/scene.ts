@@ -70,6 +70,8 @@ export interface El {
   fs?: number | undefined;
   /** label alignment inside the box: absent = centred (so older files and every existing element read as before) */
   align?: TextAlign | undefined;
+  /** free text only: 1 = drawn as markdown after editing (the text itself stays raw); absent = plain text, exactly as before */
+  md?: 1 | undefined;
   /** arrows only: labels along the path. Absent = none (a legacy `text` on an arrow reads as one label at t = 0.5, see arrowLabels) */
   labels?: ArrowLabel[] | undefined;
   /** elbow arrows only: manual offsets of interior segments, flat pairs [2 * index + vertical, offset] (see connectors.ts applySegs). Absent = auto-routed */
@@ -265,7 +267,7 @@ export class Scene {
   restoreEl(e: El, j: ElJSON): void {
     this.grid.remove(e);
     // optional fields are assigned explicitly: Object.assign alone would leave a stale value when the snapshot omits the key
-    Object.assign(e, j, { groupIds: [...j.groupIds], pts: [...j.pts], fs: j.fs, align: j.align, angle: j.angle, labels: j.labels?.map((l) => ({ ...l })), segs: j.segs ? [...j.segs] : undefined, load: j.load ? copyLoad(j.load) : undefined, st: j.st, dt: j.dt });
+    Object.assign(e, j, { groupIds: [...j.groupIds], pts: [...j.pts], fs: j.fs, align: j.align, md: j.md, angle: j.angle, labels: j.labels?.map((l) => ({ ...l })), segs: j.segs ? [...j.segs] : undefined, load: j.load ? copyLoad(j.load) : undefined, st: j.st, dt: j.dt });
     this.grid.insert(e);
     e.version++;
     this.nonce++;

@@ -8,6 +8,7 @@ import { GroupIndex } from "./groups";
 import { History, type HistState } from "./history";
 import { Controller, type Core, type Tool } from "./input";
 import { Renderer } from "./renderer";
+import { loadMd, mdLib } from "./md-hook";
 import { cleanLoad } from "./io/format";
 import { Scene, copyLoad, isPort, type ArrowLabel, type El, type ElInit, type ElJSON, type GroupInfo, type Port, type SceneJSON } from "./scene";
 import { braceVertical, NEW_KINDS } from "./shape-geom";
@@ -243,8 +244,15 @@ export function createEditor(d: EditorDeps): Editor {
 
   // ---- text --------------------------------------------------------------------------------
 
-  const commitText = (el: El, value: string, isNew: boolean): void => {
+  /** a free text's box: its rendered markdown when md is on and the chunk is loaded, else the plain measure */
+  const textBox = (text: string, fs: number | undefined, md: 1 | undefined) => (md && mdLib() ? mdLib()!.size(text, fs || 13) : measureText(text, fs));
+  const commitText = (el: El, value: string, isNew: boolean, mdReady = false): void => {
     let v = value.replace(/\s+$/g, "");
+    // markdown text is sized from its rendered layout: load the chunk first so the resize lands in the SAME history entry as the edit
+    if (el.kind === "text" && el.md && v !== "" && !mdLib() && !mdReady) {
+      void loadMd().catch(() => undefined).then(() => { if (!destroyed && scene.els.has(el.id)) commitText(el, value, isNew, true); });
+      return;
+    }
     if (el.kind === "badge") {
       const n = Math.floor(Number(v.trim()));
       if (Number.isFinite(n) && n >= 0 && n <= 99999 && n !== el.n) run("edit badge", () => { hist.touch(el); scene.patch(el, { n }); });
@@ -265,7 +273,7 @@ export function createEditor(d: EditorDeps): Editor {
     if (el.kind === "text" && v === "") { if (scene.els.has(el.id)) scene.remove(el); renderer.selected.delete(el.id); renderer.invalidate(true, true); emit("selection"); return; }
     run("edit text", () => {
       if (isNew) hist.created(el); else hist.touch(el);
-      if (el.kind === "text") { const m = measureText(v, el.fs); const cx = el.x + el.w / 2, cy = el.y + el.h / 2; scene.set(el, cx - m.w / 2, cy - m.h / 2, m.w, m.h); }
+      if (el.kind === "text") { const m = textBox(v, el.fs, el.md); const cx = el.x + el.w / 2, cy = el.y + el.h / 2; scene.set(el, cx - m.w / 2, cy - m.h / 2, m.w, m.h); }
       if (el.kind === "icon") {
         // the name lives in a strip under the tile: the box grows by the strip when a name appears and shrinks when it goes, so the tile never changes size
         v = v.replace(/\s*\n\s*/g, " ");
@@ -517,6 +525,18 @@ export function createEditor(d: EditorDeps): Editor {
     },
     setStyle(p) {
       if (!sel().size) return;
+      // a markdown text is resized from its rendered layout: when the chunk is not loaded yet, load it first and apply in one step
+      if (!mdLib() && (p.md === 1 || (p.fs !== undefined && [...sel()].some((id) => scene.els.get(id)?.md)))) {
+        const ids = [...sel()]; // the user may click away while the chunk loads: the style still goes to what it was meant for
+        void loadMd().catch(() => undefined).then(() => {
+          if (destroyed) return;
+          const keep = [...sel()];
+          if (keep.length === ids.length && keep.every((id, i) => id === ids[i])) { api.setStyle(p); return; }
+          setSel(ids); api.setStyle(p); setSel(keep);
+        });
+        return;
+      }
+      if (p.md !== undefined && Object.keys(p).length === 1 && ![...sel()].some((id) => scene.els.get(id)?.kind === "text")) return; // markdown is for free text only
       run("style", () => {
         // a whole group selected: colour, custom colour and fill style the GROUP (its outline and tint), the members keep theirs
         const gid = api.selectedGroup(), grp = gid ? scene.groups.get(gid) : undefined;
@@ -545,6 +565,7 @@ export function createEditor(d: EditorDeps): Editor {
           if (p.edge !== undefined) { patch.edge = p.edge; if (e.kind !== "arrow") patch.radius = edgeRadius(p.edge); }
           if (p.radius !== undefined) patch.radius = p.radius;
           if (p.align !== undefined) patch.align = p.align === "center" ? undefined : p.align;
+          if (p.md !== undefined && e.kind === "text") patch.md = p.md ? 1 : undefined;
           if (p.fs !== undefined) patch.fs = p.fs > 0 ? Math.max(6, Math.min(96, Math.round(p.fs))) : undefined;
           if (p.o !== undefined && e.kind === "brace") {
             if (braceVertical(e.o) !== braceVertical(p.o)) scene.set(e, e.x + e.w / 2 - e.h / 2, e.y + e.h / 2 - e.w / 2, e.h, e.w);
@@ -552,8 +573,8 @@ export function createEditor(d: EditorDeps): Editor {
           } else if (p.o !== undefined && e.kind === "lane") patch.o = p.o === 1 ? 1 : 0;
           const oldFs = e.fs;
           scene.patch(e, patch);
-          if (p.fs !== undefined && e.text) {
-            if (e.kind === "text") { const m = measureText(e.text, e.fs); const cx = e.x + e.w / 2, cy = e.y + e.h / 2; scene.set(e, cx - m.w / 2, cy - m.h / 2, m.w, m.h); }
+          if ((p.fs !== undefined || (p.md !== undefined && e.kind === "text")) && e.text) {
+            if (e.kind === "text") { const m = textBox(e.text, e.fs, e.md); const cx = e.x + e.w / 2, cy = e.y + e.h / 2; scene.set(e, cx - m.w / 2, cy - m.h / 2, m.w, m.h); }
             else if (e.kind === "icon") { scene.set(e, e.x, e.y, e.w, iconBoxH(e, oldFs, e.fs, true)); rerouteIds(new Set([e.id])); }
             else growToFit(e); // a bigger text size may need a taller shape
           }
@@ -638,6 +659,7 @@ export function createEditor(d: EditorDeps): Editor {
       for (const id of sel()) { const c = scene.els.get(id); if (c && (!e || (e.kind === "arrow" && c.kind !== "arrow"))) e = c; }
       if (!e) return false;
       styleClip = { cat: e.cat, hex: e.hex ?? "", fill: e.fill, edge: e.edge, dash: e.dash, fs: e.fs ?? 0, align: e.align ?? "center" };
+      if (e.kind === "text") styleClip.md = e.md ? 1 : 0;
       if (e.kind !== "arrow") styleClip.radius = e.radius;
       return true;
     },
@@ -861,6 +883,7 @@ function sanitize(j: ElJSON): ElJSON {
   if (fs >= 6 && fs <= 96) el.fs = Math.round(fs); else delete el.fs;
   const sg = cleanSegs(j.segs);
   if (sg) el.segs = sg; else delete el.segs;
+  if (el.kind === "text" && j.md === 1) el.md = 1; else delete el.md;
   const ang = el.kind === "text" ? cleanAngle(j.angle) : undefined; // only free text turns
   if (ang !== undefined) el.angle = ang; else delete el.angle;
   const ld = cleanLoad(j.load, el.kind === "arrow");

@@ -128,6 +128,8 @@ export interface SvgOpts {
   groups?: readonly GroupOutline[];
   /** width of a line of text at a font size, so labels wrap exactly as on the canvas; absent -> the monospace approximation */
   measure?: (text: string, fs: number) => number;
+  /** markdown texts (`md`): the formatted SVG elements; absent -> drawn as plain text */
+  md?: (e: ElLike, th: Theme, ink: string, solid: boolean) => string;
 }
 
 const symId = (id: string, tier: string) => `ap-ic-${id.replace(/[^\w-]/g, "_")}-${tier}`;
@@ -194,7 +196,7 @@ export function buildSvg(els: readonly ElLike[], th: Theme, o: SvgOpts): string 
       if (e.angle) body.push(`<g transform="rotate(${n((e.angle * 180) / Math.PI)} ${n(cx)} ${n(cy)})">`); // box and text turn together about the centre
       // same look as the canvas: an optional rounded box (tint / solid) behind the text, which is drawn in the text's own colour
       if (e.fill === 1 || e.fill === 2) body.push(`<rect x="${n(e.x - TEXT_BOX.padX)}" y="${n(e.y - TEXT_BOX.padY)}" width="${n(e.w + 2 * TEXT_BOX.padX)}" height="${n(e.h + 2 * TEXT_BOX.padY)}" rx="${TEXT_BOX.r}" fill="${c}"${e.fill === 1 ? ` fill-opacity="${th.tint}"` : ""}/>`);
-      if (e.text) body.push(shapeLabel(e, cx, cy, e.fill === 2 ? onSolid(th, c) : textInk(th, e), ""));
+      if (e.text) { const ink = e.fill === 2 ? onSolid(th, c) : textInk(th, e); body.push(e.md === 1 && o.md ? o.md(e, th, ink, e.fill === 2) : shapeLabel(e, cx, cy, ink, "")); }
       if (e.angle) body.push("</g>");
     } else if (e.kind === "arrow") {
       body.push(`<path d="${arrowPathD(e)}" fill="none" ${stroke(e, c)}/>`);

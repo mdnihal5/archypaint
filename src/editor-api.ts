@@ -5,7 +5,7 @@ import type { Tool } from "./input";
 import type { Viewport } from "./viewport";
 import type { TextAlign } from "./wrap";
 
-export interface StyleProps { cat: number; /** text size in px for labels (0 = default) */ fs?: number; /** label alignment; "center" clears it */ align?: TextAlign; /** custom #rrggbb, "" clears it */ hex?: string; fill: FillStyle; edge: EdgeStyle; radius: number; dash: 0 | 1; route: 0 | 1 | 2; /** orientation of braces (0-3) and swimlanes (0 rows, 1 columns) */ o?: 0 | 1 | 2 | 3 }
+export interface StyleProps { cat: number; /** text size in px for labels (0 = default) */ fs?: number; /** label alignment; "center" clears it */ align?: TextAlign; /** free text: 1 = markdown, 0 = plain */ md?: 0 | 1; /** custom #rrggbb, "" clears it */ hex?: string; fill: FillStyle; edge: EdgeStyle; radius: number; dash: 0 | 1; route: 0 | 1 | 2; /** orientation of braces (0-3) and swimlanes (0 rows, 1 columns) */ o?: 0 | 1 | 2 | 3 }
 
 /** "edit": an inline text editor opened or closed */
 export type EditorEvent = "change" | "selection" | "tool" | "history" | "viewport" | "edit";

@@ -7,6 +7,7 @@ import { handlePoints, type ArrowLabel, type El, type Kind, type Scene } from ".
 import { CONTAINER_KINDS, FRAME_HEADER, LANE_COL_HEADER, LANE_HEADER, LEGEND_PAD, LEGEND_ROW_H, LEGEND_TITLE_H, PATH_KINDS, labelPoint, laneCells, legendRows, shapeParts } from "./shape-geom";
 import { TEXT_BOX, colourOf, onSolid, textInk, type Theme } from "./theme";
 import type { Viewport } from "./viewport";
+import { ensureMd, mdLib, onMdLoaded } from "./md-hook";
 import { alignX, labelLineHeight, wrapCached, wrapWidth } from "./wrap";
 
 export const FACE = "'JetBrains Mono','DejaVu Sans Mono',monospace";
@@ -83,6 +84,7 @@ export class Renderer {
     this.sctx = sc.getContext("2d", { alpha: true })!;
     this.lctx = lc.getContext("2d", { alpha: true })!;
     imageRepaint = () => this.invalidate(true, true);
+    onMdLoaded(() => this.invalidate(true, true));
   }
 
   resize(w: number, h: number, dpr: number): void {
@@ -635,7 +637,9 @@ function drawEl0(ctx: CanvasRenderingContext2D, e: El, th: Theme, z: number, lod
   if (e.text && z >= 0.3 && !hideText) {
     ctx.globalAlpha = 1; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillStyle = e.fill === 2 ? onSolid(th, col) : e.kind === "text" ? textInk(th, e) : th.ink;
-    drawLabel(ctx, e, e.x + e.w / 2, e.y + e.h / 2);
+    const md = e.kind === "text" && e.md === 1 ? mdLib() : null; // markdown text: the lazy chunk draws it; until it arrives the plain label shows
+    if (md) { md.draw(ctx, e, th, ctx.fillStyle as string, e.fill === 2); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = FONT; }
+    else { if (e.kind === "text" && e.md === 1) ensureMd(); drawLabel(ctx, e, e.x + e.w / 2, e.y + e.h / 2); }
   }
   ctx.globalAlpha = 1;
 }

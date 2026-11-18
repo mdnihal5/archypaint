@@ -10,6 +10,7 @@ import { drawEl } from "./renderer";
 import { buildSvg } from "./io/svg";
 import type { El, ElJSON } from "./scene";
 import { LIGHT } from "./theme";
+import { loadMd } from "./md-hook";
 import { styleCaps, type StyleCap } from "./ui/props-model";
 
 vi.hoisted(() => { (globalThis as { Path2D?: unknown }).Path2D = class { constructor(public d?: string) {} }; });
@@ -26,7 +27,8 @@ function rec() {
 const fakeCtx = new Proxy({}, { get: (t: Record<string, unknown>, k: string) => (k === "measureText" ? () => ({ width: 40 }) : k in t ? t[k] : () => undefined), set: (t: Record<string, unknown>, k: string, v) => { t[k] = v; return true; } });
 
 let stage: HTMLDivElement, ed: Editor;
-beforeEach(() => {
+beforeEach(async () => {
+  await loadMd(); // markdown text draws through the lazy chunk: it must be there for the "markdown" row
   HTMLCanvasElement.prototype.getContext = (() => fakeCtx) as never;
   stage = document.createElement("div");
   const a = document.createElement("canvas"), b = document.createElement("canvas");
@@ -59,7 +61,7 @@ const CONTROLS: Array<[string, StyleCap, Record<string, unknown>]> = [
   ["colour swatch", "colour", { cat: 4 }], ["custom hex", "colour", { hex: "#12ab34" }],
   ["fill tint", "fill", { fill: 1 }], ["fill solid", "fill", { fill: 2 }],
   ["edge", "edge", { edge: 2 }], ["dashed", "dash", { dash: 1 }],
-  ["text size", "size", { fs: 20 }], ["align", "align", { align: "left" }], ["route", "route", { route: 2 }],
+  ["text size", "size", { fs: 20 }], ["align", "align", { align: "left" }], ["markdown", "md", { md: 1 }], ["route", "route", { route: 2 }],
 ];
 
 function drawOf(e: El): string {

@@ -188,3 +188,25 @@ describe("format: text rotation (angle)", () => {
     if (w.ok) expect(w.value.scene.els[0]!.angle).toBeUndefined();
   });
 });
+
+describe("format: markdown text (md)", () => {
+  const f = (e: object) => { const p = parseArch(serializeArch(base([el({ id: "x", ...e })]))); return p.ok ? p.value.scene.els[0]!.md : "bad"; };
+  it("round-trips on free text; absent otherwise and in files written before", () => {
+    const text = serializeArch(base([el({ id: "t", kind: "text", text: "# hi", md: 1 }), el({ id: "u", kind: "text", text: "x", z: 2 })]));
+    expect(text).toContain("\"md\":1");
+    expect(text.split("\n").filter((l) => l.startsWith("{\"id\""))[1]).not.toContain("md");
+    expect(f({ kind: "text", md: 1 })).toBe(1);
+    expect(serializeArch(base())).not.toContain("\"md\"");
+  });
+  it("only 1 is accepted; junk, 0, other kinds read as absent", () => {
+    expect(f({ kind: "text" })).toBeUndefined();
+    expect(f({ kind: "rect", md: 1 })).toBeUndefined();
+    const raw = JSON.parse(serializeArch(base([el({ id: "x", kind: "text", md: 1 })])));
+    for (const junk of [0, "1", true, 2, null, {}, [1]]) {
+      raw.scene.els[0].md = junk;
+      const v = validateFile(raw);
+      expect(v.ok).toBe(true);
+      if (v.ok) expect(v.value.scene.els[0]!.md).toBeUndefined();
+    }
+  });
+});

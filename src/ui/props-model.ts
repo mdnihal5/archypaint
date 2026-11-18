@@ -1,12 +1,12 @@
 import type { El } from "../scene";
 
 /** the ribbon's style controls; a control is shown when it does something for at least one selected element */
-export type StyleCap = "colour" | "fill" | "edge" | "dash" | "size" | "align" | "route";
+export type StyleCap = "colour" | "fill" | "edge" | "dash" | "size" | "align" | "route" | "md";
 export type Caps = Record<StyleCap, boolean>;
-const NONE: Caps = { colour: false, fill: false, edge: false, dash: false, size: false, align: false, route: false };
-const BOX = { colour: true, fill: true, edge: true, dash: true, size: true, align: true, route: false } as const;
+const NONE: Caps = { colour: false, fill: false, edge: false, dash: false, size: false, align: false, route: false, md: false };
+const BOX = { colour: true, fill: true, edge: true, dash: true, size: true, align: true, route: false, md: false } as const;
 const KIND_CAPS: Record<string, Caps> = {
-  text: { ...BOX, edge: false, dash: false }, // a free label: ink colour, an optional tint / solid box behind it
+  text: { ...BOX, edge: false, dash: false, md: true }, // a free label: ink colour, an optional tint / solid box behind it
   rect: BOX,
   ellipse: { ...BOX, edge: false }, diamond: { ...BOX, edge: false },
   cylinder: BOX, cloud: BOX, hexagon: BOX, parallelogram: BOX, triangle: BOX, star: BOX, note: BOX,
@@ -14,7 +14,7 @@ const KIND_CAPS: Record<string, Caps> = {
   frame: { ...BOX, align: false }, // the title is always at the left
   lane: { ...BOX, size: false, align: false }, badge: { ...BOX, size: false, align: false },
   icon: { ...BOX, dash: false, align: false },
-  arrow: { colour: true, fill: false, edge: true, dash: true, size: true, align: false, route: true },
+  arrow: { colour: true, fill: false, edge: true, dash: true, size: true, align: false, route: true, md: false },
   legend: { ...NONE, edge: true },
   calc: { ...NONE, colour: true, fill: true },
   image: NONE,

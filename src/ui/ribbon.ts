@@ -63,6 +63,8 @@ export function mountRibbon(ctx: Ctx, parent: HTMLElement): Ribbon {
   const edge = seg("Edge", EDGE, "edge");
   let dashNow: 0 | 1 | undefined;
   const dash = h("button", { class: "ap-btn", text: "dashed", attrs: { type: "button", "aria-pressed": "false" }, on: { click: () => set({ dash: dashNow === 1 ? 0 : 1 }) } });
+  let mdNow: 0 | 1 | undefined;
+  const md = h("button", { class: "ap-btn", text: "markdown", attrs: { type: "button", "aria-pressed": "false", title: "Draw this text as markdown (# headings, - bullets, **bold**, `code`, ``` blocks)" }, on: { click: () => set({ md: mdNow === 1 ? 0 : 1 }) } });
   const fillField = field("Fill", fill.el), edgeField = field("Edge", edge.el);
   /* arrow protocol: label prefix + dash, no stored field (see protocol.ts) */
   const protoOpts: ReadonlyArray<Protocol | null> = [...PROTOCOLS, null];
@@ -95,7 +97,7 @@ export function mountRibbon(ctx: Ctx, parent: HTMLElement): Ribbon {
   const copyBtn = ib("copyStyle", "Copy style (⌥⌘C)", () => editor.copyStyle());
   const pasteBtn = ib("pasteStyle", "Paste style (⌥⌘V)", () => editor.pasteStyle());
   const deleteBtn = h("button", { class: "ap-ib sm ap-danger", attrs: { type: "button", title: "Delete (⌫)", "aria-label": "Delete selection" }, on: { click: () => { editor.deleteSelection(); ctx.refresh(); } } }, glyphMore("trash", 18));
-  const rowB = h("div", { class: "rr" }, routeField, sizeField, alignField, braceField, laneField, h("span", { class: "ap-sep" }), arrange, h("span", { class: "ap-sep" }), groupBtn, ungroupBtn, lockBtn, copyBtn, pasteBtn, h("span", { class: "push" }), deleteBtn);
+  const rowB = h("div", { class: "rr" }, routeField, sizeField, md, alignField, braceField, laneField, h("span", { class: "ap-sep" }), arrange, h("span", { class: "ap-sep" }), groupBtn, ungroupBtn, lockBtn, copyBtn, pasteBtn, h("span", { class: "push" }), deleteBtn);
 
   /* ---------- row C: align / distribute (2+ movable shapes) ---------- */
   const distH = ib("distH", "Distribute horizontally (⌥⇧X, needs 3+)", () => editor.distribute("h"));
@@ -230,7 +232,10 @@ export function mountRibbon(ctx: Ctx, parent: HTMLElement): Ribbon {
     const texty = anyCap(els, "size");
     setHidden(sizeField, !texty);
     if (texty) { const fs = commonValue(els.filter((e) => styleCaps(e).size), (e) => e.fs ?? 0); sizeBtns.forEach((b, i) => setPressed(b, fs === TEXT_SIZES[i]!.px, "aria-checked")); }
-    const aligned = els.filter((e) => styleCaps(e).align);
+    setHidden(md, !anyCap(els, "md"));
+    mdNow = commonValue(els.filter((e) => styleCaps(e).md), (e) => (e.md ? 1 : 0));
+    setPressed(md, mdNow === 1);
+    const aligned = els.filter((e) => styleCaps(e).align && !e.md); // markdown is drawn left-aligned: its align control is hidden
     setHidden(alignField, aligned.length === 0);
     if (aligned.length) { const al = commonValue(aligned, (e) => e.align ?? "center"); alignBtns.forEach((b, i) => setPressed(b, al === ALIGNS[i]![0], "aria-checked")); }
     const braces = els.length > 0 && els.every((e) => e.kind === "brace"), lanes = els.length > 0 && els.every((e) => e.kind === "lane");
